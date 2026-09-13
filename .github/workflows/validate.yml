@@ -39,3 +39,6 @@ jobs:
 
       - name: Run G2 live mutation smoke test
         run: godot --headless --path . --script res://tests/g2_live_mutation.gd
+
+      - name: Run G2 mutation campaign
+        run: godot --headless --path . --script res://tests/g2_campaign.gd
