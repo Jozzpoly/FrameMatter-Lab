@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  g0-validation:
+  research-validation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,3 +30,6 @@ jobs:
 
       - name: Run G0 campaign
         run: godot --headless --path . --script res://tests/g0_campaign.gd
+
+      - name: Run G1 dynamic construct smoke test
+        run: godot --headless --path . --script res://tests/g1_dynamic_construct.gd
