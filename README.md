@@ -54,4 +54,26 @@ A local failure is useful evidence. The repository is allowed to replace represe
 
 ## Current state
 
-**G0 — in progress.** The initial harness is being built around `CellVolume` as the only logical source of truth.
+### G0 — PASS (bounded)
+
+Validated on Godot 4.7.2 in headless CI:
+
+- known geometry truth cases pass (isolated cell, adjacent pair, full 4³ cube),
+- mesh and collision representations regenerate from `CellVolume` after destruction,
+- moving a representation in world space does not mutate local Matter,
+- 500 deterministic Matter mutations preserve representation consistency,
+- baseline rebuild costs were measured before optimization.
+
+Baseline CI measurements for the intentionally naive box-per-cell representation:
+
+| Full cube | Cells / collision shapes | Mesh rebuild | Full representation rebuild |
+| --- | ---: | ---: | ---: |
+| 4³ | 64 | ~1.0 ms | ~1.5 ms |
+| 8³ | 512 | ~4.9 ms | ~7.1 ms |
+| 12³ | 1728 | ~16.5 ms | ~26.2 ms |
+
+These are one-run CI baselines, not performance targets. The 12³ result already demonstrates the expected scaling cliff and is evidence for later collider-region/merging work, not a reason to optimize before G1–G3.
+
+### G1 — in progress
+
+Next evidence target: use the same `CellVolume` as a real dynamic `RigidBody3D` under Jolt, verify falling/collision/settling and confirm that physical world motion does not alter logical local Matter.
