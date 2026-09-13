@@ -58,21 +58,22 @@ func _run() -> void:
 	_check(volume.duplicate_cells() == truth_snapshot, "settling and collision preserve Matter truth")
 
 	var x_before_impulse := construct.position.x
-	construct.apply_central_impulse(Vector3(2.0, 1.0, 0.0))
+	var target_delta_velocity := Vector3(2.0, 1.0, 0.0)
+	construct.apply_central_impulse(target_delta_velocity * construct.mass)
 	for _step in range(60):
 		await physics_frame
-	_check(construct.position.x > x_before_impulse + 0.05, "construct responds as a dynamic body to an impulse")
+	_check(construct.position.x > x_before_impulse + 0.05, "construct responds to a mass-normalized impulse")
 	_check(volume.duplicate_cells() == truth_snapshot, "impulse-driven motion preserves Matter truth")
 
 	print(
-		"G1_METRIC final_pos=%s final_linear_velocity=%s max_horizontal_drift=%.6f collision_shapes=%d"
-		% [construct.position, construct.linear_velocity, max_horizontal_drift, construct.get_collision_shape_count()]
+		"G1_METRIC final_pos=%s final_linear_velocity=%s max_horizontal_drift=%.6f mass=%.3f collision_shapes=%d"
+		% [construct.position, construct.linear_velocity, max_horizontal_drift, construct.mass, construct.get_collision_shape_count()]
 	)
 
 	world.free()
 
 	if _failures.is_empty():
-		print("G1_SMOKE_PASS: same CellVolume survived dynamic Jolt motion, collision, settling, and impulse response.")
+		print("G1_SMOKE_PASS: same CellVolume survived dynamic Jolt motion, collision, settling, and mass-normalized impulse response.")
 		quit(0)
 	else:
 		for failure in _failures:
