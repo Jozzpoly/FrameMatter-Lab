@@ -45,9 +45,9 @@ func _run_asymmetric_motion_case(world: Node3D) -> void:
 	world.add_child(construct)
 	construct.set_volume(volume)
 
-	var peak_linear_speed := 0.0
-	var peak_angular_speed := 0.0
-	var peak_physics_ms := 0.0
+	var peak_linear_speed: float = 0.0
+	var peak_angular_speed: float = 0.0
+	var peak_physics_ms: float = 0.0
 
 	for step in range(300):
 		await physics_frame
@@ -55,7 +55,7 @@ func _run_asymmetric_motion_case(world: Node3D) -> void:
 		peak_angular_speed = max(peak_angular_speed, construct.angular_velocity.length())
 		peak_physics_ms = max(
 			peak_physics_ms,
-			Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+			float(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0
 		)
 		if step == 120:
 			construct.apply_torque_impulse(Vector3(0.7, -0.4, 0.55))
@@ -85,19 +85,19 @@ func _run_large_compound_case(world: Node3D) -> void:
 	construct.set_volume(volume)
 
 	_check(construct.get_collision_shape_count() == 512, "8^3 dynamic construct creates the expected naive shape count")
-	var initial_y := construct.position.y
-	var peak_physics_ms := 0.0
-	var accumulated_physics_ms := 0.0
-	var sample_count := 0
+	var initial_y: float = construct.position.y
+	var peak_physics_ms: float = 0.0
+	var accumulated_physics_ms: float = 0.0
+	var sample_count: int = 0
 
 	for _step in range(150):
 		await physics_frame
-		var physics_ms := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+		var physics_ms: float = float(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0
 		peak_physics_ms = max(peak_physics_ms, physics_ms)
 		accumulated_physics_ms += physics_ms
 		sample_count += 1
 
-	var average_physics_ms := accumulated_physics_ms / max(sample_count, 1)
+	var average_physics_ms: float = accumulated_physics_ms / float(max(sample_count, 1))
 	_check(construct.position.y < initial_y - 0.5, "8^3 compound construct participates in dynamic physics")
 	_check(construct.position.length() < 100.0, "8^3 compound construct stays numerically bounded")
 	_check(volume.duplicate_cells() == truth_snapshot, "larger compound motion preserves Matter truth")
