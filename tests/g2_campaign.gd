@@ -10,14 +10,14 @@ func _init() -> void:
 
 
 func _run() -> void:
-	var world := Node3D.new()
+	var world: Node3D = Node3D.new()
 	get_root().add_child(world)
 
-	var volume := CellVolume.new(Vector3i(6, 4, 4))
+	var volume: CellVolume = CellVolume.new(Vector3i(6, 4, 4))
 	# Permanent anchor/core prevents the construct from ever becoming shapeless.
 	volume.fill_box(Vector3i(1, 1, 1), Vector3i(4, 3, 3), CellVolume.SOLID)
 
-	var construct := ConstructBody.new()
+	var construct: ConstructBody = ConstructBody.new()
 	construct.name = "G2MutationCampaignConstruct"
 	construct.gravity_scale = 0.0
 	construct.linear_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
@@ -33,18 +33,18 @@ func _run() -> void:
 	for _step in range(4):
 		await physics_frame
 
-	var rng := RandomNumberGenerator.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 22061993
-	var max_com_error := 0.0
-	var max_inverse_mass_error := 0.0
-	var max_rebuild_usec := 0
-	var total_rebuild_usec := 0
-	var initial_revision := volume.revision
-	var start_position := construct.position
+	var max_com_error: float = 0.0
+	var max_inverse_mass_error: float = 0.0
+	var max_rebuild_usec: int = 0
+	var total_rebuild_usec: int = 0
+	var initial_revision: int = volume.revision
+	var start_position: Vector3 = construct.position
 
 	for step in range(MUTATION_STEPS):
-		var cell := _random_mutable_cell(rng, volume)
-		var next_material := CellVolume.SOLID
+		var cell: Vector3i = _random_mutable_cell(rng, volume)
+		var next_material: int = CellVolume.SOLID
 		if volume.get_cell(cell) != CellVolume.EMPTY:
 			next_material = CellVolume.EMPTY
 		volume.set_cell(cell, next_material)
@@ -55,12 +55,12 @@ func _run() -> void:
 
 		await physics_frame
 
-		var solid_count := volume.count_solid()
-		var expected_mass := float(solid_count)
-		var expected_inverse_mass := 1.0 / expected_mass
-		var expected_com := _expected_com(volume)
-		var com_error := construct.observed_center_of_mass_local.distance_to(expected_com)
-		var inverse_mass_error := abs(construct.observed_inverse_mass - expected_inverse_mass)
+		var solid_count: int = volume.count_solid()
+		var expected_mass: float = float(solid_count)
+		var expected_inverse_mass: float = 1.0 / expected_mass
+		var expected_com: Vector3 = _expected_com(volume)
+		var com_error: float = construct.observed_center_of_mass_local.distance_to(expected_com)
+		var inverse_mass_error: float = abs(construct.observed_inverse_mass - expected_inverse_mass)
 		max_com_error = max(max_com_error, com_error)
 		max_inverse_mass_error = max(max_inverse_mass_error, inverse_mass_error)
 
@@ -74,7 +74,7 @@ func _run() -> void:
 		_check(_bounded_vector(construct.angular_velocity, 100.0), "step %d angular velocity remains bounded" % step)
 		_check(_bounded_vector(construct.observed_inverse_inertia, 1000.0), "step %d inverse inertia remains bounded" % step)
 
-	var average_rebuild_usec := float(total_rebuild_usec) / float(MUTATION_STEPS)
+	var average_rebuild_usec: float = float(total_rebuild_usec) / float(MUTATION_STEPS)
 	_check(volume.revision == initial_revision + MUTATION_STEPS, "all deterministic live mutations reached logical Matter")
 	_check(construct.position.distance_to(start_position) > 0.5, "construct continued traversing world space throughout mutation campaign")
 
@@ -106,7 +106,7 @@ func _run() -> void:
 
 func _random_mutable_cell(rng: RandomNumberGenerator, volume: CellVolume) -> Vector3i:
 	while true:
-		var cell := Vector3i(
+		var cell: Vector3i = Vector3i(
 			rng.randi_range(0, volume.size.x - 1),
 			rng.randi_range(0, volume.size.y - 1),
 			rng.randi_range(0, volume.size.z - 1)
@@ -120,8 +120,8 @@ func _random_mutable_cell(rng: RandomNumberGenerator, volume: CellVolume) -> Vec
 
 
 func _expected_com(volume: CellVolume) -> Vector3:
-	var weighted_sum := Vector3.ZERO
-	var count := 0
+	var weighted_sum: Vector3 = Vector3.ZERO
+	var count: int = 0
 	for z in range(volume.size.z):
 		for y in range(volume.size.y):
 			for x in range(volume.size.x):
