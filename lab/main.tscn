@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://lab/main.gd" id="1_main"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(11, 10, 12)
+current = true
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="Panel" parent="HUD"]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 430.0
+offset_bottom = 235.0
+
+[node name="Label" type="Label" parent="HUD/Panel"]
+offset_left = 14.0
+offset_top = 12.0
+offset_right = 398.0
+offset_bottom = 205.0
+text = "FrameMatter Lab — booting G0..."

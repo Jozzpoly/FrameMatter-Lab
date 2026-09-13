@@ -1,0 +1,29 @@
+name: Validate research harness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  g0-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Verify Godot
+        run: godot --version
+
+      - name: Parse/import project
+        run: godot --headless --path . --editor --quit
+
+      - name: Run G0 smoke test
+        run: godot --headless --path . --script res://tests/g0_smoke.gd
