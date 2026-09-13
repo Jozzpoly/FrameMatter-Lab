@@ -33,3 +33,6 @@ jobs:
 
       - name: Run G1 dynamic construct smoke test
         run: godot --headless --path . --script res://tests/g1_dynamic_construct.gd
+
+      - name: Run G1 campaign
+        run: godot --headless --path . --script res://tests/g1_campaign.gd
