@@ -30,15 +30,18 @@ func _run() -> void:
 		240
 	)
 
-	_check(float(linear["max_local_horizontal_drift"]) < 0.25, "linear baseline does not catastrophically lose local platform position")
-	_check(int(linear["floor_loss_frames"]) < 10, "linear baseline remains predominantly grounded")
+	# This is a probe, not the final G3 contract. Only validate that the controlled
+	# platform baseline itself is functioning and observable; drift is reported as evidence.
+	_check(bool(linear["initial_grounded"]), "linear baseline acquires controlled Matter platform as floor")
+	_check(bool(rotational["initial_grounded"]), "rotation baseline acquires controlled Matter platform as floor")
+	_check(bool(combined["initial_grounded"]), "combined baseline acquires controlled Matter platform as floor")
 	_check(bool(linear["saw_platform_linear_velocity"]), "CharacterBody3D reports platform linear velocity in linear case")
 	_check(bool(rotational["saw_platform_angular_velocity"]), "CharacterBody3D reports platform angular velocity in rotation case")
 	_check(bool(combined["saw_platform_linear_velocity"]), "CharacterBody3D reports platform linear velocity in combined case")
 	_check(bool(combined["saw_platform_angular_velocity"]), "CharacterBody3D reports platform angular velocity in combined case")
 
 	if _failures.is_empty():
-		print("G3_BASELINE_PROBE_COMPLETE: stock CharacterBody3D platform behavior measured without declaring G3 PASS.")
+		print("G3_BASELINE_PROBE_COMPLETE: stock CharacterBody3D controlled-platform behavior measured without declaring G3 PASS.")
 		quit(0)
 	else:
 		for failure in _failures:
@@ -59,32 +62,25 @@ func _run_case(
 	var volume: CellVolume = CellVolume.new(PLATFORM_SIZE)
 	volume.fill_box(Vector3i.ZERO, PLATFORM_SIZE, CellVolume.SOLID)
 
-	var construct: ConstructBody = ConstructBody.new()
-	construct.name = "Platform_%s" % case_name
-	construct.gravity_scale = 0.0
-	construct.linear_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
-	construct.angular_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
-	construct.linear_damp = 0.0
-	construct.angular_damp = 0.0
-	construct.mass_per_cell = 100.0
-	world.add_child(construct)
-	construct.set_volume(volume)
+	var platform: ControlledMatterPlatform = ControlledMatterPlatform.new()
+	platform.name = "Platform_%s" % case_name
+	world.add_child(platform)
+	platform.set_volume(volume)
 
 	var character: BaselineCharacter = BaselineCharacter.new()
 	character.name = "Character_%s" % case_name
 	character.configure_default_shape()
 	world.add_child(character)
-	character.global_position = construct.to_global(CHARACTER_LOCAL_START)
+	character.global_position = platform.to_global(CHARACTER_LOCAL_START)
 
-	# Let the character settle on a stationary construct first.
+	# Let the character settle on a stationary, externally controlled representation.
 	for _step in range(45):
 		await physics_frame
 
-	_check(character.observed_on_floor, "%s baseline acquires the construct as floor before motion" % case_name)
-
-	var local_start: Vector3 = construct.to_local(character.global_position)
-	construct.linear_velocity = platform_linear_velocity
-	construct.angular_velocity = platform_angular_velocity
+	var initial_grounded: bool = character.observed_on_floor
+	var local_start: Vector3 = platform.to_local(character.global_position)
+	platform.motion_linear_velocity = platform_linear_velocity
+	platform.motion_angular_velocity = platform_angular_velocity
 
 	var max_local_horizontal_drift: float = 0.0
 	var max_local_vertical_drift: float = 0.0
@@ -96,7 +92,7 @@ func _run_case(
 
 	for _step in range(measure_frames):
 		await physics_frame
-		var local_now: Vector3 = construct.to_local(character.global_position)
+		var local_now: Vector3 = platform.to_local(character.global_position)
 		var local_horizontal_drift: float = Vector2(local_now.x - local_start.x, local_now.z - local_start.z).length()
 		var local_vertical_drift: float = abs(local_now.y - local_start.y)
 		max_local_horizontal_drift = max(max_local_horizontal_drift, local_horizontal_drift)
@@ -113,8 +109,9 @@ func _run_case(
 		if reported_angular_speed > 0.05:
 			saw_platform_angular_velocity = true
 
-	var final_local: Vector3 = construct.to_local(character.global_position)
+	var final_local: Vector3 = platform.to_local(character.global_position)
 	var result: Dictionary = {
+		"initial_grounded": initial_grounded,
 		"max_local_horizontal_drift": max_local_horizontal_drift,
 		"max_local_vertical_drift": max_local_vertical_drift,
 		"floor_loss_frames": floor_loss_frames,
@@ -125,18 +122,19 @@ func _run_case(
 	}
 
 	print(
-		"G3_METRIC case=%s frames=%d max_local_horizontal_drift=%.6f max_local_vertical_drift=%.6f floor_loss_frames=%d final_local=%s platform_linear_reported=%.6f platform_angular_reported=%.6f construct_final_linear=%s construct_final_angular=%s"
+		"G3_METRIC case=%s frames=%d initial_grounded=%s max_local_horizontal_drift=%.6f max_local_vertical_drift=%.6f floor_loss_frames=%d final_local=%s platform_linear_reported=%.6f platform_angular_reported=%.6f commanded_linear=%s commanded_angular=%s"
 		% [
 			case_name,
 			measure_frames,
+			initial_grounded,
 			max_local_horizontal_drift,
 			max_local_vertical_drift,
 			floor_loss_frames,
 			final_local,
 			max_reported_platform_linear_speed,
 			max_reported_platform_angular_speed,
-			construct.linear_velocity,
-			construct.angular_velocity,
+			platform_linear_velocity,
+			platform_angular_velocity,
 		]
 	)
 
