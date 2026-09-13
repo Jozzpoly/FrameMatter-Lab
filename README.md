@@ -72,8 +72,23 @@ Baseline CI measurements for the intentionally naive box-per-cell representation
 | 8³ | 512 | ~4.9 ms | ~7.1 ms |
 | 12³ | 1728 | ~16.5 ms | ~26.2 ms |
 
-These are one-run CI baselines, not performance targets. The 12³ result already demonstrates the expected scaling cliff and is evidence for later collider-region/merging work, not a reason to optimize before G1–G3.
+These are one-run CI baselines, not performance targets. Later runs vary substantially with runner load. The scaling cliff is the useful result.
 
-### G1 — in progress
+### G1 — PASS (bounded)
 
-Next evidence target: use the same `CellVolume` as a real dynamic `RigidBody3D` under Jolt, verify falling/collision/settling and confirm that physical world motion does not alter logical local Matter.
+The same `CellVolume` is now used by a real dynamic `RigidBody3D` under Jolt without changing the logical Matter model.
+
+Validated in headless CI:
+
+- a 2×1×2 construct falls, collides, settles, receives an impulse, and preserves its Matter snapshot,
+- settling horizontal drift for the symmetric smoke case was ~0.000065 world units,
+- an asymmetric 8-cell construct remains bounded through translation, rotation, collision and a torque impulse while preserving Matter truth,
+- a deliberately naive full 8³ construct with 512 independent collision shapes remains numerically stable and preserves Matter truth.
+
+The 512-shape probe also exposes the expected representation cliff: one CI run measured ~61 ms rebuild time, ~25.4 ms average physics-process time and ~63.1 ms peak physics-process time. These values are not performance targets and should not be generalized beyond the probe, but they are sufficient evidence that box-per-cell cannot be the scalable dynamic representation.
+
+This is **not** evidence for large voxel constructs, nested frames, live mutation, or actor-relative locomotion. It only closes G1's bounded question.
+
+### G2 — in progress
+
+Next evidence target: mutate Matter while a construct is already moving, rebuild its derived mesh/collision representation, refresh mass properties, and verify the resulting COM/inertia change and numerical stability. Momentum semantics for adding/removing material are deliberately not declared solved by this gate.
