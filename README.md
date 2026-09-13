@@ -80,15 +80,31 @@ The same `CellVolume` is now used by a real dynamic `RigidBody3D` under Jolt wit
 
 Validated in headless CI:
 
-- a 2×1×2 construct falls, collides, settles, receives an impulse, and preserves its Matter snapshot,
+- a 2×1×2 construct falls, collides, settles, receives a mass-normalized impulse, and preserves its Matter snapshot,
 - settling horizontal drift for the symmetric smoke case was ~0.000065 world units,
 - an asymmetric 8-cell construct remains bounded through translation, rotation, collision and a torque impulse while preserving Matter truth,
 - a deliberately naive full 8³ construct with 512 independent collision shapes remains numerically stable and preserves Matter truth.
 
-The 512-shape probe also exposes the expected representation cliff: one CI run measured ~61 ms rebuild time, ~25.4 ms average physics-process time and ~63.1 ms peak physics-process time. These values are not performance targets and should not be generalized beyond the probe, but they are sufficient evidence that box-per-cell cannot be the scalable dynamic representation.
+The 512-shape probe also exposes the expected representation cliff: across CI runs, rebuild and physics costs vary materially with runner load but are already far beyond a reasonable realtime budget. This is sufficient evidence that box-per-cell cannot be the scalable dynamic representation.
 
 This is **not** evidence for large voxel constructs, nested frames, live mutation, or actor-relative locomotion. It only closes G1's bounded question.
 
-### G2 — in progress
+### G2 — PASS (bounded)
 
-Next evidence target: mutate Matter while a construct is already moving, rebuild its derived mesh/collision representation, refresh mass properties, and verify the resulting COM/inertia change and numerical stability. Momentum semantics for adding/removing material are deliberately not declared solved by this gate.
+Live Matter edits now rebuild a moving construct's mesh, collision representation, mass, center of mass and inertia while keeping the logical `CellVolume` authoritative.
+
+Validated in headless CI:
+
+- analytic equal-density Matter COM matches Jolt's observed local COM before and after asymmetric removals/additions,
+- mass and inverse mass follow solid-cell count after rebuilds,
+- inertia is refreshed and remains numerically bounded,
+- a deterministic 120-mutation campaign runs while the construct continuously translates and rotates,
+- every campaign step keeps mesh topology, collision-shape count, mass and solver COM coherent with current Matter,
+- the campaign's maximum COM error was ~0.00000122 and maximum inverse-mass error was effectively zero,
+- the 120-step campaign averaged ~1.25 ms rebuild time for the small test construct in one CI run, with ~1.68 ms maximum.
+
+G2 deliberately **does not solve momentum semantics** for physical attachment/detachment of material. A newly added cell's prior momentum and the momentum carried away by removed material remain a separate assembly/mechanics question. G2 only establishes bounded representation/mass-property coherence during live mutation.
+
+### G3 — in progress
+
+Next evidence target: benchmark the stock `CharacterBody3D` baseline against translating, rotating and combined-motion dynamic constructs. Relative position in construct-local coordinates, grounded state, platform linear/angular velocity and jump/re-contact behavior will be measured explicitly. A custom controller is not introduced unless the baseline produces a concrete failure mode.
