@@ -43,5 +43,8 @@ jobs:
       - name: Run G2 mutation campaign
         run: godot --headless --path . --script res://tests/g2_campaign.gd
 
-      - name: Run G3 stock CharacterBody3D baseline probe
+      - name: Run G3 stock CharacterBody3D controlled-platform probe
         run: godot --headless --path . --script res://tests/g3_baseline_probe.gd
+
+      - name: Run G3 free-dynamic contact probe
+        run: godot --headless --path . --script res://tests/g3_dynamic_contact_probe.gd
