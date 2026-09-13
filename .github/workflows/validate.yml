@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  g0-smoke:
+  g0-validation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,3 +27,6 @@ jobs:
 
       - name: Run G0 smoke test
         run: godot --headless --path . --script res://tests/g0_smoke.gd
+
+      - name: Run G0 campaign
+        run: godot --headless --path . --script res://tests/g0_campaign.gd
