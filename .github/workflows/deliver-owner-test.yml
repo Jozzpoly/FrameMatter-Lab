@@ -16,8 +16,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: "p0-owner-delivery"
@@ -77,20 +75,9 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: build/web
-
-  deploy-pages:
-    name: Publish browser Owner test
-    needs: build
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Delivery summary
+        run: |
+          echo "P0 smoke PASS"
+          echo "Browser export PASS"
+          echo "Windows export PASS"
+          echo "Download artifacts: FrameMatter-P0-Web and FrameMatter-P0-Windows"
