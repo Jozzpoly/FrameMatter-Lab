@@ -22,6 +22,7 @@ var observed_support_transfers: int = 0
 
 var _previous_support_point_world: Vector3 = Vector3.ZERO
 var _has_grounded_before: bool = false
+var _topology_validation_grace_steps: int = 0
 
 
 func request_jump() -> void:
@@ -36,12 +37,18 @@ func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -
 
 	# A topology handoff is not a fresh contact acquisition. The caller owns the
 	# parent→successor mapping and supplies the corresponding local support point.
+	# A freshly created PhysicsServer body is not direct-space-query-visible yet
+	# inside the same physics_frame callback, even though it can participate in
+	# the upcoming solver step. Trust this explicit mapping for exactly one actor
+	# physics tick; ordinary grounding returns to query validation immediately
+	# afterward.
 	support_body = new_support
 	support_local_center = mapped_local_center
 	global_position = support_body.to_global(support_local_center)
 	_previous_support_point_world = global_position
 	world_velocity = _rigid_velocity_at_point(support_body, global_position)
 	observed_support_velocity = world_velocity
+	_topology_validation_grace_steps = 1
 	observed_support_transfers += 1
 	return true
 
@@ -62,7 +69,12 @@ func _step_grounded(delta: float) -> void:
 
 	var old_anchor_world: Vector3 = support_body.to_global(support_local_center)
 	var support_velocity: Vector3 = Vector3.ZERO
-	if delta > 0.0:
+	if _topology_validation_grace_steps > 0:
+		# The successor scene-node transform has not received a post-step solver
+		# synchronization yet. Its configured rigid velocity field is the correct
+		# synchronous kinematic state for this explicit transaction boundary.
+		support_velocity = _rigid_velocity_at_point(support_body, old_anchor_world)
+	elif delta > 0.0:
 		support_velocity = (old_anchor_world - _previous_support_point_world) / delta
 	observed_support_velocity = support_velocity
 
@@ -80,6 +92,11 @@ func _step_grounded(delta: float) -> void:
 	support_local_center += desired_local_velocity * delta
 	global_position = support_body.to_global(support_local_center)
 	world_velocity = support_velocity + support_body.global_transform.basis * desired_local_velocity
+
+	if _topology_validation_grace_steps > 0:
+		_topology_validation_grace_steps -= 1
+		_previous_support_point_world = global_position
+		return
 
 	var hit: Dictionary = _probe_ground()
 	if not _valid_ground_hit(hit):
@@ -139,6 +156,7 @@ func _attach_to_hit(hit: Dictionary) -> void:
 	_previous_support_point_world = global_position
 	world_velocity = _rigid_velocity_at_point(support_body, global_position)
 	observed_support_velocity = world_velocity
+	_topology_validation_grace_steps = 0
 	observed_ground_acquisitions += 1
 
 	if _has_grounded_before:
@@ -161,6 +179,7 @@ func _detach_from_support(preserve_velocity: bool = true) -> void:
 	grounded = false
 	support_body = null
 	observed_support_velocity = Vector3.ZERO
+	_topology_validation_grace_steps = 0
 
 
 func _rigid_velocity_at_point(body: Node3D, world_point: Vector3) -> Vector3:
