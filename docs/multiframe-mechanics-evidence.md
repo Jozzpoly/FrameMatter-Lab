@@ -119,6 +119,27 @@ CI evidence:
 
 Bounded result: **one topology replacement can partition a constraint graph deterministically by retained Matter ownership.** Mechanical links do not need to belong to a monolithic construct object; distinct anchors can follow distinct successor frames through one split transaction.
 
+## Destroyed anchor Matter retires its mechanical link
+
+A negative challenger tested whether mechanical ownership follows coordinate/material coincidence or actual retained Matter identity. A pin-jointed construct kept the same `RigidBody3D`, but the Matter cell owning the mechanical endpoint was explicitly destroyed and its lineage token was retired. The host `PinJoint3D` was retired in the same mutation transaction.
+
+The former endpoints were then driven apart. Later, identical material was recreated at the exact same local coordinate with a fresh lineage token. No automatic rebinding was allowed.
+
+CI evidence:
+
+- original owner lineage token: `81030`,
+- recreated lineage token at the same address/material: `910001`,
+- owner and sibling physics-body identities survived the entire sequence,
+- pre-destruction joint-anchor gap: `0.0001599411 m`,
+- immediate gap at retirement: `0.0005088530 m`,
+- former endpoints diverged to at least `1.427452 m` after link retirement,
+- Matter was recreated when the former endpoints were already `1.449092 m` apart,
+- post-recreation gap ranged from `1.470645 m` to `3.854979 m`,
+- final host pin-joint count: `0`,
+- the Matter volume returned to its full `54` occupied cells.
+
+Bounded result: **retained Matter identity may carry mechanical ownership through frame/address replacement, but actual owner destruction ends that ownership. Same-address, same-material recreation is new Matter and does not resurrect the retired mechanical relation.** Rebinding must be explicit, or an undo system would need to restore the original logical identity rather than merely recreate equivalent material.
+
 ## Current invariant candidate
 
 Topology replacement is becoming a multi-domain transaction rather than merely a body spawn/despawn operation. When continuity matters, one transaction may need explicit mappings for:
@@ -128,16 +149,16 @@ Topology replacement is becoming a multi-domain transaction rather than merely a
 - dependent actor support frames,
 - mechanical-anchor ownership,
 - constraint-frame spatial state,
-- endpoint succession,
+- endpoint succession or retirement,
 - pre-PhysicsServer scheduling.
 
-These are related but must not be conflated. A retained Matter lineage may survive while local address, physics-body identity, actor support object, and constraint endpoint all change.
+These are related but must not be conflated. A retained Matter lineage may survive while local address, physics-body identity, actor support object, and constraint endpoint all change. Conversely, an address and material may be recreated while the previous lineage and its mechanical ownership remain retired.
 
 ## Still unproven
 
+- mixed transactions where some mechanical anchors survive/succeed while others are destroyed and retired in the same topology event,
 - multi-joint chains, loops, motors, limits, gears, springs, or breakable links,
 - graph-level conservation semantics during simultaneous topology + constraint changes,
-- anchor destruction semantics when the owner Matter itself is removed,
 - joint succession across incompatible rigid binding/merge events,
 - nested frames or arbitrary gravity,
 - scalable large-construct collision/representation,
