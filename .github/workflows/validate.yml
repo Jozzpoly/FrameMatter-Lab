@@ -241,3 +241,6 @@ jobs:
 
       - name: Run R0 representation/scale baseline
         run: godot --headless --path . --script res://tests/r0_representation_scale_baseline.gd
+
+      - name: Run R1 collision aggregation challenger
+        run: godot --headless --path . --script res://tests/r1_collision_aggregation_challenger.gd
