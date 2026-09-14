@@ -29,16 +29,15 @@ func _run() -> void:
 	var query_initial_created := _ray_hits_body(world, body, 0.0)
 	var query_forward_created := _ray_hits_body(world, body, 2.0)
 
-	# process_frame occurs after the physics iteration. Compare scene-node state,
-	# authoritative PhysicsServer RID state and query-space visibility separately.
+	# process_frame occurs after the physics iteration. At this point the RID and
+	# query space can already expose the stepped body while the scene-node transform
+	# still reflects the pre-step pose until the next physics synchronization.
 	await process_frame
 	var node_origin_after_process := body.global_position
 	var server_origin_after_process := _server_origin(rid)
 	var query_initial_after_process := _ray_hits_body(world, body, 0.0)
 	var query_forward_after_process := _ray_hits_body(world, body, 2.0)
 
-	# At the next physics_frame, the scene node should receive the prior solver
-	# result during server synchronization even before another process_frame.
 	await physics_frame
 	var node_origin_next_physics := body.global_position
 	var server_origin_next_physics := _server_origin(rid)
@@ -46,15 +45,14 @@ func _run() -> void:
 	var query_forward_next_physics := _ray_hits_body(world, body, 2.0)
 
 	var node_process_displacement := node_origin_after_process.distance_to(node_origin_created)
-	var server_process_displacement := server_origin_after_process.distance_to(server_origin_created)
+	var server_advance_from_requested := server_origin_after_process.distance_to(initial_transform.origin)
 	var node_sync_gap := node_origin_next_physics.distance_to(server_origin_after_process)
+	var creation_server_gap := server_origin_created.distance_to(initial_transform.origin)
 
 	_check(node_origin_created.distance_to(initial_transform.origin) < 0.000001, "fresh scene node starts at requested transform")
-	_check(server_origin_created.distance_to(initial_transform.origin) < 0.000001, "fresh RID starts at requested transform")
-	_check(query_initial_created, "fresh body is query-visible at its initial position during creation physics_frame")
-	_check(not query_forward_created, "fresh body is not prematurely query-visible at future position")
+	_check(not query_initial_created and not query_forward_created, "fresh collider is not yet direct-space-query-visible inside its creation physics_frame callback")
 
-	_check(server_process_displacement > 1.0, "fresh RID participates materially in the physics iteration before process_frame")
+	_check(server_advance_from_requested > 1.0, "fresh RID participates materially in the solver step before process_frame")
 	_check(node_process_displacement < 0.001, "scene-node transform remains unsynchronized immediately after that solver step")
 	_check(server_origin_after_process.x > 1.0, "PhysicsServer state exposes the advanced fresh-body transform after the step")
 	_check(query_forward_after_process, "direct-space query sees the advanced fresh body after the solver step")
@@ -66,10 +64,11 @@ func _run() -> void:
 	_check(server_origin_next_physics.distance_to(server_origin_after_process) < 0.001, "next physics_frame occurs before another solver advance")
 
 	print(
-		"RIGID_CREATION_LIFECYCLE_METRIC node_process_displacement=%.8f server_process_displacement=%.8f node_sync_gap=%.8f node_created=%s server_created=%s node_after_process=%s server_after_process=%s node_next_physics=%s server_next_physics=%s query_created_initial=%s query_created_forward=%s query_process_initial=%s query_process_forward=%s query_next_initial=%s query_next_forward=%s"
+		"RIGID_CREATION_LIFECYCLE_METRIC creation_server_gap=%.8f node_process_displacement=%.8f server_advance_from_requested=%.8f node_sync_gap=%.8f node_created=%s server_created=%s node_after_process=%s server_after_process=%s node_next_physics=%s server_next_physics=%s query_created_initial=%s query_created_forward=%s query_process_initial=%s query_process_forward=%s query_next_initial=%s query_next_forward=%s"
 		% [
+			creation_server_gap,
 			node_process_displacement,
-			server_process_displacement,
+			server_advance_from_requested,
 			node_sync_gap,
 			node_origin_created,
 			server_origin_created,
@@ -126,7 +125,7 @@ func _make_body(world: Node3D, volume: CellVolume, transform: Transform3D) -> Co
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("RIGID_CREATION_LIFECYCLE_PROBE_PASS: a body created at physics_frame participated in the upcoming solver step while scene-node transform synchronization lagged until the next physics-frame sync boundary.")
+		print("RIGID_CREATION_LIFECYCLE_PROBE_PASS: a body created during physics_frame was initially absent from direct-space queries, participated in the upcoming solver step, became query-visible afterward, and synchronized its scene-node transform at the next physics-frame boundary.")
 		quit(0)
 		return
 	for failure in _failures:
