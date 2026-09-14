@@ -79,15 +79,17 @@ func _run() -> void:
 	_check(dynamic_translation > 0.1, "same-body control is genuinely dynamic before first freeze")
 	_check(dynamic_rotation > 0.02, "same-body control genuinely rotates before first freeze")
 
-	# First transition is committed at the physics-frame boundary. Velocity behavior
-	# is intentionally telemetry here: the host contract is measured before FrameMatter
-	# decides whether future lifecycle policy should preserve/restore any of it.
+	# First transition is committed at the physics-frame boundary. Separate the
+	# final legal dynamic phase advance from the synchronous effect of the toggle.
+	# Velocity behavior remains telemetry: FrameMatter has not chosen a restore policy.
 	await physics_frame
+	var freeze_boundary_transform := body.global_transform
+	var freeze_phase_advance := _transform_gap(pre_freeze_transform, freeze_boundary_transform)
 	var freeze_world_before := _world_cell_positions(body, volume)
 	body.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	body.freeze = true
 	var freeze_toggle_transform := body.global_transform
-	var freeze_toggle_jump := _transform_gap(pre_freeze_transform, freeze_toggle_transform)
+	var freeze_toggle_jump := _transform_gap(freeze_boundary_transform, freeze_toggle_transform)
 	var linear_immediate_frozen := body.linear_velocity
 	var angular_immediate_frozen := body.angular_velocity
 	_check(body.freeze, "body reports frozen state immediately after static freeze transition")
@@ -204,12 +206,13 @@ func _run() -> void:
 	var material_changes_from_initial := _count_int32_mismatches(initial_cells, volume.duplicate_cells())
 	var lineage_changes_from_initial := _count_int64_mismatches(initial_lineage, lineage.duplicate_tokens())
 	print(
-		"LIFECYCLE_FREEZE_SEMANTICS_METRIC instance_id=%d rid_id=%d dynamic_translation=%.8f dynamic_rotation=%.8f freeze_toggle_jump=%.10f max_frozen_pose_drift=%.10f frozen_rebuild_pose_jump=%.10f unfreeze_toggle_jump=%.10f first_unfreeze_server_displacement=%.10f first_unfreeze_node_sync_gap=%.10f resumed_translation=%.8f resumed_rotation=%.8f second_freeze_toggle_jump=%.10f max_second_frozen_drift=%.10f linear_pre_freeze=%s angular_pre_freeze=%s linear_immediate_frozen=%s angular_immediate_frozen=%s linear_after_frozen_window=%s angular_after_frozen_window=%s linear_before_unfreeze=%s angular_before_unfreeze=%s linear_immediate_unfrozen=%s angular_immediate_unfrozen=%s linear_after_first_unfreeze_step=%s angular_after_first_unfreeze_step=%s initial_mass=%.6f final_mass=%.6f initial_shapes=%d final_shapes=%d material_changes=%d lineage_changes=%d retired_a=%d retired_b=%d created_token=%d"
+		"LIFECYCLE_FREEZE_SEMANTICS_METRIC instance_id=%d rid_id=%d dynamic_translation=%.8f dynamic_rotation=%.8f freeze_phase_advance=%.10f freeze_toggle_jump=%.10f max_frozen_pose_drift=%.10f frozen_rebuild_pose_jump=%.10f unfreeze_toggle_jump=%.10f first_unfreeze_server_displacement=%.10f first_unfreeze_node_sync_gap=%.10f resumed_translation=%.8f resumed_rotation=%.8f second_freeze_toggle_jump=%.10f max_second_frozen_drift=%.10f linear_pre_freeze=%s angular_pre_freeze=%s linear_immediate_frozen=%s angular_immediate_frozen=%s linear_after_frozen_window=%s angular_after_frozen_window=%s linear_before_unfreeze=%s angular_before_unfreeze=%s linear_immediate_unfrozen=%s angular_immediate_unfrozen=%s linear_after_first_unfreeze_step=%s angular_after_first_unfreeze_step=%s initial_mass=%.6f final_mass=%.6f initial_shapes=%d final_shapes=%d material_changes=%d lineage_changes=%d retired_a=%d retired_b=%d created_token=%d"
 		% [
 			instance_id,
 			rid.get_id(),
 			dynamic_translation,
 			dynamic_rotation,
+			freeze_phase_advance,
 			freeze_toggle_jump,
 			max_frozen_pose_drift,
 			frozen_rebuild_pose_jump,
