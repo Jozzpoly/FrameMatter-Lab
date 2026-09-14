@@ -71,7 +71,7 @@ func get_mesh_vertex_count() -> int:
 		return 0
 	if _mesh_instance.mesh.get_surface_count() == 0:
 		return 0
-	return _mesh_instance.mesh.surface_get_arrays(Mesh.ARRAY_VERTEX).size()
+	return _mesh_instance.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
 
 
 func _refresh_mass_properties() -> void:
