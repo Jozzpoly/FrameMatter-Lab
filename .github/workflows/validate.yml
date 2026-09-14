@@ -51,3 +51,6 @@ jobs:
 
       - name: Run G3 frame-aware query controller challenger
         run: godot --headless --path . --script res://tests/g3_frame_challenger.gd
+
+      - name: Run G3 frame-aware campaign
+        run: godot --headless --path . --script res://tests/g3_frame_campaign.gd
