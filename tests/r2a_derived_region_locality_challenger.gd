@@ -93,15 +93,15 @@ func _measure_case(extent: int, pattern: String, region_edge: int) -> void:
 	_check(CellCollisionBoxer.covered_cell_count(edited_regional_boxes) == edited.count_solid(), "R2A edited regional collision cardinality matches Matter")
 	_check(edited_regional_vertices == edited_global_vertices, "R2A regional mesh stays exact after occupancy edit")
 
-	var full_collision_us := _median(full_collision_samples)
-	var full_mesh_us := _median(full_mesh_samples)
-	var dirty_collision_us := _median(dirty_collision_samples)
-	var dirty_mesh_us := _median(dirty_mesh_samples)
-	var full_total_us := full_collision_us + full_mesh_us
-	var dirty_total_us := dirty_collision_us + dirty_mesh_us
-	var locality_speedup := full_total_us / max(dirty_total_us, 1.0)
-	var shape_inflation := float(regional_boxes.size()) / float(max(global_boxes.size(), 1))
-	var edited_shape_inflation := float(edited_regional_boxes.size()) / float(max(edited_global_boxes.size(), 1))
+	var full_collision_us: float = _median(full_collision_samples)
+	var full_mesh_us: float = _median(full_mesh_samples)
+	var dirty_collision_us: float = _median(dirty_collision_samples)
+	var dirty_mesh_us: float = _median(dirty_mesh_samples)
+	var full_total_us: float = full_collision_us + full_mesh_us
+	var dirty_total_us: float = dirty_collision_us + dirty_mesh_us
+	var locality_speedup: float = full_total_us / max(dirty_total_us, 1.0)
+	var shape_inflation: float = float(regional_boxes.size()) / float(max(global_boxes.size(), 1))
+	var edited_shape_inflation: float = float(edited_regional_boxes.size()) / float(max(edited_global_boxes.size(), 1))
 
 	if extent >= 24 and occupied_regions > affected_mesh_regions:
 		_check(dirty_total_us < full_total_us, "R2A bounded dirty compile materially reduces work on larger case")
