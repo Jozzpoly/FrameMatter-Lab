@@ -94,11 +94,15 @@ func _run() -> void:
 	var transaction_transform: Transform3D = left.global_transform
 	var expected_right_transform := transaction_transform * Transform3D(Basis.IDENTITY, Vector3(RIGHT_ORIGIN))
 	var source_alignment_error := right.global_transform.origin.distance_to(expected_right_transform.origin)
-	var source_angle_error := Quaternion(right.global_transform.basis.orthonormalized()).angle_to(
-		Quaternion(expected_right_transform.basis.orthonormalized())
+	# Do not use Quaternion.angle_to() as a near-zero equality metric here. Its
+	# acos path has a visible float-resolution floor around the sub-milliradian
+	# range. Compare basis axes directly so this remains a real alignment test.
+	var source_orientation_error := _basis_axis_error(
+		right.global_transform.basis.orthonormalized(),
+		expected_right_transform.basis.orthonormalized()
 	)
 	_check(source_alignment_error < 0.0001, "source lattices remain aligned at explicit bind instant")
-	_check(source_angle_error < 0.0001, "source orientations remain aligned at explicit bind instant")
+	_check(source_orientation_error < 0.00001, "source orientations remain aligned at explicit bind instant")
 
 	var actor_world_before := actor.global_position
 	var actor_local_before := left.to_local(actor_world_before)
@@ -210,16 +214,27 @@ func _run() -> void:
 	_check(actor.support_local_center.distance_to(mapped_actor_local) < 0.000001, "integrated bind stores mapped successor-local support point")
 
 	var successor_origin_before_step := successor.global_transform.origin
+	var successor_rid := successor.get_rid()
 	left.free()
 	right.free()
 
-	# Because the transaction committed from physics_frame, the new successor must
-	# participate in the immediately upcoming PhysicsServer step rather than lose
-	# one frame of phase.
+	# The lifecycle probe established that a body created during physics_frame can
+	# participate in this upcoming solver step while its scene-node transform stays
+	# at the requested pre-step pose until the next physics_frame synchronization.
+	# Prove immediate participation from PhysicsServer state, not from the delayed
+	# scene-node transform.
 	await process_frame
-	var immediate_step_displacement := successor.global_transform.origin.distance_to(successor_origin_before_step)
-	_check(immediate_step_displacement > 0.001, "pre-step successor participates in the immediately upcoming physics step")
+	var successor_server_origin_after_step := _server_origin(successor_rid)
+	var server_step_displacement := successor_server_origin_after_step.distance_to(successor_origin_before_step)
+	var node_process_displacement := successor.global_transform.origin.distance_to(successor_origin_before_step)
+	_check(server_step_displacement > 0.001, "pre-step successor participates in the immediately upcoming PhysicsServer step")
+	_check(node_process_displacement < 0.001, "fresh successor scene-node transform remains unsynchronized immediately after its first solver step")
 	_check(actor.grounded and actor.support_body == successor, "actor remains grounded after the same pre-step bind transaction")
+
+	await physics_frame
+	var node_sync_gap := successor.global_transform.origin.distance_to(successor_server_origin_after_step)
+	_check(node_sync_gap < 0.001, "next physics_frame synchronizes successor scene-node transform to prior PhysicsServer state")
+	await process_frame
 
 	var post_bind_local := successor.to_local(actor.global_position)
 	var max_post_bind_drift := 0.0
@@ -235,8 +250,10 @@ func _run() -> void:
 	_check(max_post_bind_drift < 0.002, "actor stays locally stable after integrated bind")
 
 	print(
-		"TOPOLOGY_BINDING_TRANSACTION_METRIC anchor_velocity_error=%.8f angular_velocity_error=%.8f linear_momentum_error=%.10f angular_momentum_error=%.10f energy_loss=%.6f lineage_mismatches=%d handoff_world_jump=%.10f handoff_velocity_error=%.10f intended_actor_velocity_change=%.6f immediate_step_displacement=%.8f post_bind_drift=%.8f floor_loss=%d left_id=%d right_id=%d successor_id=%d actor_local_before=%s actor_local_after=%s"
+		"TOPOLOGY_BINDING_TRANSACTION_METRIC source_alignment_error=%.10f source_orientation_error=%.10f anchor_velocity_error=%.8f angular_velocity_error=%.8f linear_momentum_error=%.10f angular_momentum_error=%.10f energy_loss=%.6f lineage_mismatches=%d handoff_world_jump=%.10f handoff_velocity_error=%.10f intended_actor_velocity_change=%.6f server_step_displacement=%.8f node_process_displacement=%.8f node_sync_gap=%.8f post_bind_drift=%.8f floor_loss=%d left_id=%d right_id=%d successor_id=%d actor_local_before=%s actor_local_after=%s"
 		% [
+			source_alignment_error,
+			source_orientation_error,
 			anchor_velocity_error,
 			angular_velocity_error,
 			linear_momentum_error,
@@ -246,7 +263,9 @@ func _run() -> void:
 			handoff_world_jump,
 			handoff_velocity_error,
 			intended_actor_velocity_change,
-			immediate_step_displacement,
+			server_step_displacement,
+			node_process_displacement,
+			node_sync_gap,
 			max_post_bind_drift,
 			floor_loss,
 			left_id,
@@ -269,6 +288,15 @@ func _rigid_velocity(linear: Vector3, angular: Vector3, com_world: Vector3, worl
 	return linear + angular.cross(world_point - com_world)
 
 
+func _server_origin(rid: RID) -> Vector3:
+	var state: Variant = PhysicsServer3D.body_get_state(rid, PhysicsServer3D.BODY_STATE_TRANSFORM)
+	return (state as Transform3D).origin
+
+
+func _basis_axis_error(a: Basis, b: Basis) -> float:
+	return max(a.x.distance_to(b.x), max(a.y.distance_to(b.y), a.z.distance_to(b.z)))
+
+
 func _occupied_cells(volume: CellVolume) -> Array[Vector3i]:
 	var result: Array[Vector3i] = []
 	for z in range(volume.size.z):
@@ -289,7 +317,9 @@ func _make_body(world: Node3D, body_name: String, volume: CellVolume, transform:
 	body.linear_damp = 0.0
 	body.angular_damp = 0.0
 	body.collision_layer = layer
-	body.collision_mask = layer
+	# Sources are observed by actor queries through their layer, but this harness
+	# must not let incidental source-source contact alter the explicit bind state.
+	body.collision_mask = 0
 	body.mass_per_cell = MASS_PER_CELL
 	world.add_child(body)
 	body.global_transform = transform
@@ -309,7 +339,7 @@ func _copy_volume(source: CellVolume, target_origin: Vector3i, target: CellVolum
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("TOPOLOGY_BINDING_TRANSACTION_PROBE_PASS: explicit inelastic policy outcome committed a pre-PhysicsServer two-frame bind while preserving momentum semantics, retained Matter lineage, actor continuity and immediate successor integration.")
+		print("TOPOLOGY_BINDING_TRANSACTION_PROBE_PASS: explicit inelastic policy outcome committed a pre-PhysicsServer two-frame bind while preserving momentum semantics, retained Matter lineage, actor continuity and lifecycle-correct successor integration.")
 		quit(0)
 		return
 	for failure in _failures:
