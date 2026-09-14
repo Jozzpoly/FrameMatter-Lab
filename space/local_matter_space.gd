@@ -27,6 +27,7 @@ var _pending_provider_kind := ProviderKind.NONE
 var _pending_linear_velocity := Vector3.ZERO
 var _pending_angular_velocity := Vector3.ZERO
 var _last_transition_report: Dictionary = {}
+var _physics_boundary_connected := false
 
 
 func initialize_static(
@@ -42,7 +43,7 @@ func initialize_static(
 	lineage = new_lineage
 	_active_provider = _create_static_provider(world_transform)
 	_provider_kind = ProviderKind.STATIC
-	set_physics_process(true)
+	_connect_physics_boundary()
 
 
 func request_dynamic(linear_velocity: Vector3, angular_velocity: Vector3) -> bool:
@@ -108,7 +109,21 @@ func is_transition_pending() -> bool:
 	return _pending_provider_kind != ProviderKind.NONE
 
 
-func _physics_process(_delta: float) -> void:
+func _connect_physics_boundary() -> void:
+	if _physics_boundary_connected:
+		return
+	var tree := get_tree()
+	assert(tree != null)
+	var callback := Callable(self, "_on_physics_frame")
+	if not tree.physics_frame.is_connected(callback):
+		tree.physics_frame.connect(callback)
+	_physics_boundary_connected = true
+
+
+func _on_physics_frame() -> void:
+	# SceneTree.physics_frame is emitted before node _physics_process callbacks and
+	# before the PhysicsServer step. Fresh replacement RIDs must be installed here,
+	# not in _physics_process, if they are to participate in the upcoming solver tick.
 	if _pending_provider_kind == ProviderKind.NONE:
 		return
 	_commit_pending_transition()
