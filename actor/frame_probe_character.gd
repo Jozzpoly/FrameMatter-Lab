@@ -18,6 +18,7 @@ var world_velocity: Vector3 = Vector3.ZERO
 var observed_support_velocity: Vector3 = Vector3.ZERO
 var observed_ground_acquisitions: int = 0
 var observed_recontacts: int = 0
+var observed_support_transfers: int = 0
 
 var _previous_support_point_world: Vector3 = Vector3.ZERO
 var _has_grounded_before: bool = false
@@ -25,6 +26,24 @@ var _has_grounded_before: bool = false
 
 func request_jump() -> void:
 	jump_requested = true
+
+
+func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -> bool:
+	if not grounded:
+		return false
+	if new_support == null or not is_instance_valid(new_support):
+		return false
+
+	# A topology handoff is not a fresh contact acquisition. The caller owns the
+	# parent→successor mapping and supplies the corresponding local support point.
+	support_body = new_support
+	support_local_center = mapped_local_center
+	global_position = support_body.to_global(support_local_center)
+	_previous_support_point_world = global_position
+	world_velocity = _rigid_velocity_at_point(support_body, global_position)
+	observed_support_velocity = world_velocity
+	observed_support_transfers += 1
+	return true
 
 
 func _physics_process(delta: float) -> void:

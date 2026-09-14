@@ -74,6 +74,7 @@ func _run() -> void:
 	var actor_world_before_split: Vector3 = actor.global_position
 	var actor_local_before_split: Vector3 = parent.to_local(actor.global_position)
 	var recontacts_before: int = actor.observed_recontacts
+	var transfers_before: int = actor.observed_support_transfers
 
 	_check(volume.set_cell(CUT_CELL, CellVolume.EMPTY), "split edit removes bridge Matter")
 	var components: Array[CellVolume] = MatterTopology.extract_connected_components(volume)
@@ -106,35 +107,29 @@ func _run() -> void:
 	# Scan order guarantees Child_0 contains the left block where the actor stands.
 	var expected_support: ConstructBody = children[0]
 	_check(expected_support.volume.get_cell(Vector3i(1, 1, 1)) != CellVolume.EMPTY, "expected child contains actor-side Matter")
+
+	# A topology split is not an ordinary contact loss. Parent and child use the
+	# same Matter-local coordinates in this probe, so the transition can preserve
+	# the exact support anchor before the parent ceases to exist.
+	var handoff_ok: bool = actor.transfer_support_frame(expected_support, actor_local_before_split)
+	var handoff_world_jump: float = actor.global_position.distance_to(actor_world_before_split)
+	_check(handoff_ok, "topology handoff accepts the mapped successor frame")
+	_check(actor.observed_support_transfers == transfers_before + 1, "topology handoff is recorded separately from contact acquisition")
+	_check(actor.observed_recontacts == recontacts_before, "topology handoff is not misclassified as a re-contact")
+	_check(handoff_world_jump < 0.0001, "topology handoff itself does not move the actor in world space")
+
 	parent.free()
 
-	var transition_frames := -1
-	var max_transition_world_step := 0.0
-	var previous_actor_world: Vector3 = actor_world_before_split
-	for step in range(8):
-		await physics_frame
-		await process_frame
-		max_transition_world_step = max(max_transition_world_step, actor.global_position.distance_to(previous_actor_world))
-		previous_actor_world = actor.global_position
-		if actor.grounded and actor.support_body == expected_support:
-			transition_frames = step + 1
-			break
+	await physics_frame
+	await process_frame
+	_check(actor.grounded and actor.support_body == expected_support, "actor remains grounded on successor after parent removal")
 
-	_check(transition_frames > 0, "actor reacquires the child frame after parent removal")
-	_check(transition_frames <= 3, "support transition resolves within three physics frames")
-	_check(actor.observed_recontacts > recontacts_before, "support transition is recorded as a new frame acquisition")
-	_check(actor.support_body == expected_support, "actor transitions to the child containing its supporting Matter")
-	_check(max_transition_world_step < 0.2, "support transition does not teleport the actor")
-
-	var child_local_after_transition := Vector3.ZERO
-	var split_local_error := 999.0
-	if transition_frames > 0:
-		child_local_after_transition = expected_support.to_local(actor.global_position)
-		split_local_error = Vector2(
-			child_local_after_transition.x - actor_local_before_split.x,
-			child_local_after_transition.z - actor_local_before_split.z
-		).length()
-	_check(split_local_error < 0.05, "actor preserves its horizontal local-frame position across split")
+	var child_local_after_transition: Vector3 = expected_support.to_local(actor.global_position)
+	var split_local_error: float = Vector2(
+		child_local_after_transition.x - actor_local_before_split.x,
+		child_local_after_transition.z - actor_local_before_split.z
+	).length()
+	_check(split_local_error < 0.002, "explicit handoff preserves horizontal local-frame position across split")
 
 	var post_split_local_start: Vector3 = expected_support.to_local(actor.global_position)
 	var max_post_split_drift := 0.0
@@ -159,11 +154,10 @@ func _run() -> void:
 	_check(max_support_angular_error < 0.01, "actor does not perturb selected child angular velocity")
 
 	print(
-		"TOPOLOGY_ACTOR_SPLIT_METRIC pre_split_drift=%.8f transition_frames=%d max_transition_world_step=%.8f split_local_error=%.8f post_split_drift=%.8f post_floor_loss=%d support_linear_error=%.8f support_angular_error=%.8f local_before=%s local_after=%s support_cells=%d sibling_cells=%d"
+		"TOPOLOGY_ACTOR_SPLIT_METRIC pre_split_drift=%.8f handoff_world_jump=%.10f split_local_error=%.8f post_split_drift=%.8f post_floor_loss=%d support_linear_error=%.8f support_angular_error=%.8f local_before=%s local_after=%s support_cells=%d sibling_cells=%d transfers=%d"
 		% [
 			max_pre_split_drift,
-			transition_frames,
-			max_transition_world_step,
+			handoff_world_jump,
 			split_local_error,
 			max_post_split_drift,
 			post_split_floor_loss,
@@ -173,6 +167,7 @@ func _run() -> void:
 			child_local_after_transition,
 			expected_support.volume.count_solid(),
 			children[1].volume.count_solid(),
+			actor.observed_support_transfers,
 		]
 	)
 
@@ -181,7 +176,7 @@ func _run() -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("TOPOLOGY_ACTOR_SPLIT_PROBE_PASS: actor support migrated from a removed parent frame to the correct dynamic child without teleport, fall, or rigid-body kick.")
+		print("TOPOLOGY_ACTOR_SPLIT_PROBE_PASS: explicit topology frame handoff preserved actor support across parent→child replacement without world teleport or rigid-body kick.")
 		quit(0)
 		return
 	for failure in _failures:
