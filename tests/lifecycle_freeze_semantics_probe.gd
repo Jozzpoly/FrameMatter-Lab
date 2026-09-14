@@ -58,8 +58,9 @@ func _run() -> void:
 	var initial_transform := body.global_transform
 	var initial_mass := body.mass
 	var initial_shape_count := body.get_collision_shape_count()
+	var initial_expected_shapes := CellCollisionBoxer.build_boxes(volume, body.collision_mode).size()
 
-	_check(initial_shape_count == volume.count_solid(), "initial collision representation matches Matter occupancy")
+	_check(initial_shape_count == initial_expected_shapes, "initial collision representation matches active collision compiler output")
 	_check(abs(initial_mass - float(volume.count_solid()) * MASS_PER_CELL) < 0.00001, "initial mass matches occupied Matter")
 
 	body.linear_velocity = Vector3(2.3, 0.4, -1.1)
@@ -124,10 +125,11 @@ func _run() -> void:
 	body.rebuild_derived()
 	var frozen_rebuild_pose_jump := _transform_gap(frozen_pose_before_rebuild, body.global_transform)
 	var expected_mass := float(volume.count_solid()) * MASS_PER_CELL
+	var expected_collision_shapes := CellCollisionBoxer.build_boxes(volume, body.collision_mode).size()
 	_check(body.freeze, "live Matter rebuild does not implicitly unfreeze the body")
 	_check(frozen_rebuild_pose_jump < 0.000001, "live Matter rebuild while frozen does not move the host pose")
 	_check(body.get_instance_id() == instance_id and body.get_rid() == rid, "frozen live rebuild keeps instance and RID identity")
-	_check(body.get_collision_shape_count() == volume.count_solid(), "frozen live rebuild updates collision shape count from Matter")
+	_check(body.get_collision_shape_count() == expected_collision_shapes, "frozen live rebuild updates collision representation from Matter through the active collision compiler")
 	_check(abs(body.mass - expected_mass) < 0.00001, "frozen live rebuild refreshes mass from Matter")
 	_check(lineage.get_lineage(remove_a) == MatterLineageMap.NONE and lineage.get_lineage(remove_b) == MatterLineageMap.NONE, "destroyed frozen Matter retires its sidecar lineage in the experiment")
 	_check(lineage.get_lineage(create_c) == 299999, "created frozen Matter receives fresh lineage in the experiment")
@@ -183,7 +185,7 @@ func _run() -> void:
 	_check(resumed_rotation > 0.02, "same host resumes commanded rigid rotation after unfreeze")
 	_check(volume.duplicate_cells() == post_mutation_cells, "dynamic resume preserves edited Matter storage")
 	_check(lineage.duplicate_tokens() == post_mutation_lineage, "dynamic resume preserves edited lineage sidecar")
-	_check(body.get_collision_shape_count() == volume.count_solid(), "dynamic resume retains rebuilt collision representation")
+	_check(body.get_collision_shape_count() == expected_collision_shapes, "dynamic resume retains rebuilt collision representation")
 	_check(abs(body.mass - expected_mass) < 0.00001, "dynamic resume retains rebuilt mass")
 
 	# Freeze again at the arbitrary orientation reached through active simulation.
