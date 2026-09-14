@@ -77,6 +77,7 @@ func _run() -> void:
 		return
 	var dynamic_body := dynamic_provider as ConstructBody
 	var dynamic_id := dynamic_body.get_instance_id()
+	var dynamic_rid := dynamic_body.get_rid()
 	var activation_report := space.get_last_transition_report()
 	var activation_previous_transform: Transform3D = activation_report["previous_transform"]
 	var activation_current_transform: Transform3D = activation_report["current_transform"]
@@ -93,9 +94,20 @@ func _run() -> void:
 	_check(dynamic_body.linear_velocity.distance_to(requested_linear) < 0.000001, "dynamic provider receives requested linear velocity before solver step")
 	_check(dynamic_body.angular_velocity.distance_to(requested_angular) < 0.000001, "dynamic provider receives requested angular velocity before solver step")
 
+	# The physics server steps before RigidBody3D's node transform is synchronized
+	# back on the next PhysicsServer3D.sync(). Observe the first solver result from
+	# the RID directly, then verify the node catches up at the next physics boundary.
 	await process_frame
-	var first_dynamic_step_displacement := dynamic_body.global_position.distance_to(dynamic_commit_transform.origin)
-	_check(first_dynamic_step_displacement > 0.005, "new dynamic provider participates in the upcoming solver tick without losing one phase")
+	var first_dynamic_server_transform := PhysicsServer3D.body_get_state(
+		dynamic_rid,
+		PhysicsServer3D.BODY_STATE_TRANSFORM
+	) as Transform3D
+	var first_dynamic_server_displacement := first_dynamic_server_transform.origin.distance_to(dynamic_commit_transform.origin)
+	_check(first_dynamic_server_displacement > 0.005, "new dynamic provider participates in the upcoming solver tick without losing one phase")
+	await physics_frame
+	var first_dynamic_node_sync_gap := _transform_gap(dynamic_body.global_transform, first_dynamic_server_transform)
+	_check(first_dynamic_node_sync_gap < 0.00001, "dynamic provider node synchronizes to the first solver result on the next physics boundary")
+	await process_frame
 
 	for _frame in range(ACTIVE_FRAMES):
 		await physics_frame
@@ -180,7 +192,7 @@ func _run() -> void:
 
 	var lineage_changes := _count_int64_mismatches(initial_lineage_tokens, lineage.duplicate_tokens())
 	print(
-		"LIFECYCLE_PROVIDER_REPLACEMENT_METRIC logical_space_id=%d initial_static_id=%d dynamic_id=%d final_static_id=%d activation_pose_jump=%.10f activation_world_error=%.10f first_dynamic_step_displacement=%.10f dynamic_translation=%.8f dynamic_rotation=%.8f freeze_pose_jump=%.10f frozen_orientation_from_identity=%.8f max_static_drift=%.10f final_cells=%d final_shapes=%d lineage_changes=%d"
+		"LIFECYCLE_PROVIDER_REPLACEMENT_METRIC logical_space_id=%d initial_static_id=%d dynamic_id=%d final_static_id=%d activation_pose_jump=%.10f activation_world_error=%.10f first_dynamic_server_displacement=%.10f first_dynamic_node_sync_gap=%.10f dynamic_translation=%.8f dynamic_rotation=%.8f freeze_pose_jump=%.10f frozen_orientation_from_identity=%.8f max_static_drift=%.10f final_cells=%d final_shapes=%d lineage_changes=%d"
 		% [
 			logical_space_id,
 			initial_static_id,
@@ -188,7 +200,8 @@ func _run() -> void:
 			final_static_id,
 			activation_pose_jump,
 			activation_world_error,
-			first_dynamic_step_displacement,
+			first_dynamic_server_displacement,
+			first_dynamic_node_sync_gap,
 			dynamic_translation,
 			dynamic_rotation,
 			freeze_pose_jump,
