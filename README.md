@@ -26,21 +26,36 @@ The repository now has defended evidence across several layers:
 - independent frames can remain distinct while mechanically constrained; bounded joint state can survive split/partition/contraction cases,
 - exact merged-cuboid collision removed the demonstrated one-shape-per-cell scale bottleneck in dense/shell cases,
 - post-R1 profiling shows full mesh/cuboid/COM derivation—not installing a handful of merged shapes—now dominates representative full rebuilds,
-- bounded derived-region experiments prove strong edit locality is possible without making regions logical identity, but naive fixed regions can badly inflate final collider partitions.
+- bounded derived-region experiments prove strong edit locality is possible without making regions logical identity, but naive fixed regions can badly inflate final collider partitions,
+- the real LAB now composes an embodied actor, direct selected-cell Matter remove/place, static→dynamic ride/walk, moving edit and freeze through the shared runtime.
 
 These are not production architecture, world-scale or product-quality claims.
 
 ## Current active campaign
 
-The project has deliberately stopped representation optimization before it becomes architecture by inertia.
+The project deliberately stopped representation optimization before it became architecture by inertia.
 
-Active pressure is **P0 — a deliberately small interactive consumer**:
+Active pressure is **P0 — direct Owner interaction with the first embodied consumer**:
 
-> walk on/around Matter → inspect/select a local cell → remove/place Matter → activate the same logical Space → ride it → edit while moving → freeze it → inspect/debug the result.
+> walk on/around Matter → point at a local cell → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect/debug the result.
 
-The goal is not to make a game. It is to force the current substrate to compose under direct Owner interaction and reveal which pressure actually matters next.
+The automated composition gate is **PASS in a bounded translation+yaw scope**. On runtime commit `09eb18e8…`, current-campaign validation, fast invariants and the full historical research ratchet through R2A are green. This is integrated automated evidence, **not playability/product PASS**.
 
-If edit latency becomes limiting, R2A already provides measured locality evidence. If actor limitations dominate, the actor frontier should move next. If lifecycle or topology semantics fail under interaction, those exact invariants should be reopened instead of hidden behind LAB-specific hacks.
+The first pitch/roll P0 challenger also exposed a useful boundary: the current actor transports support in frame coordinates but validates/snaps with a world-down single ray. It remained grounded but drifted locally on tilted support. Arbitrary pitch/roll therefore remains an explicit actor/gravity/orientation frontier rather than being hidden by a LAB-specific adhesion hack.
+
+The next material evidence must come from direct Owner use of the LAB: camera/movement feel, pointer targeting, remove/place clarity, perceived edit latency and whether the loop reveals a compelling next pressure.
+
+If edit latency becomes limiting, R2A already provides measured locality evidence. If actor geometry/orientation dominates, the actor frontier should move next. If lifecycle/topology semantics fail under interaction, those exact invariants should be reopened instead of hidden behind consumer glue.
+
+### Current P0 controls
+
+- `WASD` — move relative to the current view/support,
+- `Space` — jump,
+- `T` — activate static Space / freeze dynamic Space,
+- `LMB` — remove pointed occupied Matter cell,
+- `RMB` — place Matter in the pointed adjacent empty in-bounds cell,
+- `R` — reset LAB,
+- `M`, `C`, `F` — retained legacy instrumentation probes.
 
 ## Important current distinctions
 
@@ -50,7 +65,8 @@ If edit latency becomes limiting, R2A already provides measured locality evidenc
 - **contact ≠ mechanical constraint ≠ rigid bind.**
 - **freeze/static transition ≠ canonical-world reintegration ≠ bake/resample.**
 - **dirty/invalidation region ≠ final physical representation partition.**
-- **bounded PASS ≠ integrated/scale/product proof.**
+- **support-frame transport ≠ gravity/orientation/adhesion semantics.**
+- **bounded/integrated automated PASS ≠ playability/product proof.**
 
 ## Stack
 
