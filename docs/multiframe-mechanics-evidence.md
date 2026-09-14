@@ -226,6 +226,36 @@ Bounded result: **mechanical succession is not inherently pin-specific. A topolo
 
 This strengthens the abstraction boundary: Matter lineage determines which successor owns an attachment, spatial mapping determines where its logical constraint frame moves, and host-specific joint reconstruction consumes that frame. The three concerns should remain distinct.
 
+## Stateful hinge motor and limits survive succession
+
+The next challenger tested behavior rather than merely geometry or stored properties. Immediately before the split transaction, a persistent `HingeJoint3D` was configured with symmetric angular limits (`±0.45 rad`), an enabled motor, target velocity `1.4 rad/s`, and maximum motor impulse `40`. The two source bodies were explicitly reset to a common rigid motion at the hinge anchor, giving essentially zero relative hinge speed before replacement.
+
+The parent then split and compacted. Retained owner-Matter lineage selected the successor, the full logical hinge frame was mapped and rebased, and the persistent joint endpoint was replaced before the upcoming solver step. No post-split driving torque was applied to fake motor action.
+
+Fast and full validation both passed. The physical response was discriminating:
+
+- owner lineage: `150038 -> 150038`,
+- lineage mismatches: `0`,
+- retained Matter world-position error: `0.0000019805 m`,
+- retained Matter velocity-field error: `0.0000008765 m/s`,
+- relative hinge angle before transaction: `0.0210530646 rad`,
+- relative hinge speed before transaction: `0`,
+- stale hinge origin/basis before rebase: `1.0017143488 m / 0.3052369058`,
+- explicit origin/basis rebase errors: `0 / 0`,
+- relative angle after 30 post-split frames: `0.428973 rad`,
+- maximum relative angle: `0.437008 rad`, remaining below the configured `0.45 rad` limit plus solver tolerance,
+- final relative angle: `0.434209 rad`,
+- maximum relative angular speed: `1.399979 rad/s`, matching the configured `1.4 rad/s` motor target,
+- final relative angular speed: `0`, showing that the active angular limit arrested the motor-driven motion,
+- maximum/final anchor gaps: `0.0022333276 m / 0.0022333150 m`,
+- maximum/final hinge-axis errors: `0.0001480049 / 0.0001354747 rad`,
+- non-owning successor separated by `11.775003 m`,
+- logical `HingeJoint3D` identity and node-side motor/limit configuration survived endpoint reconstruction.
+
+Bounded result: **topology succession can preserve active constraint behavior, not just constraint geometry.** In this Godot/Jolt hinge case, retained Matter ownership plus full constraint-frame rebasing allowed motor authority and angular-limit authority to remain physically effective after the source body was replaced.
+
+This does not establish a universal serialized constraint-state model. It does show that our current separation is useful: attachment ownership, spatial constraint frame, persistent logical joint identity, and host-specific behavioral parameters can remain distinct yet cooperate through one topology transaction.
+
 ## Current invariant candidate
 
 Topology replacement is becoming a multi-domain transaction rather than merely a body spawn/despawn operation. When continuity matters, one transaction may need explicit mappings for:
@@ -235,19 +265,20 @@ Topology replacement is becoming a multi-domain transaction rather than merely a
 - dependent actor support frames,
 - mechanical-anchor ownership,
 - logical constraint-frame position and orientation,
+- persistent mechanical relation identity and state/configuration,
 - per-anchor endpoint succession or retirement,
 - graph-edge contraction/retirement when endpoint frames merge,
 - pre-PhysicsServer scheduling.
 
-These are related but must not be conflated. A retained Matter lineage may survive while local address, physics-body identity, actor support object, and constraint endpoint all change. Conversely, an address and material may be recreated while the previous lineage and its mechanical ownership remain retired. Different anchors on the same source frame may legitimately choose different lifecycle outcomes in the same transaction. Multiple source frames may also collapse into one successor while external mechanical relations remain logically continuous and newly internal relations disappear.
+These are related but must not be conflated. A retained Matter lineage may survive while local address, physics-body identity, actor support object, and constraint endpoint all change. Conversely, an address and material may be recreated while the previous lineage and its mechanical ownership remain retired. Different anchors on the same source frame may legitimately choose different lifecycle outcomes in the same transaction. Multiple source frames may also collapse into one successor while external mechanical relations remain logically continuous and newly internal relations disappear. Stateful joint behavior may remain continuous even while its underlying physics-body endpoint is replaced.
 
 ## Still unproven
 
-- stateful hinge semantics through topology replacement: angular limits, motor state/target and motor authority,
-- whether partition/contraction graph rewrites generalize cleanly to oriented/stateful constraints,
+- partition/contraction graph rewrites with oriented/stateful constraints rather than point-only pin joints,
 - multi-joint chains and loops under repeated topology rewrites,
 - graph-level conservation semantics during more complex simultaneous topology + constraint changes,
 - breakable-link policy and force/impulse thresholds,
+- additional constraint families such as sliders, 6DOF joints, springs, gears, or custom transmission semantics,
 - nested frames or arbitrary gravity,
 - scalable large-construct collision/representation,
 - production persistence/network identity for Matter or mechanical links.
