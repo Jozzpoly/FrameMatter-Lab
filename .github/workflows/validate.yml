@@ -19,6 +19,9 @@ jobs:
           use-dotnet: false
           include-templates: false
 
+      - name: Parse/import project
+        run: godot --headless --path . --editor --quit
+
       - name: Run interactive lifecycle LAB smoke test
         run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
 
