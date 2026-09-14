@@ -231,6 +231,12 @@ func _run() -> void:
 	left_joint.node_a = left_joint.get_path_to(successor)
 	right_joint.node_a = right_joint.get_path_to(successor)
 
+	# Measure inherited relative motion before the first successor solver step.
+	# After that step the enabled motors are allowed to create relative speed.
+	var pre_solver_left_speed: float = _relative_hinge_speed(successor, merged_left_frame, left_external, left_external_frame)
+	var pre_solver_right_speed: float = _relative_hinge_speed(successor, merged_right_frame, right_external, right_external_frame)
+	_check(pre_solver_left_speed < 0.001 and pre_solver_right_speed < 0.001, "both external hinges enter the successor solver phase with near-zero inherited relative speed")
+
 	internal_joint.free()
 	_check(not is_instance_valid(internal_joint), "internal relation retires when A and B collapse into one rigid successor")
 	_check(left_joint.get_instance_id() == left_joint_id and right_joint.get_instance_id() == right_joint_id, "both external stateful edge identities survive many-to-one contraction")
@@ -250,9 +256,8 @@ func _run() -> void:
 	_check(_count_hinges(world) == 2, "stateful graph contraction leaves only the two external hinges")
 	_check(left_joint.node_a == left_joint.get_path_to(successor) and right_joint.node_a == right_joint.get_path_to(successor), "both stateful external edges converge onto the same merged successor")
 
-	var post_left_speed_initial: float = _relative_hinge_speed(successor, merged_left_frame, left_external, left_external_frame)
-	var post_right_speed_initial: float = _relative_hinge_speed(successor, merged_right_frame, right_external, right_external_frame)
-	_check(post_left_speed_initial < 0.05 and post_right_speed_initial < 0.05, "both external hinges enter the successor phase with near-zero inherited relative speed")
+	var first_step_left_speed: float = _relative_hinge_speed(successor, merged_left_frame, left_external, left_external_frame)
+	var first_step_right_speed: float = _relative_hinge_speed(successor, merged_right_frame, right_external, right_external_frame)
 
 	var max_left_gap := 0.0
 	var max_right_gap := 0.0
@@ -308,7 +313,7 @@ func _run() -> void:
 	_check(_count_hinges(world) == 2, "final contracted graph contains no internal self-edge")
 
 	print(
-		"MULTIFRAME_STATEFUL_HINGE_CONTRACTION_METRIC left_token=%d inherited_left=%d right_token=%d inherited_right=%d lineage_mismatches=%d source_alignment_error=%.10f source_orientation_error=%.10f linear_momentum_error=%.10f angular_momentum_error=%.10f energy_loss=%.6f left_angle_before=%.10f right_angle_before=%.10f left_speed_before=%.10f right_speed_before=%.10f left_origin_staleness=%.10f right_origin_staleness=%.10f left_rebase_origin_error=%.10f right_rebase_origin_error=%.10f left_rebase_basis_error=%.10f right_rebase_basis_error=%.10f post_left_speed_initial=%.6f post_right_speed_initial=%.6f left_angle_after_30=%.6f right_angle_after_30=%.6f max_left_angle=%.6f max_right_angle=%.6f final_left_angle=%.6f final_right_angle=%.6f max_left_speed=%.6f max_right_speed=%.6f final_left_speed=%.6f final_right_speed=%.6f max_left_gap=%.10f max_right_gap=%.10f final_left_gap=%.10f final_right_gap=%.10f max_left_axis_error=%.10f max_right_axis_error=%.10f final_left_axis_error=%.10f final_right_axis_error=%.10f left_joint_id=%d right_joint_id=%d internal_joint_id=%d successor_id=%d"
+		"MULTIFRAME_STATEFUL_HINGE_CONTRACTION_METRIC left_token=%d inherited_left=%d right_token=%d inherited_right=%d lineage_mismatches=%d source_alignment_error=%.10f source_orientation_error=%.10f linear_momentum_error=%.10f angular_momentum_error=%.10f energy_loss=%.6f left_angle_before=%.10f right_angle_before=%.10f left_speed_before=%.10f right_speed_before=%.10f left_origin_staleness=%.10f right_origin_staleness=%.10f left_rebase_origin_error=%.10f right_rebase_origin_error=%.10f left_rebase_basis_error=%.10f right_rebase_basis_error=%.10f pre_solver_left_speed=%.6f pre_solver_right_speed=%.6f first_step_left_speed=%.6f first_step_right_speed=%.6f left_angle_after_30=%.6f right_angle_after_30=%.6f max_left_angle=%.6f max_right_angle=%.6f final_left_angle=%.6f final_right_angle=%.6f max_left_speed=%.6f max_right_speed=%.6f final_left_speed=%.6f final_right_speed=%.6f max_left_gap=%.10f max_right_gap=%.10f final_left_gap=%.10f final_right_gap=%.10f max_left_axis_error=%.10f max_right_axis_error=%.10f final_left_axis_error=%.10f final_right_axis_error=%.10f left_joint_id=%d right_joint_id=%d internal_joint_id=%d successor_id=%d"
 		% [
 			left_owner_token, inherited_left_token, right_owner_token, inherited_right_token,
 			lineage_mismatches,
@@ -317,7 +322,7 @@ func _run() -> void:
 			left_angle_before, right_angle_before, left_speed_before, right_speed_before,
 			left_origin_staleness, right_origin_staleness,
 			left_rebase_origin_error, right_rebase_origin_error, left_rebase_basis_error, right_rebase_basis_error,
-			post_left_speed_initial, post_right_speed_initial,
+			pre_solver_left_speed, pre_solver_right_speed, first_step_left_speed, first_step_right_speed,
 			left_angle_after_30, right_angle_after_30,
 			max_left_angle, max_right_angle, final_left_angle, final_right_angle,
 			max_left_speed, max_right_speed, final_left_speed, final_right_speed,
