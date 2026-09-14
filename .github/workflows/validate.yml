@@ -70,6 +70,9 @@ jobs:
       - name: Run hinge split succession probe
         run: godot --headless --path . --script res://tests/multiframe_hinge_split_succession_probe.gd
 
+      - name: Run stateful hinge motor-limit succession probe
+        run: godot --headless --path . --script res://tests/multiframe_hinge_motor_limit_succession_probe.gd
+
   research-validation:
     runs-on: ubuntu-latest
     steps:
@@ -190,3 +193,6 @@ jobs:
 
       - name: Run hinge split succession probe
         run: godot --headless --path . --script res://tests/multiframe_hinge_split_succession_probe.gd
+
+      - name: Run stateful hinge motor-limit succession probe
+        run: godot --headless --path . --script res://tests/multiframe_hinge_motor_limit_succession_probe.gd
