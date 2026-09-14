@@ -161,7 +161,7 @@ G3 does **not** establish a production character controller. `FrameProbeCharacte
 ### Open debts before a broader substrate claim
 
 - scalable mesh/collision representations for larger editable constructs,
-- topology identity/provenance and repeated fragmentation/reassembly,
+- durable lineage allocation/persistence across save/load or network boundaries and semantics for fusion, mixing or transformation of material,
 - momentum semantics for general matter attachment/detachment beyond the bounded rigid split/merge cases below,
 - finite, physically meaningful actor→construct force exchange,
 - a volumetric actor controller (capsule/shape queries, walls, slopes, steps and ceilings),
@@ -173,7 +173,7 @@ The first campaign therefore does **not** define a final architecture. It establ
 
 ## Exploratory topology evidence — after G3
 
-Topology work has started as a separate exploratory line. These probes are **not yet a topology gate PASS**; they establish narrower semantics that can now be challenged by repeated fragmentation/reassembly, larger-scale cases and more general binding semantics.
+Topology work has started as a separate exploratory line. These probes are **not yet a topology gate PASS**; they establish narrower semantics that can now be challenged by larger-scale cases and more general binding/frame semantics.
 
 ### Moving split continuity
 
@@ -316,6 +316,57 @@ The complete regression suite remained green after this change. In the strengthe
 
 This extends the atomic topology-handoff invariant: **a dependent frame can cross an incompatible rigid bind while preserving world position and local support continuity, yet intentionally adopt the successor's new physically derived velocity field in the same transaction.** A topology handoff is therefore not just an identity/local-coordinate rewrite; it can also carry an explicit velocity-state transition.
 
+### Repeated topology replacement and PhysicsServer timing
+
+A 48-cycle split → compact-rebase → compatible-merge campaign initially exposed a large apparent accumulation failure. Logical Matter storage stayed bit-identical and each individual topology mapping remained micrometric, yet a repeatedly replaced dynamic body drifted from a never-replaced control by ~`4.59 m` and ~`0.623 rad`.
+
+A replacement-only control reproduced the same phase loss without performing any topology work, separating the failure from split/merge mathematics. A dedicated timing probe then compared identical `RigidBody3D` destroy/recreate operations in two scheduling phases. After 32 replacements:
+
+- post-PhysicsServer-step linear replacement accumulated ~`1.484 m` origin error,
+- pre-PhysicsServer-step linear replacement stayed at ~`7.69e-6 m`,
+- post-step rotating replacement accumulated ~`2.155 m` and ~`0.415 rad`,
+- pre-step rotating replacement stayed at ~`3.72e-6 m` and ~`0.000977 rad`.
+
+The topology campaign was therefore moved to the `physics_frame` boundary before the upcoming PhysicsServer step, without any manual `velocity * delta` compensation. Over 48 replacement cycles CI then measured:
+
+- Matter storage mismatches: `0`,
+- maximum split world-position error ~`4.27e-6 m`,
+- maximum split velocity-field error ~`3.16e-6 m/s`,
+- merge COM error `0`,
+- maximum reconstructed linear-velocity error ~`1.75e-6 m/s`,
+- maximum reconstructed angular-velocity error ~`1.45e-6 rad/s`,
+- maximum subject-vs-never-replaced origin gap ~`8.86e-6 m`,
+- maximum retained-cell world-position gap ~`1.43e-5 m`,
+- final origin gap ~`1.07e-6 m`,
+- final orientation gap `0` at test precision.
+
+This establishes an execution invariant for the current host: **dynamic topology transactions that replace physics-body identity must commit before the upcoming PhysicsServer step if phase continuity is required.** Replacement scheduling is part of topology correctness, not merely an implementation detail.
+
+### Experimental Matter lineage
+
+A minimal `MatterLineageMap` sidecar was introduced to test logical identity semantics without committing lineage storage to canonical `CellVolume` or choosing a final UUID/persistence format. Tokens are opaque experimental identities only.
+
+The first challenger assigned unique lineage to 46 live Matter cells, split the Matter into two components, compact-rebased both, reassembled them into a third address frame, and replaced the physics body. All 46 cells underwent non-identity address remapping with zero lineage or material mismatches. One tracked cell moved through:
+
+`(10, 1, 2) → (1, 1, 1) → (8, 1, 1)`
+
+while retaining lineage token `10026`; the source and successor also had different physics-body identities. Destroying that Matter and recreating the same material at the same final coordinate deliberately produced a new lineage token instead of resurrecting the old one.
+
+A stronger 32-cycle campaign then repeated offset → split → compact → merge while destroying and recreating exactly one occupied cell per cycle. Across the campaign:
+
+- 46 live cells were maintained,
+- 32 explicit recreation events retired 32 lineage tokens,
+- 1,472 address moves were exercised,
+- lineage mismatches: `0`,
+- material mismatches: `0`,
+- duplicate live lineage tokens: `0`,
+- retired lineage tokens resurrected: `0`,
+- final assigned lineage count remained 46.
+
+This defends a bounded identity distinction: **storage coordinate identity, retained-Matter lineage identity, spatial-frame identity and physics-body identity are separate concepts.** Split/rebase/merge may replace coordinates and representations without replacing retained Matter lineage; actual destruction/recreation may deliberately start a new lineage even when coordinate and material are identical.
+
+This is not yet a production identity system. Durable allocation, serialization, save/load, networking, cross-session uniqueness and lineage semantics for material fusion, mixing, conversion or partial continuity remain open.
+
 ### Topology checkpoint
 
 Current defended exploratory results now cover:
@@ -328,15 +379,18 @@ Current defended exploratory results now cover:
 - free successor divergence after a lossless instantaneous split,
 - actor succession through a dissipative incompatible merge including the successor velocity impulse,
 - independently verified Matter mass/COM/inertia needed to reason about those transitions,
-- an explicit separation between synchronous Matter-derived frame kinematics and delayed solver telemetry.
+- an explicit separation between synchronous Matter-derived frame kinematics and delayed solver telemetry,
+- 48 repeated pre-PhysicsServer split/compact/merge replacements with exact Matter storage and micrometric absolute drift against a never-replaced control,
+- a host scheduling invariant for phase-preserving dynamic body replacement,
+- experimental retained-Matter lineage continuity across address/frame/body replacement,
+- fresh lineage for explicit destruction/recreation without retired-token resurrection across 32 repeated cycles.
 
 This is still **not a topology PASS**. Important open questions include:
 
-- repeated split → rebase → merge cycles and accumulated transform/momentum/storage drift,
-- logical identity and provenance across fragmentation/reassembly,
 - binding triggers and policies: when mere contact/connectivity should or should not collapse frames,
 - non-lattice-aligned and nested frame relationships,
 - multiple dependents and dependents spanning different successor regions,
 - larger topology operations and scalable representations,
 - arbitrary frame orientation/gravity for actors,
-- general material attachment/detachment carrying independent momentum.
+- general material attachment/detachment carrying independent momentum,
+- durable lineage allocation/persistence and semantics for fusion, mixing or transformation of material.
