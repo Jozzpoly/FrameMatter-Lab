@@ -82,7 +82,6 @@ func _run() -> void:
 
 	var initial_mass := edited.mass
 	var initial_com := edited.matter_center_of_mass_local
-	var initial_shapes := edited.get_collision_shape_count()
 	var mutation_cells: Array[Vector3i] = [
 		Vector3i(0, 0, 0),
 		Vector3i(0, 0, 1),
@@ -106,7 +105,7 @@ func _run() -> void:
 	# derived mesh/colliders/mass properties on the SAME RigidBody3D while the
 	# joint stays alive and the sibling remains a separate frame.
 	for material_id in [CellVolume.EMPTY, 2]:
-		var cells := mutation_cells
+		var cells: Array[Vector3i] = mutation_cells
 		if material_id != CellVolume.EMPTY:
 			cells = mutation_cells.duplicate()
 			cells.reverse()
@@ -133,8 +132,8 @@ func _run() -> void:
 				await physics_frame
 				await process_frame
 				max_anchor_gap = max(max_anchor_gap, _anchor_gap(edited, sibling, edited_anchor_local, sibling_anchor_local))
-				max_linear_speed = max(max_linear_speed, edited.linear_velocity.length(), sibling.linear_velocity.length())
-				max_angular_speed = max(max_angular_speed, edited.angular_velocity.length(), sibling.angular_velocity.length())
+				max_linear_speed = max(max_linear_speed, max(edited.linear_velocity.length(), sibling.linear_velocity.length()))
+				max_angular_speed = max(max_angular_speed, max(edited.angular_velocity.length(), sibling.angular_velocity.length()))
 				_check(_finite_body_state(edited) and _finite_body_state(sibling), "constraint-linked bodies remain numerically finite during live mutation")
 
 	var final_anchor_gap := _anchor_gap(edited, sibling, edited_anchor_local, sibling_anchor_local)
@@ -145,7 +144,7 @@ func _run() -> void:
 	_check(max_com_shift > 0.05, "asymmetric edits materially move the edited frame COM")
 	_check(max_mass_error < 0.00001, "edited frame mass stays coherent with current Matter")
 	_check(max_shape_error == 0, "edited frame collision-shape count stays coherent with current Matter")
-	_check(edited.mass == initial_mass, "restoring the removed Matter restores initial total mass")
+	_check(abs(edited.mass - initial_mass) < 0.00001, "restoring the removed Matter restores initial total mass")
 	_check(edited_storage_mismatch == 0, "remove/add cycle restores edited Matter exactly")
 	_check(sibling_storage_mismatch == 0, "editing one constrained frame never mutates sibling Matter")
 	_check(max_anchor_gap < 0.02, "joint remains bounded while endpoint geometry/mass/COM are rebuilt")
