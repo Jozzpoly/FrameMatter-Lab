@@ -5,7 +5,7 @@ const MIN_BODY_MASS := 0.001
 
 var volume: CellVolume
 var mass_per_cell := 1.0
-var collision_mode := CellCollisionBoxer.Mode.PER_CELL
+var collision_mode := CellCollisionBoxer.Mode.MERGED_CUBOIDS
 var last_rebuild_usec := 0
 
 # Authoritative equal-density Matter COM, available synchronously as soon as
