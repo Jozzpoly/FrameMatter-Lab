@@ -6,6 +6,61 @@ on:
   pull_request:
 
 jobs:
+  fast-invariant-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Parse/import project
+        run: godot --headless --path . --editor --quit
+
+      - name: Run G0 smoke test
+        run: godot --headless --path . --script res://tests/g0_smoke.gd
+
+      - name: Run G1 dynamic construct smoke test
+        run: godot --headless --path . --script res://tests/g1_dynamic_construct.gd
+
+      - name: Run G2 live mutation smoke test
+        run: godot --headless --path . --script res://tests/g2_live_mutation.gd
+
+      - name: Run G3 frame-aware query controller challenger
+        run: godot --headless --path . --script res://tests/g3_frame_challenger.gd
+
+      - name: Run topology rebased split probe
+        run: godot --headless --path . --script res://tests/topology_rebased_split_probe.gd
+
+      - name: Run topology lineage challenger
+        run: godot --headless --path . --script res://tests/topology_lineage_probe.gd
+
+      - name: Run integrated binding transaction challenger
+        run: godot --headless --path . --script res://tests/topology_binding_transaction_probe.gd
+
+      - name: Run multi-frame pin-joint mechanics probe
+        run: godot --headless --path . --script res://tests/multiframe_pin_joint_probe.gd
+
+      - name: Run actor-on-joint multi-frame integration probe
+        run: godot --headless --path . --script res://tests/multiframe_actor_joint_probe.gd
+
+      - name: Run live-mutation joint integration probe
+        run: godot --headless --path . --script res://tests/multiframe_live_mutation_joint_probe.gd
+
+      - name: Run joint split succession integration probe
+        run: godot --headless --path . --script res://tests/multiframe_joint_split_succession_probe.gd
+
+      - name: Run multi-anchor graph partition integration probe
+        run: godot --headless --path . --script res://tests/multiframe_multi_anchor_split_partition_probe.gd
+
+      - name: Run mechanical anchor destruction semantics probe
+        run: godot --headless --path . --script res://tests/multiframe_anchor_destruction_probe.gd
+
   research-validation:
     runs-on: ubuntu-latest
     steps:
