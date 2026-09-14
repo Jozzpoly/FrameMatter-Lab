@@ -93,3 +93,6 @@ jobs:
 
       - name: Run topology binding policy challenger
         run: godot --headless --path . --script res://tests/topology_binding_policy_probe.gd
+
+      - name: Run integrated binding transaction challenger
+        run: godot --headless --path . --script res://tests/topology_binding_transaction_probe.gd
