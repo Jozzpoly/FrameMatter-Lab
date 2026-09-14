@@ -57,3 +57,6 @@ jobs:
 
       - name: Run topology split probe
         run: godot --headless --path . --script res://tests/topology_split_probe.gd
+
+      - name: Run topology actor split probe
+        run: godot --headless --path . --script res://tests/topology_actor_split_probe.gd
