@@ -166,6 +166,38 @@ CI evidence (fast and full validation both passed):
 
 Bounded result: **mechanical attachment lifecycle can be decided per anchor/per retained Matter owner inside one atomic topology event.** A construct does not need one global "all links survive" or "all links break" outcome.
 
+## Rigid merge can contract a mechanical graph
+
+A many-to-one challenger tested the inverse topology direction. Two source frames `A` and `B` were linked to each other and also had one persistent external pin-joint each. An explicit incompatible rigid bind then replaced `A+B` with one momentum-derived merged successor.
+
+Graph rewrite semantics were deliberately asymmetric:
+
+- both external links retained their own logical identities and converged onto the common merged successor,
+- the `A <-> B` relation was retired because both of its endpoints mapped into the same rigid successor and keeping it would create a meaningless self-constraint,
+- both external anchor owners retained their Matter lineage through the merge,
+- both persistent host `Joint3D` frames were rebased before endpoint reconfiguration.
+
+Fast and full validation both passed. CI evidence:
+
+- left external owner lineage: `120017 -> 120017`,
+- right external owner lineage: `120056 -> 120056`,
+- lineage mismatches: `0`,
+- source alignment error at bind: `0.0000063974 m`,
+- source orientation error: `0`,
+- linear-momentum reconstruction error: `0`,
+- angular-momentum reconstruction error: `0.0000019073`,
+- inelastic kinetic-energy loss: `188.184550`,
+- stale left/right `Joint3D` frame distances: `1.4324222803 m / 1.4324282408 m`,
+- both explicit rebase errors: `0`,
+- maximum inherited external anchor gaps: `0.0000099567 m / 0.0000116411 m`,
+- final inherited external anchor gaps: `0.0000081482 m / 0.0000097256 m`,
+- merged-successor mechanical response after external impulses: `Δv = 0.010439 m/s`, `Δω = 0.023475 rad/s`,
+- final pin-joint count: exactly `2`, with the internal source relation absent.
+
+Bounded result: **topology replacement can contract a constraint graph as well as partition it.** External relations may preserve logical identity while multiple endpoint frames collapse into one successor, whereas relations that become internal to the same rigid frame should be explicitly retired rather than converted into self-constraints.
+
+Within the currently tested `PinJoint3D` scope, partition and contraction therefore form a useful pair of graph-rewrite semantics driven by retained Matter ownership and successor-frame mapping rather than by source-object lifetime alone.
+
 ## Current invariant candidate
 
 Topology replacement is becoming a multi-domain transaction rather than merely a body spawn/despawn operation. When continuity matters, one transaction may need explicit mappings for:
@@ -176,16 +208,17 @@ Topology replacement is becoming a multi-domain transaction rather than merely a
 - mechanical-anchor ownership,
 - constraint-frame spatial state,
 - per-anchor endpoint succession or retirement,
+- graph-edge contraction/retirement when endpoint frames merge,
 - pre-PhysicsServer scheduling.
 
-These are related but must not be conflated. A retained Matter lineage may survive while local address, physics-body identity, actor support object, and constraint endpoint all change. Conversely, an address and material may be recreated while the previous lineage and its mechanical ownership remain retired. Different anchors on the same source frame may legitimately choose different lifecycle outcomes in the same transaction.
+These are related but must not be conflated. A retained Matter lineage may survive while local address, physics-body identity, actor support object, and constraint endpoint all change. Conversely, an address and material may be recreated while the previous lineage and its mechanical ownership remain retired. Different anchors on the same source frame may legitimately choose different lifecycle outcomes in the same transaction. Multiple source frames may also collapse into one successor while external mechanical relations remain logically continuous and newly internal relations disappear.
 
 ## Still unproven
 
-- graph contraction when multiple constrained source frames rigidly merge into one successor,
-- multi-joint chains, loops, motors, limits, gears, springs, or breakable links,
-- graph-level conservation semantics during simultaneous topology + constraint changes,
-- joint succession across incompatible rigid binding/merge events,
+- whether the same ownership/rebase/succession semantics generalize beyond `PinJoint3D`, especially hinges, motors and limits,
+- multi-joint chains and loops under repeated topology rewrites,
+- graph-level conservation semantics during more complex simultaneous topology + constraint changes,
+- breakable-link policy and force/impulse thresholds,
 - nested frames or arbitrary gravity,
 - scalable large-construct collision/representation,
 - production persistence/network identity for Matter or mechanical links.
