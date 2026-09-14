@@ -7,6 +7,13 @@ var volume: CellVolume
 var mass_per_cell := 1.0
 var last_rebuild_usec := 0
 
+# Authoritative equal-density Matter COM, available synchronously as soon as
+# derived state is rebuilt. Frame/topology kinematics must not depend on the
+# one-physics-step-later solver observation below.
+var matter_center_of_mass_local := Vector3.ZERO
+
+# Solver-observed values are telemetry/validation, not synchronous topology
+# authority. They update from PhysicsDirectBodyState3D in _integrate_forces().
 var observed_center_of_mass_local := Vector3.ZERO
 var observed_inverse_inertia := Vector3.ZERO
 var observed_inverse_inertia_tensor := Basis.IDENTITY
@@ -64,12 +71,13 @@ func get_mesh_vertex_count() -> int:
 		return 0
 	if _mesh_instance.mesh.get_surface_count() == 0:
 		return 0
-	return _mesh_instance.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
+	return _mesh_instance.mesh.surface_get_arrays(Mesh.ARRAY_VERTEX).size()
 
 
 func _refresh_mass_properties() -> void:
 	var solid_count := volume.count_solid()
 	mass = max(float(solid_count) * mass_per_cell, MIN_BODY_MASS)
+	matter_center_of_mass_local = MatterTopology.center_of_mass_local(volume)
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_AUTO
 	inertia = Vector3.ZERO
 	PhysicsServer3D.body_reset_mass_properties(get_rid())
