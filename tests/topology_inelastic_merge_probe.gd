@@ -106,14 +106,15 @@ func _run() -> void:
 	merged_body.linear_velocity = merged_linear
 	merged_body.angular_velocity = merged_angular
 
-	_check(merged_body.mass == merged_mass, "ConstructBody accepts merged Matter mass")
+	var construct_mass_error: float = abs(merged_body.mass - merged_mass)
+	_check(construct_mass_error < 0.0001, "ConstructBody accepts merged Matter mass within float precision")
 	_check(merged_body.linear_velocity.distance_to(merged_linear) < 0.000001, "ConstructBody accepts momentum-derived linear velocity")
 	_check(merged_body.angular_velocity.distance_to(merged_angular) < 0.000001, "ConstructBody accepts momentum-derived angular velocity")
 
 	print(
-		"TOPOLOGY_INELASTIC_MERGE_METRIC left_mass=%.6f right_mass=%.6f merged_mass=%.6f linear_momentum_error=%.10f angular_momentum_error=%.10f energy_before=%.6f energy_after=%.6f energy_loss=%.6f max_cell_velocity_delta=%.6f rms_cell_velocity_delta=%.6f merged_linear=%s merged_angular=%s"
+		"TOPOLOGY_INELASTIC_MERGE_METRIC left_mass=%.6f right_mass=%.6f merged_mass=%.6f construct_mass_error=%.10f linear_momentum_error=%.10f angular_momentum_error=%.10f energy_before=%.6f energy_after=%.6f energy_loss=%.6f max_cell_velocity_delta=%.6f rms_cell_velocity_delta=%.6f merged_linear=%s merged_angular=%s"
 		% [
-			left_mass, right_mass, merged_mass,
+			left_mass, right_mass, merged_mass, construct_mass_error,
 			linear_momentum_error, angular_momentum_error,
 			energy_before, energy_after, energy_loss,
 			max_cell_delta, rms_cell_delta,
