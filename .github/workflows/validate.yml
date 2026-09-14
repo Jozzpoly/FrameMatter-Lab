@@ -102,3 +102,6 @@ jobs:
 
       - name: Run multi-frame pin-joint mechanics probe
         run: godot --headless --path . --script res://tests/multiframe_pin_joint_probe.gd
+
+      - name: Run actor-on-joint multi-frame integration probe
+        run: godot --headless --path . --script res://tests/multiframe_actor_joint_probe.gd
