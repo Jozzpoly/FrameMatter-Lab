@@ -6,6 +6,7 @@ Evidence is **historical truth about what was tested**, not automatically live a
 
 ## Current evidence records
 
+- `r0-representation-scale-baseline.md` — first controlled scale baseline across dense/shell/sparse Matter and disconnected splits. Ranks per-occupied-cell collision node/shape materialization as the dominant current scale pressure; full-volume topology scanning and visual mesh complexity are secondary at the tested sizes.
 - `i3-shared-topology-split.md` — moving `LocalMatterSpace` retires through one shared one→many topology transaction into fresh compact successors while retained Matter lineage, world placement, rigid velocity field and explicit actor succession remain coherent. Records the transaction/solver/node observation-phase trap found by the first gated run.
 - `i2-actor-provider-transition.md` — actor support remains a logical `LocalMatterSpace` relation through static→dynamic→static provider replacement without test-local handoff; records the sync/phase-advance distinction discovered by the first challenger run.
 - `lifecycle-lab-consumer.md` — the real interactive LAB front door consumes the shared local-Space lifecycle for activation, motion, live mutation, freeze and post-freeze edit; second independent consumer shape for the lifecycle substrate.
@@ -46,10 +47,10 @@ Evidence levels used by the project:
 
 Most older FrameMatter results are strong **bounded evidence**. I0B established the first integrated local-Space lifecycle consumer. The real LAB exercised the same provider/mutation lifecycle through a materially different consumer shape, supplying the first narrow **reusable-substrate evidence** for that path. I2 adds integrated actor-support evidence across provider replacement. I3 adds integrated one→many topology execution through shared runtime rather than test-local orchestration.
 
-None of these results is scale or product evidence. The current `LocalMatterSpace`, provider classes and APIs remain experimental mechanisms whose semantics are more mature than their implementation shape.
+R0 is the first explicit **scale-pressure baseline**. It does not claim acceptable production scale; it establishes which current cost is dominant enough to justify the next challenger.
 
 ## Current re-audit consequence
 
-The lifecycle campaign has reached the point where another same-scale semantic probe has lower expected information value than measuring the present reference implementation under increasing size and occupancy patterns.
+R0 rejects full-volume connectivity scanning and visual mesh vertex count as the first optimization target at the tested sizes. The strongest observed pressure is the current one-`CollisionShape3D`/`BoxShape3D`-per-occupied-cell representation, which becomes strongly superlinear in active-tree construction/rebuild cost.
 
-The next campaign is therefore **R0 — representation/scale baseline**. R0 must measure before optimizing. It is not evidence for any particular replacement representation until a benchmark identifies the actual dominant cost and a challenger demonstrates a better tradeoff.
+The next campaign is therefore **R1 — exact merged-cuboid collision aggregation**. It must preserve logical Matter, lineage, exact occupied collision volume, Matter-derived mass properties and lifecycle semantics while proving that shape-count reduction materially changes the measured curve.
