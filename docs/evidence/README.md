@@ -8,6 +8,8 @@ Evidence is **historical truth about what was tested**, not automatically live a
 
 The repository predates this directory, so the first evidence files still live directly under `docs/` and are indexed here until a later cleanup moves them without rewriting history:
 
+- `i0a-freeze-unfreeze-semantics.md` — in-place `RigidBody3D` dynamic↔`FREEZE_MODE_STATIC` lifecycle control, frozen live edit, identity/pose continuity and measured host velocity semantics.
+- `stateful-graph-contraction-capstone.md` — standalone mechanics capstone closing the bounded stateful partition↔contraction campaign.
 - `../multiframe-mechanics-evidence.md` — constraint coupling, actor+constraint composition, live mutation under joints, split succession, graph partition/contraction, anchor destruction/mixed lifecycle and related measurements.
 - `../stateful-constraint-graph-evidence.md` — oriented hinge-frame succession, motor/limit state, multi-edge stateful partition results.
 - `../research-state.md` — **not evidence archive**; current synthesized truth built from evidence.
@@ -40,4 +42,4 @@ Evidence levels used by the project:
 5. Scale evidence
 6. Playability/product evidence
 
-Most current FrameMatter results are strong **bounded evidence**. The next campaign is specifically intended to begin producing integrated and reusable-substrate evidence.
+Most current FrameMatter results are strong **bounded evidence**. The lifecycle campaign is intended to begin producing integrated and reusable-substrate evidence without promoting bounded host behavior into architecture prematurely.
