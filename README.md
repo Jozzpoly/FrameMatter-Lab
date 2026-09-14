@@ -159,8 +159,8 @@ G3 does **not** establish a production character controller. `FrameProbeCharacte
 ### Open debts before a broader substrate claim
 
 - scalable mesh/collision representations for larger editable constructs,
-- topology changes: splitting one Matter volume into multiple constructs and merging constructs back together,
-- momentum semantics for matter attachment/detachment and construct split/merge,
+- topology identity/provenance and repeated fragmentation/reassembly,
+- momentum semantics for general matter attachment/detachment beyond the bounded rigid split/merge cases below,
 - finite, physically meaningful actor→construct force exchange,
 - a volumetric actor controller (capsule/shape queries, walls, slopes, steps and ceilings),
 - nested/moving frames and frame transitions beyond one actor→construct relationship,
@@ -171,7 +171,7 @@ The first campaign therefore does **not** define a final architecture. It establ
 
 ## Exploratory topology evidence — after G3
 
-Topology work has started as a separate exploratory line. These probes are **not yet a topology gate PASS**; they establish narrower semantics that can now be challenged by merge, incompatible motion, repeated fragmentation and larger-scale cases.
+Topology work has started as a separate exploratory line. These probes are **not yet a topology gate PASS**; they establish narrower semantics that can now be challenged by repeated fragmentation/reassembly, dependent-frame handoffs, larger-scale cases and more general binding semantics.
 
 ### Moving split continuity
 
@@ -216,11 +216,77 @@ An earlier version of this probe used a tilted parent with three-axis angular ve
 
 The rebased result is important because it separates **Matter storage coordinates from spatial continuity**: a successor frame may choose a new compact local origin while world-space Matter, velocity field and actor support remain continuous through an explicit mapping.
 
-### Topology questions still open
+### Compatible frame merge
 
-- merging multiple construct frames into one,
-- incompatible pre-merge velocity fields and the resulting momentum/energy policy,
-- repeated fragmentation/reassembly and identity/provenance semantics,
-- actor and other dependent-frame handoff during merge or multi-successor events,
-- topology cost and representation cost at larger cell counts,
-- arbitrary frame orientation/gravity and nested frame succession.
+The first merge probe deliberately used two separate source constructs that were lattice-aligned and already shared one common instantaneous rigid velocity field. This isolates merge/reframe semantics from collision or binding policy.
+
+The 25-cell and 34-cell sources became one 59-cell successor. Measured in CI:
+
+- maximum source-cell world-position error ~`2.70e-6 m`,
+- maximum velocity-field error ~`1.83e-6 m/s`,
+- retained Matter mass error `0`,
+- linear-momentum error ~`8.90e-5` in the float test accumulation,
+- solver COM error ~`7.91e-7 m`.
+
+This establishes a bounded **compatible merge** case: multiple frames that already describe the same rigid motion can be replaced by one successor without a meaningful physical discontinuity. It is better understood as lossless topology reframing than as a collision response.
+
+### Analytic Matter mass properties
+
+Incompatible merge requires angular momentum to be reasoned about explicitly rather than delegated blindly to the solver. `MatterMassProperties` therefore computes equal-density unit-cube mass, COM and the full local inertia tensor independently from Jolt, including the parallel-axis terms and products of inertia.
+
+The analytic result was compared with Jolt's full world-space inverse inertia tensor for a single cube, a rectangular block and an asymmetric sparse 12-cell compound under different 3D orientations.
+
+Across the campaign:
+
+- maximum COM error ~`4.92e-7 m`,
+- maximum inverse-mass error ~`6.0e-9`,
+- maximum full inverse-inertia-tensor action error ~`7.34e-7`,
+- the asymmetric sparse compound's tensor error was ~`6.2e-9`.
+
+This gives the research layer an independently verified physical description of Matter mass properties. Jolt remains the runtime solver, but topology reasoning no longer needs to treat its inertia as an opaque authority.
+
+### Incompatible perfectly-inelastic merge
+
+A second merge probe deliberately gave the two source frames incompatible linear and angular velocities. There is no single rigid successor velocity field that can preserve both source fields simultaneously, so the experiment used an explicit perfectly-inelastic rigid-binding contract rather than arbitrary velocity averaging:
+
+- successor linear velocity is derived from total linear momentum,
+- successor angular velocity is derived from total angular momentum about the merged COM and the merged Matter inertia tensor,
+- kinetic energy is allowed to dissipate,
+- the imposed per-cell velocity discontinuity is measured rather than hidden.
+
+For source masses `57.5 kg` and `78.2 kg` merging into `135.7 kg`, CI measured:
+
+- linear-momentum error `0` at test precision,
+- angular-momentum error ~`4.89e-5`,
+- kinetic energy before merge ~`989.05 J`,
+- kinetic energy after merge ~`607.19 J`,
+- dissipated kinetic energy ~`381.85 J`,
+- maximum retained-cell velocity change ~`4.59 m/s`,
+- RMS retained-cell velocity change ~`2.31 m/s`,
+- `ConstructBody` mass-vs-analytic-Matter error ~`3.05e-6 kg`.
+
+This is evidence for a second bounded merge regime: **when source rigid motions are incompatible, physical binding is not a lossless frame rewrite.** A perfectly-inelastic successor can conserve total linear and angular momentum while necessarily changing source velocity fields and dissipating kinetic energy.
+
+The stronger architecture implication is that **topological connectivity and rigid physical binding are separate semantics**. Matter becoming connected does not by itself determine that two currently independent frames must instantly become one body; a bind/merge event needs an explicit physical policy.
+
+### Topology checkpoint
+
+Current defended exploratory results now cover:
+
+- one rigid frame splitting into multiple successors while preserving retained-Matter instantaneous motion,
+- non-identity local-coordinate rebasing during split,
+- explicit dependent-frame succession for actor support,
+- compatible multi-frame merge as near-lossless reframing,
+- incompatible rigid merge with explicit conservation/dissipation semantics,
+- independently verified Matter mass/COM/inertia needed to reason about those transitions.
+
+This is still **not a topology PASS**. Important open questions include:
+
+- repeated split → rebase → merge cycles and accumulated transform/momentum/storage drift,
+- logical identity and provenance across fragmentation/reassembly,
+- actor or other dependent-frame succession during merge, especially when binding applies a physical impulse,
+- binding triggers and policies: when mere contact/connectivity should or should not collapse frames,
+- non-lattice-aligned and nested frame relationships,
+- larger topology operations and scalable representations,
+- arbitrary frame orientation/gravity for actors,
+- general material attachment/detachment carrying independent momentum.
