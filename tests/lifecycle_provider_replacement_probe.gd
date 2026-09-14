@@ -59,10 +59,11 @@ func _run() -> void:
 	var initial_static_id := initial_static.get_instance_id()
 	var initial_world_cells := _world_cell_positions(initial_static, volume)
 	var initial_lineage_tokens := lineage.duplicate_tokens()
+	var initial_expected_shapes := CellCollisionBoxer.build_boxes(volume, initial_static.collision_mode).size()
 	_check(space.volume == volume and space.lineage == lineage, "logical Space owns the original authoritative Matter and lineage references")
 	_check(space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "initial provider authority is static")
 	_check(space.get_provider_node_count() == 1, "initial logical Space has exactly one live provider")
-	_check(initial_static.get_collision_shape_count() == volume.count_solid(), "initial static provider derives collision from authoritative Matter")
+	_check(initial_static.get_collision_shape_count() == initial_expected_shapes, "initial static provider derives collision from authoritative Matter through the active collision compiler")
 
 	var requested_linear := Vector3(1.9, 0.35, -1.15)
 	var requested_angular := Vector3(0.28, -0.41, 0.33)
@@ -94,9 +95,6 @@ func _run() -> void:
 	_check(dynamic_body.linear_velocity.distance_to(requested_linear) < 0.000001, "dynamic provider receives requested linear velocity before solver step")
 	_check(dynamic_body.angular_velocity.distance_to(requested_angular) < 0.000001, "dynamic provider receives requested angular velocity before solver step")
 
-	# The physics server steps before RigidBody3D's node transform is synchronized
-	# back on the next PhysicsServer3D.sync(). Observe the first solver result from
-	# the RID directly, then verify the node catches up at the next physics boundary.
 	await process_frame
 	var first_dynamic_server_transform := PhysicsServer3D.body_get_state(
 		dynamic_rid,
@@ -129,11 +127,12 @@ func _run() -> void:
 	_check(space.mutate_cell(create_cell, 6, 399999), "shared Space mutation path creates Matter with fresh lineage while dynamic")
 	_check(space.mutate_cell(material_change_cell, 7), "shared Space mutation path changes retained Matter material while dynamic")
 	await process_frame
+	var dynamic_expected_shapes := CellCollisionBoxer.build_boxes(volume, dynamic_body.collision_mode).size()
 	_check(space.get_active_provider().get_instance_id() == dynamic_id_before_edits, "live Matter edits rebuild the active dynamic provider without replacing it")
 	_check(lineage.get_lineage(remove_cell) == MatterLineageMap.NONE, "dynamic removal retires lineage")
 	_check(lineage.get_lineage(create_cell) == 399999, "dynamic creation receives requested fresh lineage")
 	_check(lineage.get_lineage(material_change_cell) == retained_change_token, "dynamic material change retains existing lineage")
-	_check(dynamic_body.get_collision_shape_count() == volume.count_solid(), "dynamic live edit refreshes collision from authoritative Matter")
+	_check(dynamic_body.get_collision_shape_count() == dynamic_expected_shapes, "dynamic live edit refreshes collision from authoritative Matter through the active collision compiler")
 	_check(abs(dynamic_body.mass - float(volume.count_solid()) * MASS_PER_CELL) < 0.00001, "dynamic live edit refreshes mass from authoritative Matter")
 
 	for _frame in range(POST_EDIT_FRAMES):
@@ -162,6 +161,7 @@ func _run() -> void:
 		final_static.global_basis.orthonormalized(),
 		Basis.IDENTITY
 	)
+	var final_expected_shapes := CellCollisionBoxer.build_boxes(volume, final_static.collision_mode).size()
 	_check(space.get_instance_id() == logical_space_id, "logical Space identity survives dynamic→static provider replacement")
 	_check(final_static_id != dynamic_id_before_static and final_static_id != initial_static_id, "final static provider is a fresh engine representation")
 	_check(space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "provider authority returns to static")
@@ -170,7 +170,7 @@ func _run() -> void:
 	_check(freeze_pose_jump < 0.000001, "dynamic→static replacement preserves arbitrary current pose")
 	_check(frozen_orientation_from_identity > 0.05, "static successor retains a genuinely non-world-aligned orientation")
 	_check(volume.duplicate_cells() == post_edit_cells and lineage.duplicate_tokens() == post_edit_lineage, "provider replacement preserves edited Matter and lineage truth")
-	_check(final_static.get_collision_shape_count() == volume.count_solid(), "new static provider derives collision from edited Matter")
+	_check(final_static.get_collision_shape_count() == final_expected_shapes, "new static provider derives collision from edited Matter through the active collision compiler")
 
 	var static_pose := final_static.global_transform
 	var max_static_drift := 0.0
@@ -186,7 +186,8 @@ func _run() -> void:
 	_check(space.mutate_cell(post_static_edit_cell, 8), "same shared mutation path remains usable after freeze-to-static replacement")
 	_check(final_static.get_instance_id() == static_id_before_edit, "post-freeze edit rebuilds static provider without replacing logical or provider identity")
 	_check(lineage.get_lineage(post_static_edit_cell) == post_static_token, "post-freeze retained Matter edit preserves lineage")
-	_check(final_static.get_collision_shape_count() == volume.count_solid(), "post-freeze edit keeps static collision coherent")
+	var post_static_expected_shapes := CellCollisionBoxer.build_boxes(volume, final_static.collision_mode).size()
+	_check(final_static.get_collision_shape_count() == post_static_expected_shapes, "post-freeze edit keeps static collision coherent through the active collision compiler")
 	_check(space.volume == volume and space.lineage == lineage, "entire I0B cycle retains one authoritative Matter + lineage pair")
 	_check(space.get_instance_id() == logical_space_id, "entire I0B cycle retains one logical Space identity")
 
