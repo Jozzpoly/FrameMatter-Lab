@@ -1,0 +1,96 @@
+name: Deliver P0 Owner Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lab/**"
+      - "actor/**"
+      - "construct/**"
+      - "matter/**"
+      - "space/**"
+      - "project.godot"
+      - "export_presets.cfg"
+      - ".github/workflows/deliver-owner-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "p0-owner-delivery"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build browser + Windows Owner test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2 with export templates
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Prime project import
+        run: godot --headless --path . --editor --quit
+
+      - name: Verify P0 before packaging
+        run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
+
+      - name: Export browser build
+        run: |
+          mkdir -p build/web
+          godot --headless --path . --export-release "Web" build/web/index.html
+          test -f build/web/index.html
+          test -f build/web/index.wasm
+          test -f build/web/index.pck
+
+      - name: Export Windows build
+        run: |
+          mkdir -p build/windows
+          godot --headless --path . --export-release "Windows Desktop" build/windows/FrameMatter-P0.exe
+          test -f build/windows/FrameMatter-P0.exe
+
+      - name: Add no-Jekyll marker
+        run: touch build/web/.nojekyll
+
+      - name: Upload browser download artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P0-Web
+          path: build/web
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Windows download artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P0-Windows
+          path: build/windows/FrameMatter-P0.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/web
+
+  deploy-pages:
+    name: Publish browser Owner test
+    needs: build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
