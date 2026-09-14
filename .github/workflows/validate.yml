@@ -31,6 +31,9 @@ jobs:
       - name: Run G2 live mutation smoke test
         run: godot --headless --path . --script res://tests/g2_live_mutation.gd
 
+      - name: Run I0A freeze/unfreeze host-semantics probe
+        run: godot --headless --path . --script res://tests/lifecycle_freeze_semantics_probe.gd
+
       - name: Run G3 frame-aware query controller challenger
         run: godot --headless --path . --script res://tests/g3_frame_challenger.gd
 
@@ -115,6 +118,9 @@ jobs:
 
       - name: Run G2 mutation campaign
         run: godot --headless --path . --script res://tests/g2_campaign.gd
+
+      - name: Run I0A freeze/unfreeze host-semantics probe
+        run: godot --headless --path . --script res://tests/lifecycle_freeze_semantics_probe.gd
 
       - name: Run G3 stock CharacterBody3D controlled-platform probe
         run: godot --headless --path . --script res://tests/g3_baseline_probe.gd
