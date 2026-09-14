@@ -46,6 +46,7 @@ func _measure_representation_case(world: Node3D, extent: int, pattern: String) -
 		occupied = static_volume.count_solid()
 		var static_space := LocalMatterSpace.new()
 		static_space.name = "R0Static_%s_%d" % [pattern, extent]
+		static_space.collision_mode = CellCollisionBoxer.Mode.PER_CELL
 		world.add_child(static_space)
 		var static_started := Time.get_ticks_usec()
 		static_space.initialize_static(static_volume, static_lineage, Transform3D.IDENTITY)
@@ -61,6 +62,7 @@ func _measure_representation_case(world: Node3D, extent: int, pattern: String) -
 		var dynamic_space := LocalMatterSpace.new()
 		dynamic_space.name = "R0Dynamic_%s_%d" % [pattern, extent]
 		dynamic_space.mass_per_cell = MASS_PER_CELL
+		dynamic_space.collision_mode = CellCollisionBoxer.Mode.PER_CELL
 		dynamic_space.dynamic_gravity_scale = 0.0
 		dynamic_space.dynamic_linear_damp = 0.0
 		dynamic_space.dynamic_angular_damp = 0.0
@@ -135,6 +137,7 @@ func _measure_split_case(world: Node3D, extent: int) -> void:
 		var space := LocalMatterSpace.new()
 		space.name = "R0Split_%d" % extent
 		space.mass_per_cell = MASS_PER_CELL
+		space.collision_mode = CellCollisionBoxer.Mode.PER_CELL
 		space.dynamic_gravity_scale = 0.0
 		space.dynamic_linear_damp = 0.0
 		space.dynamic_angular_damp = 0.0
