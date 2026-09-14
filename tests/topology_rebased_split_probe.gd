@@ -36,10 +36,12 @@ func _run() -> void:
 	parent.mass_per_cell = MASS_PER_CELL
 	world.add_child(parent)
 	parent.position = Vector3(13.0, 8.0, -11.0)
-	parent.rotation = Vector3(-0.16, 0.71, 0.09)
+	# Keep locomotion inside bounded G3 semantics. This probe is about topology
+	# rebasing, not tilted-frame/arbitrary-gravity support.
+	parent.rotation = Vector3(0.0, 0.71, 0.0)
 	parent.set_volume(volume)
-	parent.linear_velocity = Vector3(-1.8, 0.6, 2.7)
-	parent.angular_velocity = Vector3(0.35, 0.72, -0.41)
+	parent.linear_velocity = Vector3(-1.8, 0.0, 2.7)
+	parent.angular_velocity = Vector3(0.0, 0.72, 0.0)
 
 	var actor := FrameProbeCharacter.new()
 	actor.name = "Actor"
@@ -58,9 +60,19 @@ func _run() -> void:
 		_finish()
 		return
 
+	var pre_split_local_start: Vector3 = parent.to_local(actor.global_position)
+	var max_pre_split_drift := 0.0
 	for _step in range(45):
 		await physics_frame
 		await process_frame
+		var local_now: Vector3 = parent.to_local(actor.global_position)
+		max_pre_split_drift = max(max_pre_split_drift, Vector2(local_now.x - pre_split_local_start.x, local_now.z - pre_split_local_start.z).length())
+
+	_check(actor.grounded and actor.support_body == parent, "actor is still grounded on parent immediately before rebased split")
+	_check(max_pre_split_drift < 0.002, "parent support remains locally stable before rebased split")
+	if not actor.grounded or actor.support_body != parent:
+		_finish()
+		return
 
 	var parent_transform: Transform3D = parent.global_transform
 	var parent_linear: Vector3 = parent.linear_velocity
@@ -193,11 +205,12 @@ func _run() -> void:
 	_check(actor.support_body == support_child, "post-rebase landing resolves to compact successor")
 
 	print(
-		"TOPOLOGY_REBASED_SPLIT_METRIC support_index=%d source_origin=%s compact_size=%s world_cell_error=%.10f velocity_field_error=%.10f handoff_world_jump=%.10f handoff_local_error=%.10f ride_drift=%.10f floor_loss=%d linear_error=%.10f angular_error=%.10f recontact_frame=%d actor_parent_local=%s actor_child_local=%s"
+		"TOPOLOGY_REBASED_SPLIT_METRIC support_index=%d source_origin=%s compact_size=%s pre_split_drift=%.10f world_cell_error=%.10f velocity_field_error=%.10f handoff_world_jump=%.10f handoff_local_error=%.10f ride_drift=%.10f floor_loss=%d linear_error=%.10f angular_error=%.10f recontact_frame=%d actor_parent_local=%s actor_child_local=%s"
 		% [
 			support_index,
 			support_origin,
 			support_child.volume.size,
+			max_pre_split_drift,
 			max_world_cell_error,
 			max_velocity_field_error,
 			handoff_world_jump,
