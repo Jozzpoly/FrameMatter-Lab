@@ -99,6 +99,7 @@ func _run() -> void:
 	var reference_p_relative: float = _relative_vector_error(Vector3(reference_final["p"]), Vector3(reference_initial["p"]))
 	var reference_l_relative: float = _relative_vector_error(Vector3(reference_final["l"]), Vector3(reference_initial["l"]))
 	var reference_energy_relative: float = _relative_scalar_error(float(reference_final["energy"]), float(reference_initial["energy"]))
+	var topology_l_excess: float = max(0.0, l_relative - reference_l_relative)
 
 	_check(max_seam_gap > 0.5, "free successors physically diverge at their former seam")
 	_check(max_velocity_gap > 0.5, "free successors develop incompatible seam velocity fields")
@@ -106,14 +107,13 @@ func _run() -> void:
 	_check(energy_relative < 0.0001, "collisionless free successors keep total kinetic energy bounded")
 	_check(reference_p_relative < 0.0001, "unsplit control keeps linear momentum bounded")
 	_check(reference_energy_relative < 0.0001, "unsplit control keeps kinetic energy bounded")
-	# Jolt's gyroscopic force is opt-in upstream and is not exposed by the Godot
-	# RigidBody3D API used here. Angular-momentum drift is therefore measured
-	# against the unsplit control rather than silently treated as a topology error.
-	_check(l_relative < 0.02, "split-system angular-momentum drift remains bounded for this solver mode")
-	_check(reference_l_relative < 0.02, "unsplit-control angular-momentum drift remains bounded for this solver mode")
+	# Angular momentum is calibrated against the unsplit host-solver control.
+	# The split is not allowed to introduce material extra drift beyond the
+	# behavior already present in the same free rigid-body solver mode.
+	_check(topology_l_excess < 0.001, "topology split adds no material angular-momentum drift beyond unsplit solver control")
 
 	print(
-		"TOPOLOGY_FREE_SPLIT_DIVERGENCE_METRIC frames=%d initial_p_relative=%.10f initial_l_relative=%.10f initial_energy_relative=%.10f final_frame_origin_gap=%.6f final_frame_angle_gap=%.6f final_seam_gap=%.6f final_seam_velocity_gap=%.6f max_frame_angle_gap=%.6f max_seam_gap=%.6f max_seam_velocity_gap=%.6f split_p_relative=%.10f split_l_relative=%.10f split_energy_relative=%.10f reference_p_relative=%.10f reference_l_relative=%.10f reference_energy_relative=%.10f left_angular=%s right_angular=%s reference_angular=%s"
+		"TOPOLOGY_FREE_SPLIT_DIVERGENCE_METRIC frames=%d initial_p_relative=%.10f initial_l_relative=%.10f initial_energy_relative=%.10f final_frame_origin_gap=%.6f final_frame_angle_gap=%.6f final_seam_gap=%.6f final_seam_velocity_gap=%.6f max_frame_angle_gap=%.6f max_seam_gap=%.6f max_seam_velocity_gap=%.6f split_p_relative=%.10f split_l_relative=%.10f split_energy_relative=%.10f reference_p_relative=%.10f reference_l_relative=%.10f reference_energy_relative=%.10f topology_l_excess=%.10f left_angular=%s right_angular=%s reference_angular=%s"
 		% [
 			FREE_FRAMES,
 			initial_p_relative,
@@ -132,6 +132,7 @@ func _run() -> void:
 			reference_p_relative,
 			reference_l_relative,
 			reference_energy_relative,
+			topology_l_excess,
 			left.angular_velocity,
 			right.angular_velocity,
 			reference.angular_velocity,
@@ -255,7 +256,7 @@ func _copy_volume(source: CellVolume, target_origin: Vector3i, target: CellVolum
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("TOPOLOGY_FREE_SPLIT_DIVERGENCE_PROBE_PASS: an instantaneous conservation-preserving split produced successors whose former seam diverged under free motion; split-system conservation was evaluated against an unsplit solver control.")
+		print("TOPOLOGY_FREE_SPLIT_DIVERGENCE_PROBE_PASS: an instantaneous conservation-preserving split produced successors whose former seam diverged under free motion; angular-momentum drift was calibrated against an unsplit host-solver control.")
 		quit(0)
 		return
 	for failure in _failures:
