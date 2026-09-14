@@ -63,3 +63,6 @@ jobs:
 
       - name: Run topology rebased split probe
         run: godot --headless --path . --script res://tests/topology_rebased_split_probe.gd
+
+      - name: Run topology compatible merge probe
+        run: godot --headless --path . --script res://tests/topology_compatible_merge_probe.gd
