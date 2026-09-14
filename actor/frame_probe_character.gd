@@ -12,6 +12,7 @@ var jump_requested: bool = false
 
 var grounded: bool = false
 var support_body: Node3D
+var support_space: LocalMatterSpace
 var support_local_center: Vector3 = Vector3.ZERO
 var world_velocity: Vector3 = Vector3.ZERO
 
@@ -32,7 +33,8 @@ func request_jump() -> void:
 func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -> bool:
 	if not grounded:
 		return false
-	if new_support == null or not is_instance_valid(new_support):
+	var resolved_support := _resolve_support_frame(new_support)
+	if resolved_support == null or not is_instance_valid(resolved_support):
 		return false
 
 	# A topology handoff is not a fresh contact acquisition. The caller owns the
@@ -42,7 +44,8 @@ func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -
 	# the upcoming solver step. Trust this explicit mapping for exactly one actor
 	# physics tick; ordinary grounding returns to query validation immediately
 	# afterward.
-	support_body = new_support
+	support_body = resolved_support
+	support_space = _resolve_support_space(support_body)
 	support_local_center = mapped_local_center
 	global_position = support_body.to_global(support_local_center)
 	_previous_support_point_world = global_position
@@ -62,6 +65,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _step_grounded(delta: float) -> void:
+	_refresh_support_provider_from_space()
 	if support_body == null or not is_instance_valid(support_body):
 		_detach_from_support()
 		_step_airborne(delta)
@@ -104,7 +108,7 @@ func _step_grounded(delta: float) -> void:
 		_detach_from_support(false)
 		return
 
-	var hit_body: Node3D = hit["collider"] as Node3D
+	var hit_body := _resolve_support_frame(hit["collider"] as Node3D)
 	if hit_body != support_body:
 		_attach_to_hit(hit)
 		return
@@ -146,10 +150,12 @@ func _valid_ground_hit(hit: Dictionary) -> bool:
 
 func _attach_to_hit(hit: Dictionary) -> void:
 	var collider: Node3D = hit["collider"] as Node3D
-	if collider == null:
+	var resolved_support := _resolve_support_frame(collider)
+	if resolved_support == null:
 		return
 
-	support_body = collider
+	support_body = resolved_support
+	support_space = _resolve_support_space(support_body)
 	grounded = true
 	_snap_to_hit(hit)
 	support_local_center = support_body.to_local(global_position)
@@ -178,8 +184,51 @@ func _detach_from_support(preserve_velocity: bool = true) -> void:
 		world_velocity = _rigid_velocity_at_point(support_body, global_position)
 	grounded = false
 	support_body = null
+	support_space = null
 	observed_support_velocity = Vector3.ZERO
 	_topology_validation_grace_steps = 0
+
+
+func _refresh_support_provider_from_space() -> void:
+	if support_space == null or not is_instance_valid(support_space):
+		return
+	var current_provider := support_space.get_active_provider()
+	if current_provider == null or current_provider == support_body:
+		return
+
+	# LocalMatterSpace's current static↔dynamic lifecycle preserves the same local
+	# Matter lattice. That makes the actor's local support point a valid mapping
+	# across this provider-class replacement. Topology rebases are deliberately
+	# excluded and continue to use transfer_support_frame() with an explicit map.
+	support_body = current_provider
+	global_position = support_body.to_global(support_local_center)
+	_previous_support_point_world = global_position
+	world_velocity = _rigid_velocity_at_point(support_body, global_position)
+	observed_support_velocity = world_velocity
+	_topology_validation_grace_steps = 1
+	observed_support_transfers += 1
+
+
+func _resolve_support_frame(collider: Node3D) -> Node3D:
+	if collider == null:
+		return null
+	var current: Node = collider
+	while current != null:
+		if current is ConstructBody or current is MatterRepresentation:
+			return current as Node3D
+		current = current.get_parent()
+	return collider
+
+
+func _resolve_support_space(frame: Node3D) -> LocalMatterSpace:
+	if frame == null:
+		return null
+	var parent := frame.get_parent()
+	if parent is LocalMatterSpace:
+		var space := parent as LocalMatterSpace
+		if space.get_active_provider() == frame:
+			return space
+	return null
 
 
 func _rigid_velocity_at_point(body: Node3D, world_point: Vector3) -> Vector3:
