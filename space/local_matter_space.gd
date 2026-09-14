@@ -17,7 +17,7 @@ var volume: CellVolume
 var lineage: MatterLineageMap
 
 var mass_per_cell := 1.0
-var collision_mode := CellCollisionBoxer.Mode.PER_CELL
+var collision_mode := CellCollisionBoxer.Mode.MERGED_CUBOIDS
 var dynamic_gravity_scale := 0.0
 var dynamic_linear_damp := 0.0
 var dynamic_angular_damp := 0.0
