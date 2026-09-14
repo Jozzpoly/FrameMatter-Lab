@@ -41,6 +41,7 @@ func _run() -> void:
 	var acquired: bool = false
 	for _step in range(60):
 		await physics_frame
+		await process_frame
 		if actor.grounded and actor.support_body == construct:
 			acquired = true
 			break
@@ -63,6 +64,7 @@ func _run() -> void:
 
 	for _step in range(RIDE_FRAMES):
 		await physics_frame
+		await process_frame
 		var local_now: Vector3 = construct.to_local(actor.global_position)
 		var drift: float = Vector2(local_now.x - ride_local_start.x, local_now.z - ride_local_start.z).length()
 		max_ride_local_drift = max(max_ride_local_drift, drift)
@@ -79,6 +81,7 @@ func _run() -> void:
 	var walk_floor_loss_frames: int = 0
 	for _step in range(WALK_FRAMES):
 		await physics_frame
+		await process_frame
 		if not actor.grounded:
 			walk_floor_loss_frames += 1
 		max_linear_velocity_error = max(max_linear_velocity_error, (construct.linear_velocity - commanded_linear).length())
@@ -98,6 +101,7 @@ func _run() -> void:
 
 	for step in range(MAX_JUMP_FRAMES):
 		await physics_frame
+		await process_frame
 		max_linear_velocity_error = max(max_linear_velocity_error, (construct.linear_velocity - commanded_linear).length())
 		max_angular_velocity_error = max(max_angular_velocity_error, (construct.angular_velocity - commanded_angular).length())
 		if not actor.grounded:
@@ -118,6 +122,7 @@ func _run() -> void:
 	if recontact_frame >= 0:
 		for _step in range(POST_RECONTACT_FRAMES):
 			await physics_frame
+			await process_frame
 			var local_now: Vector3 = construct.to_local(actor.global_position)
 			var drift: float = Vector2(local_now.x - post_recontact_local_start.x, local_now.z - post_recontact_local_start.z).length()
 			post_recontact_drift = max(post_recontact_drift, drift)
