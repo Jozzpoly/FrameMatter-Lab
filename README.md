@@ -57,6 +57,17 @@ If edit latency becomes limiting, R2A already provides measured locality evidenc
 - `R` — reset LAB,
 - `M`, `C`, `F` — retained legacy instrumentation probes.
 
+### Owner-test builds
+
+P0 has a dedicated delivery workflow: **[Deliver P0 Owner Test](https://github.com/Jozzpoly/FrameMatter-Lab/actions/workflows/deliver-owner-test.yml)**.
+
+Every delivery run first executes the real P0 smoke and only packages the experiment if that gate passes. A successful run publishes two 30-day downloadable artifacts:
+
+- `FrameMatter-P0-Windows` — standalone Windows x86-64 executable with embedded PCK; this is the preferred Owner-test build,
+- `FrameMatter-P0-Web` — browser export bundle for hosting/HTTP testing.
+
+The web bundle itself exports successfully with Godot 4.7.2 + built-in Jolt. A permanent GitHub Pages URL is intentionally not claimed until Pages is enabled in repository settings; delivery artifacts do not depend on that setting.
+
 ## Important current distinctions
 
 - **Matter ≠ mesh/collision/body identity.**
