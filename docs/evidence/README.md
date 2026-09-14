@@ -6,7 +6,10 @@ Evidence is **historical truth about what was tested**, not automatically live a
 
 ## Current evidence records
 
-- `r0-representation-scale-baseline.md` — first controlled scale baseline across dense/shell/sparse Matter and disconnected splits. Ranks per-occupied-cell collision node/shape materialization as the dominant current scale pressure; full-volume topology scanning and visual mesh complexity are secondary at the tested sizes.
+- `r2a-derived-region-locality.md` — bounded A/B challenger showing that one logical Matter volume can keep exact collision/mesh semantics while derivation work is localized to bounded update regions. Local one-cell work improves dramatically at larger extents, but naive fixed regions inflate dense/shell collider partitions enough to argue against promoting the test mechanism directly.
+- `r2p-post-aggregation-profile.md` — post-R1 decomposition of provider/edit/split cost. Shows that engine shape installation is no longer dominant; full mesh, cuboid compilation, COM and repeated whole-volume work now dominate. Separates material-only from occupancy-changing edit cost.
+- `r1-exact-collision-aggregation.md` — exact deterministic merged-cuboid compiler and integrated promotion. Preserves occupied collision coverage and lifecycle semantics while reducing dense/shell collider count and provider/rebuild cost by orders of magnitude in the strongest cases.
+- `r0-representation-scale-baseline.md` — first controlled scale baseline across dense/shell/sparse Matter and disconnected splits. Ranks per-occupied-cell collision node/shape materialization as the dominant first scale pressure in the original reference representation.
 - `i3-shared-topology-split.md` — moving `LocalMatterSpace` retires through one shared one→many topology transaction into fresh compact successors while retained Matter lineage, world placement, rigid velocity field and explicit actor succession remain coherent. Records the transaction/solver/node observation-phase trap found by the first gated run.
 - `i2-actor-provider-transition.md` — actor support remains a logical `LocalMatterSpace` relation through static→dynamic→static provider replacement without test-local handoff; records the sync/phase-advance distinction discovered by the first challenger run.
 - `lifecycle-lab-consumer.md` — the real interactive LAB front door consumes the shared local-Space lifecycle for activation, motion, live mutation, freeze and post-freeze edit; second independent consumer shape for the lifecycle substrate.
@@ -47,10 +50,16 @@ Evidence levels used by the project:
 
 Most older FrameMatter results are strong **bounded evidence**. I0B established the first integrated local-Space lifecycle consumer. The real LAB exercised the same provider/mutation lifecycle through a materially different consumer shape, supplying the first narrow **reusable-substrate evidence** for that path. I2 adds integrated actor-support evidence across provider replacement. I3 adds integrated one→many topology execution through shared runtime rather than test-local orchestration.
 
-R0 is the first explicit **scale-pressure baseline**. It does not claim acceptable production scale; it establishes which current cost is dominant enough to justify the next challenger.
+R0 is the first explicit **scale-pressure baseline**. R1 then removes the demonstrated first bottleneck in the tested range and survives integrated lifecycle/topology consumers. R2P re-ranks the resulting cost structure. R2A supplies bounded evidence that edit locality is achievable without making update regions logical identity, while showing that naive fixed regional collision partitions can undo much of R1's collider compression.
 
 ## Current re-audit consequence
 
-R0 rejects full-volume connectivity scanning and visual mesh vertex count as the first optimization target at the tested sizes. The strongest observed pressure is the current one-`CollisionShape3D`/`BoxShape3D`-per-occupied-cell representation, which becomes strongly superlinear in active-tree construction/rebuild cost.
+The representation campaign has reached a useful stop point rather than a reason to keep expanding by inertia:
 
-The next campaign is therefore **R1 — exact merged-cuboid collision aggregation**. It must preserve logical Matter, lineage, exact occupied collision volume, Matter-derived mass properties and lifecycle semantics while proving that shape-count reduction materially changes the measured curve.
+- `PER_CELL` remains a historical/reference control, not a scalability candidate,
+- `MERGED_CUBOIDS` remains the current provider default,
+- post-R1 edit cost is dominated by repeated whole-volume derivation rather than installing merged shapes,
+- bounded locality can attack that cost if a consumer needs it,
+- the R2A fixed-region mechanism is **not** promoted because locality benefit and final physical partition quality are separate concerns.
+
+The next highest-information pressure should come from a small interactive/Owner-facing consumer. If that consumer demonstrates edit-latency pressure, R2A provides a measured direction for the next representation challenger without precommitting the runtime to a chunk architecture.
