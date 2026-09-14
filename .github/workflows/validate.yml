@@ -37,6 +37,9 @@ jobs:
       - name: Run I0B provider replacement lifecycle challenger
         run: godot --headless --path . --script res://tests/lifecycle_provider_replacement_probe.gd
 
+      - name: Run interactive lifecycle LAB smoke test
+        run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
+
       - name: Run G3 frame-aware query controller challenger
         run: godot --headless --path . --script res://tests/g3_frame_challenger.gd
 
@@ -127,6 +130,9 @@ jobs:
 
       - name: Run I0B provider replacement lifecycle challenger
         run: godot --headless --path . --script res://tests/lifecycle_provider_replacement_probe.gd
+
+      - name: Run interactive lifecycle LAB smoke test
+        run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
 
       - name: Run G3 stock CharacterBody3D controlled-platform probe
         run: godot --headless --path . --script res://tests/g3_baseline_probe.gd
