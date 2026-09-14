@@ -5,7 +5,10 @@ const PROBE_CELL := Vector3i(3, 1, 3)
 const MATERIAL_CELL := Vector3i(6, 1, 5)
 const MASS_PER_CELL := 1.25
 const DRIVE_LINEAR := Vector3(1.15, 0.0, -0.35)
-const DRIVE_ANGULAR := Vector3(0.08, 0.34, 0.12)
+# P0's embodied actor is currently defended for world-up translation+yaw support.
+# Pitch/roll support semantics remain an explicit actor frontier rather than being
+# hidden here behind local-gravity/adhesion assumptions.
+const DRIVE_ANGULAR := Vector3(0.0, 0.34, 0.0)
 const ACTOR_SPEED := 3.2
 const ACTOR_SPAWN := Vector3(4.5, 2.15, 4.5)
 const CAMERA_OFFSET := Vector3(8.5, 7.0, 10.0)
