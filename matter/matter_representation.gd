@@ -2,7 +2,7 @@ class_name MatterRepresentation
 extends Node3D
 
 var volume: CellVolume
-var collision_mode := CellCollisionBoxer.Mode.PER_CELL
+var collision_mode := CellCollisionBoxer.Mode.MERGED_CUBOIDS
 var last_rebuild_usec := 0
 
 var _mesh_instance: MeshInstance3D
