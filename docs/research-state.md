@@ -78,6 +78,8 @@ No bounded result implies production readiness, scale readiness or product value
 - In the tested hinge case, full-frame rebasing preserved axis alignment and real relative hinge motion.
 - Motor and angular-limit behavior can survive topology succession.
 - One split can partition two independently configured active hinges onto different successors while preserving distinct owner lineage, frame, identity, motor target and limit behavior.
+- The inverse bounded contraction case also passes: two distinct external motorized/limited hinges can converge onto one inelastic merged successor while retaining separate owner lineage, full frames, joint identities and active state; the source relation that becomes an internal/self-edge retires.
+- This closes the intended standalone stateful partition↔contraction research symmetry at bounded evidence maturity. It is **not** a production mechanics architecture claim.
 
 ## Host viability
 
@@ -115,10 +117,10 @@ A minimal shared pre-physics commit path is likely justified by the next represe
 
 At least two strategies remain viable:
 
-- in-place `RigidBody3D` mode/freeze changes,
+- in-place `RigidBody3D` freeze/mode changes,
 - true replacement between distinct static and dynamic representations.
 
-The next campaign will A/B them rather than choose prematurely.
+The new lifecycle campaign begins by measuring in-place host semantics before choosing a lifecycle contract, then challenges representation replacement separately.
 
 ## Physics material model
 
@@ -148,7 +150,7 @@ Current mass-property evidence assumes equal mass per occupied cell. `material_i
 
 ## Immediate / active-campaign debts
 
-- Stateful graph-contraction capstone (final standalone mechanics probe).
+- Measure same-body `RigidBody3D` freeze/unfreeze semantics before defining the in-place lifecycle contract.
 - Persistent logical Space/frame identity through real representation lifecycle.
 - Pose/velocity authority transfer between providers without dual truth.
 - One coherent Matter+lineage mutation authority for an interactive consumer.
@@ -169,7 +171,7 @@ Current mass-property evidence assumes equal mass per occupied cell. `material_i
 
 ## Deferred until consumer pressure
 
-- richer/breakable/looped mechanics,
+- richer/breakable/looped mechanics and larger mechanics graphs,
 - streaming and world scale,
 - multiple simulation domains and migration,
 - nested frames,
