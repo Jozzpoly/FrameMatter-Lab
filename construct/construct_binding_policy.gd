@@ -19,21 +19,25 @@ enum Decision {
 
 static func decide(
 	request_mode: RequestMode,
-	linear_velocity_error: float,
+	anchor_velocity_error: float,
 	angular_velocity_error: float,
-	linear_tolerance: float = 0.0001,
+	anchor_velocity_tolerance: float = 0.0001,
 	angular_tolerance: float = 0.0001
 ) -> Decision:
-	assert(linear_velocity_error >= 0.0)
+	assert(anchor_velocity_error >= 0.0)
 	assert(angular_velocity_error >= 0.0)
-	assert(linear_tolerance >= 0.0)
+	assert(anchor_velocity_tolerance >= 0.0)
 	assert(angular_tolerance >= 0.0)
 
 	if request_mode == RequestMode.NONE:
 		return Decision.KEEP_SEPARATE
 
+	# Two bodies can have different COM linear velocities while belonging to one
+	# compatible rigid velocity field. Compatibility is therefore evaluated at a
+	# shared physical anchor/seam point plus angular velocity, not by comparing
+	# raw RigidBody3D.linear_velocity values.
 	var compatible := (
-		linear_velocity_error <= linear_tolerance
+		anchor_velocity_error <= anchor_velocity_tolerance
 		and angular_velocity_error <= angular_tolerance
 	)
 	if compatible:
