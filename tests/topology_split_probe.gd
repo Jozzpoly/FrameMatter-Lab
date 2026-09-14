@@ -127,10 +127,11 @@ func _run() -> void:
 		var child: ConstructBody = children[index]
 		var component: CellVolume = components[index]
 		var expected_com: Vector3 = MatterTopology.center_of_mass_local(component)
+		var expected_collision_count: int = CellCollisionBoxer.build_boxes(component, child.collision_mode).size()
 		max_child_com_error = max(max_child_com_error, child.observed_center_of_mass_local.distance_to(expected_com))
 		max_child_angular_error = max(max_child_angular_error, child.angular_velocity.distance_to(parent_angular))
 		_check(abs(child.mass - float(component.count_solid()) * MASS_PER_CELL) < 0.0001, "child %d mass follows component Matter" % index)
-		_check(child.get_collision_shape_count() == component.count_solid(), "child %d collision representation follows component Matter" % index)
+		_check(child.get_collision_shape_count() == expected_collision_count, "child %d collision representation follows active compiled component Matter" % index)
 		_check(_bounded_vector(child.global_position, 1000.0), "child %d position remains bounded after release" % index)
 		_check(_bounded_vector(child.linear_velocity, 1000.0), "child %d linear velocity remains bounded after release" % index)
 
