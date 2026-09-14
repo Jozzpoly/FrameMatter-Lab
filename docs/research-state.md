@@ -145,16 +145,45 @@ R1 establishes in the tested scope:
 - Matter-derived mass/COM/inertia semantics do not depend on collider count,
 - dense `14³` compiles from `2744` reference shapes to `1` merged shape,
 - shell `14³` compiles from `1016` reference shapes to `6`,
-- dense `14³` full mutation/rebuild improved from about `2349 ms` to `27 ms` (~`87×`),
-- shell `14³` full mutation/rebuild improved from about `328 ms` to `16 ms` (~`20×`),
+- dense/shell provider and full-rebuild cost changes by orders of magnitude in the strongest cases,
 - sparse skeleton cases improve only slightly, supporting the R0 diagnosis that shape materialization—not a universal unrelated speedup—was the dominant dense/shell pressure,
 - provider replacement, live occupancy editing, solver mass properties, actor support and topology succession remain coherent with merged collision active.
 
 `MERGED_CUBOIDS` is therefore the current provider default. `PER_CELL` remains a reference representation, not a scalability candidate.
 
-The full post-promotion ratchet passed at commit `286758a9cdf895e569f8cbb1b300602005ae94e2`, GitHub Actions run `#182` / `34899262822`.
-
 Evidence: `docs/evidence/r0-representation-scale-baseline.md`, `docs/evidence/r1-exact-collision-aggregation.md`.
+
+## Post-aggregation cost ranking — scale-pressure
+
+R2P establishes the current tested cost structure after R1:
+
+- installing the already-small merged collider set into engine bodies is negligible relative to full provider rebuild,
+- full visual mesh generation is the largest measured component in dense/shell cases,
+- full cuboid compilation and Matter COM scans remain visible because each still traverses the whole extent,
+- material-only and true occupancy mutations currently route through essentially the same whole-provider rebuild path,
+- current material-only full rebuild is execution waste under implemented semantics, not evidence that future materials can never affect rendering/physics,
+- merged collision also removes most split-commit shape-materialization cost, exposing topology preflight/compaction/provider reconstruction as meaningful remaining split work.
+
+Evidence: `docs/evidence/r2p-post-aggregation-profile.md`.
+
+## Derived update locality — bounded scale-pressure challenger
+
+R2A establishes a semantic/mechanical distinction without promoting a new runtime representation:
+
+**dirty/invalidation partition ≠ final physical representation partition.**
+
+In test-local regional derivation across `14³`, `24³` and `32³` dense/shell/skeleton volumes:
+
+- exact occupied collision coverage remained intact,
+- exposed mesh vertex count matched the global mesher before and after occupancy mutation,
+- one-cell dirty derivation remained bounded to a small region neighborhood,
+- locality speedups grew strongly with extent, reaching roughly `174×/138×/202×` for dense/shell/skeleton at `32³` with region edge 4,
+- but dense `32³` collision partition inflated from global `1` shape to `512` regional shapes at edge 4 and `64` at edge 8,
+- shell `32³` inflated from `6` global shapes to `384` / `96`.
+
+Therefore the locality concept is defended enough to revisit under real edit pressure, but the naive fixed-region collision representation is **not** promoted. A future solution should not blindly undo R1's global collision compression merely to obtain dirty update boundaries.
+
+Evidence: `docs/evidence/r2a-derived-region-locality.md`.
 
 ## Actor/controller semantics — bounded
 
@@ -210,6 +239,20 @@ The semantic result of R1 is stronger than the current greedy algorithm.
 
 The current deterministic x→y→z partition is adequate as a derived exact representation in tested cases, but R1 does not establish that it is globally minimal, optimal for edit locality, appropriate for every material model or the final physical partition strategy.
 
+## Update-local representation mechanism
+
+R2A strongly supports bounded dirty derivation as a future direction **if a consumer demonstrates the need**, but no implementation is canonical.
+
+In particular, do not conflate:
+
+- logical Matter storage,
+- dirty/invalidation regions,
+- visual mesh partitions,
+- physical collider partitions,
+- streaming/world chunks.
+
+Those may eventually overlap for pragmatic reasons, but R2A is evidence against assuming they are identical by default.
+
 ## Static/dynamic host strategy
 
 Both approaches remain useful evidence-backed tools:
@@ -248,45 +291,36 @@ Current mass properties assume equal mass per occupied cell. `material_id` is no
 - `RigidBody3D.freeze` as an implicit automatic velocity pause/resume guarantee.
 - Immediately-read node transform after a server step as proof that a fresh RID did or did not participate in that same step.
 - Arbitrarily assigning retired source Space identity to one topology fragment without an explicit policy.
+- Naive fixed derived-region collision partition as an automatically superior replacement for global merged collision merely because dirty derivation is faster.
 
 ---
 
 # OPEN — current re-audited priorities
 
-## Active: post-R1 representation/update re-profile
+## Active: P0 interactive consumer pressure
 
-R1 removed the dominant R0 per-cell collision-shape bottleneck strongly enough that the old ranking is no longer valid.
+The current lifecycle LAB proves that a second consumer can exercise shared static↔dynamic transitions and mutation, but it is still primarily a keyboard-driven instrumentation scene rather than an embodied Owner experiment.
 
-The current implementation still performs whole-volume / whole-provider work for edits:
+The highest-information next question is now whether the defended pieces compose into a small direct loop:
 
-- `CellMesher.build_mesh` rebuilds the complete visual mesh,
-- `CellCollisionBoxer.build_boxes` recompiles the complete collision partition,
-- providers destroy and recreate their complete derived collision-node set,
-- dynamic providers refresh mass/COM/solver mass properties,
-- `LocalMatterSpace.mutate_cell` currently routes edits through a full derived rebuild,
-- connected-component topology work still scans whole current storage and split commits construct successor providers.
+> walk on/around Matter → select a local cell → remove/place Matter → activate the same logical Space → remain supported/ride it → edit while moving → freeze it → inspect/debug the consequences.
 
-Do **not** call dirty regions, chunking or another representation mechanism the next architecture yet.
+P0 should reuse the shared runtime rather than creating parallel LAB semantics:
 
-The next measurement should decompose remaining post-R1 cost across at least:
+- `FrameProbeCharacter` for current support-frame behavior,
+- `LocalMatterSpace` for logical ownership and mutation,
+- shared static↔dynamic provider replacement,
+- `MERGED_CUBOIDS` as current collision default,
+- minimal camera/selection/input/debug feedback only.
 
-- logical Matter scans / occupied count,
-- visual mesh generation,
-- merged-cuboid compilation,
-- engine collision-shape materialization,
-- dynamic mass/COM refresh where measurable,
-- total static/dynamic provider rebuild,
-- live occupancy-edit transaction,
-- topology extraction and split transaction under the promoted representation.
+P0 is not evidence that the current actor is a final game controller. Its purpose is to reveal what actually fails or feels limiting when Owner interaction becomes the consumer.
 
-It should also distinguish occupancy-changing edits from retained-Matter/material edits; the latter must not be allowed to masquerade as evidence that physical collision necessarily needs rebuilding if current physical semantics do not change.
+Decision pressure from P0:
 
-Decision after measurement:
-
-- if full rebuild remains materially expensive and cost is localizable, challenge edit-local/dirty rebuild;
-- if global greedy partitioning makes locality awkward, compare bounded region/chunk partitioning rather than forcing an incremental global compiler;
-- if current representative local-Space sizes are already cheap enough, prefer higher-information consumer/playability pressure over optimization by inertia;
-- if another subsystem becomes dominant, re-rank accordingly.
+- if edit latency is material, reopen representation with R2A locality evidence but do not equate dirty regions with collider chunks;
+- if walls/steps/ceilings or finite reaction forces become the blocker, move to the volumetric/finite-force actor frontier;
+- if provider transition/support continuity fails under direct interaction, reopen that lifecycle invariant rather than patching around it in LAB;
+- if the substrate works but the interaction is awkward or uninteresting, treat Owner experience as evidence before building more infrastructure.
 
 ## Important consumer-triggered frontiers
 
@@ -347,12 +381,21 @@ Debugging and handoff logic must not collapse these into one instantaneous “cu
 - exact collision coverage can be preserved while collider identity/count changes radically,
 - tests must target the semantic relationship between truth and representation, not assume one shape per cell.
 
+## Dirty update boundaries vs representation identity
+
+- an invalidation region is a bounded unit of work,
+- a visual region is a derived render partition,
+- a collider partition is a derived physical representation,
+- none of those is automatically a logical Space, Matter identity or world-streaming chunk.
+
+R2A directly demonstrates why keeping these concepts separable matters.
+
 ---
 
-# Product pressure kept in view
+# Product pressure now in view
 
-Long-term validation still needs a deliberately small Owner-facing slice:
+The deliberately small Owner-facing loop is no longer only a distant reminder; it is the active source of the next evidence:
 
-> walk → dig/place → activate/freeze a local Space → ride/build on it → use one simple mechanism → inspect/debug consequences.
+> walk → dig/place → activate/freeze a local Space → ride/build on it → inspect/debug consequences.
 
-The project should not rush into that slice before the substrate can support it meaningfully, but it must recur as a decision pressure so representation research does not become an end in itself.
+A simple mechanism remains a later extension of that slice, not a prerequisite for proving actor/edit/lifecycle composition. The next major architectural decision should be pulled by what this interaction exposes, not pushed by another speculative subsystem.
