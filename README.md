@@ -29,7 +29,7 @@ All of these remain falsifiable by evidence.
 | **G2 — Live Mutation** | Can a moving construct rebuild geometry/collision/mass properties safely after matter edits? |
 | **G3 — Relative Actor** | Can an actor stand, walk, jump, and re-contact reliably relative to translating and rotating constructs? |
 
-After G3 the architecture is reviewed before automatically expanding scope.
+G0–G3 are now closed as bounded research gates. The architecture review below is the checkpoint before expanding scope.
 
 ## 0.1 stack
 
@@ -40,7 +40,7 @@ After G3 the architecture is reviewed before automatically expanding scope.
 - custom minimal integer-grid matter model
 - intentionally simple derived mesh/collision representations
 
-Voxel plugins, C++, portals, procedural terrain, streaming, multiplayer, Planet Matter, Create-like machinery, and JV/VAW-grade vehicle systems are deliberately outside G0–G3 unless evidence makes one necessary.
+Voxel plugins, C++, portals, procedural terrain, streaming, multiplayer, Planet Matter, Create-like machinery, and JV/VAW-grade vehicle systems remain outside the first campaign unless later evidence makes one necessary.
 
 ## Evidence standard
 
@@ -76,7 +76,7 @@ These are one-run CI baselines, not performance targets. Later runs vary substan
 
 ### G1 — PASS (bounded)
 
-The same `CellVolume` is now used by a real dynamic `RigidBody3D` under Jolt without changing the logical Matter model.
+The same `CellVolume` is used by a real dynamic `RigidBody3D` under Jolt without changing the logical Matter model.
 
 Validated in headless CI:
 
@@ -85,13 +85,13 @@ Validated in headless CI:
 - an asymmetric 8-cell construct remains bounded through translation, rotation, collision and a torque impulse while preserving Matter truth,
 - a deliberately naive full 8³ construct with 512 independent collision shapes remains numerically stable and preserves Matter truth.
 
-The 512-shape probe also exposes the expected representation cliff: across CI runs, rebuild and physics costs vary materially with runner load but are already far beyond a reasonable realtime budget. This is sufficient evidence that box-per-cell cannot be the scalable dynamic representation.
+The 512-shape probe exposes the expected representation cliff: across CI runs, rebuild and physics costs vary materially with runner load but are already far beyond a reasonable realtime budget. This is sufficient evidence that box-per-cell cannot be the scalable dynamic representation.
 
 This is **not** evidence for large voxel constructs, nested frames, live mutation, or actor-relative locomotion. It only closes G1's bounded question.
 
 ### G2 — PASS (bounded)
 
-Live Matter edits now rebuild a moving construct's mesh, collision representation, mass, center of mass and inertia while keeping the logical `CellVolume` authoritative.
+Live Matter edits rebuild a moving construct's mesh, collision representation, mass, center of mass and inertia while keeping the logical `CellVolume` authoritative.
 
 Validated in headless CI:
 
@@ -101,10 +101,70 @@ Validated in headless CI:
 - a deterministic 120-mutation campaign runs while the construct continuously translates and rotates,
 - every campaign step keeps mesh topology, collision-shape count, mass and solver COM coherent with current Matter,
 - the campaign's maximum COM error was ~0.00000122 and maximum inverse-mass error was effectively zero,
-- the 120-step campaign averaged ~1.25 ms rebuild time for the small test construct in one CI run, with ~1.68 ms maximum.
+- small-construct rebuilds remain in the low-millisecond range in CI, while the intentionally naive larger compound representation already shows a clear scaling cliff.
 
 G2 deliberately **does not solve momentum semantics** for physical attachment/detachment of material. A newly added cell's prior momentum and the momentum carried away by removed material remain a separate assembly/mechanics question. G2 only establishes bounded representation/mass-property coherence during live mutation.
 
-### G3 — in progress
+### G3 — PASS (bounded support-frame semantics)
 
-Next evidence target: benchmark the stock `CharacterBody3D` baseline against translating, rotating and combined-motion dynamic constructs. Relative position in construct-local coordinates, grounded state, platform linear/angular velocity and jump/re-contact behavior will be measured explicitly. A custom controller is not introduced unless the baseline produces a concrete failure mode.
+G3 produced both a useful failure and a successful replacement strategy.
+
+**Controlled moving-frame baseline.** Stock `CharacterBody3D` behaved well on a controlled Matter-derived `AnimatableBody3D`: translation, rotation and combined motion maintained floor contact for the complete probes. Measured construct-local horizontal drift was roughly 2–3 cm in the original sampling setup, and Godot reported the expected platform linear/angular velocities.
+
+**Free-dynamic failure.** The same stock kinematic character semantics were unsuitable when the support was a freely simulated `ConstructBody` (`RigidBody3D`). In the probe, the actor never acquired stable floor contact and the construct was accelerated to roughly 277 m/s. Increasing total construct mass from 49 kg through 4,900 kg to 490,000 kg barely changed the failure. This rules out "make the construct heavier" as an acceptable fix for this research case.
+
+**Frame-aware challenger.** A minimal query-based `FrameProbeCharacter` separates support-frame transport from physical actor→construct force exchange. While grounded it maintains an explicit construct-local support anchor; while airborne it moves in world space and can only re-enter a frame through a new physics query. It is not scene-tree parented to the construct and it intentionally applies no reaction force to the rigid body.
+
+The first challenger case passed ride → walk → jump → re-contact on a freely simulated construct with:
+
+- maximum ride local drift ~0.000016 m,
+- zero grounded-frame loss,
+- ~0.9 m × 0.5 m local walking displacement,
+- jump re-contact after 34 physics frames,
+- post-recontact local drift ~0.000010 m,
+- no measurable change to the construct's commanded linear or angular velocity in the test precision.
+
+A follow-up campaign varied translation, rotation, actor offset and construct mass:
+
+| Case | Construct motion | Total mass | Max ride drift | Jump re-contact | Velocity perturbation |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `linear_fast` | 5 m/s, -3 m/s | 121 kg | 0.00000000 m | 34 frames | 0 |
+| `spin_offset` | 0.9 rad/s yaw | 121 kg | 0.00001775 m | 34 frames | 0 |
+| `combined_reverse` | -2.5/+2.0 m/s, -0.8 rad/s | 6,050 kg | 0.00001614 m | 34 frames | 0 |
+| `combined_heavy` | 3.5/-1.5 m/s, 1.1 rad/s | 121,000 kg | 0.00001628 m | 34 frames | 0 |
+
+All cases kept support during riding/walking, completed a bounded jump/re-contact, stayed below the 2 mm drift contract by a wide margin, and did not perturb the free construct's prescribed linear/angular velocity.
+
+G3 therefore establishes a narrower but important result: **support-frame locomotion can be represented explicitly above the rigid-body solver without transform parenting and without conflating contact transport with physical force exchange.**
+
+G3 does **not** establish a production character controller. `FrameProbeCharacter` currently uses a downward ray and does not solve capsule volume, walls, slopes, steps, ceilings, arbitrary gravity, tilted walk surfaces, actor–actor collision, physical pushing, or nested frames. Those remain separate questions.
+
+## Post-G3 architecture review — 0.1
+
+### Defended foundations
+
+- **Logical Matter remains independent of representation.** G0–G2 repeatedly reconstruct render/physics state from `CellVolume` without changing Matter identity.
+- **A construct can be treated as dynamic local space.** The same Matter can move, rotate and mutate while retaining coherent local coordinates and derived mass properties.
+- **Frame relationships should be explicit state, not scene-tree parenting.** G3's successful actor stores a support-local anchor and crosses between support-frame and world-space states deliberately.
+- **Support transport and force exchange are separate problems.** A body can carry an actor kinematically relative to its frame without granting the actor unlimited authority over the body's rigid-body motion.
+- **Godot + Jolt remains viable for the current research layer.** No first-campaign result currently justifies replacing the host engine or introducing native code merely to preserve the core invariants.
+
+### Falsified or rejected as scalable foundations
+
+- **One collision box per solid cell is not a scalable dynamic representation.** It remains useful as a truth/reference implementation only.
+- **Stock `CharacterBody3D` directly standing on a free `RigidBody3D` is not accepted as our actor/construct interaction model.** The bounded probe produced catastrophic, mass-insensitive rigid-body acceleration.
+- **Making constructs artificially enormous in mass is not an architectural fix** for actor/support semantics.
+- **Contact alone is insufficient to define frame membership.** Support-frame acquisition and release need explicit semantics.
+
+### Open debts before a broader substrate claim
+
+- scalable mesh/collision representations for larger editable constructs,
+- topology changes: splitting one Matter volume into multiple constructs and merging constructs back together,
+- momentum semantics for matter attachment/detachment and construct split/merge,
+- finite, physically meaningful actor→construct force exchange,
+- a volumetric actor controller (capsule/shape queries, walls, slopes, steps and ceilings),
+- nested/moving frames and frame transitions beyond one actor→construct relationship,
+- larger-coordinate/origin-management questions,
+- performance and stability under multiple simultaneous constructs and actors.
+
+The first campaign therefore does **not** define a final architecture. It establishes a small set of defended invariants and rejects several tempting shortcuts. The next campaign should be chosen from the open debts by information value, rather than by automatically adding game features.
