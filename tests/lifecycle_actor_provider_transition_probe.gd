@@ -126,12 +126,25 @@ func _run() -> void:
 	_check(max_linear_velocity_error < 0.01, "actor support logic does not perturb dynamic provider linear velocity")
 	_check(max_angular_velocity_error < 0.01, "actor support logic does not perturb dynamic provider angular velocity")
 
+	# At this point the scene-node pose is the last PhysicsServer-synchronized pose.
+	# The next physics tick begins with another legal sync of the still-dynamic
+	# provider before LocalMatterSpace commits the static replacement. Therefore
+	# pre_freeze_world -> transaction-boundary world motion is phase advance, not
+	# a replacement teleport. Measure the actual transition against the transform
+	# captured by LocalMatterSpace at its commit boundary.
 	var pre_freeze_local := dynamic_body.to_local(actor.global_position)
 	var pre_freeze_world := actor.global_position
 	var transfers_before_freeze := actor.observed_support_transfers
 	var acquisitions_before_freeze := actor.observed_ground_acquisitions
 	_check(space.request_static(), "I2 queues dynamic→static provider replacement while actor is grounded")
 	await space.provider_transition_committed
+	var freeze_report := space.get_last_transition_report()
+	var freeze_previous_transform: Transform3D = freeze_report["previous_transform"]
+	var freeze_current_transform: Transform3D = freeze_report["current_transform"]
+	var freeze_transaction_expected_world := freeze_previous_transform * pre_freeze_local
+	var freeze_phase_advance := freeze_transaction_expected_world.distance_to(pre_freeze_world)
+	var provider_freeze_pose_jump := _transform_gap(freeze_previous_transform, freeze_current_transform)
+
 	var final_provider := space.get_active_provider()
 	_check(final_provider is MatterRepresentation, "I2 installs fresh static provider")
 	if not final_provider is MatterRepresentation:
@@ -143,14 +156,15 @@ func _run() -> void:
 	await process_frame
 	var freeze_local := final_static.to_local(actor.global_position)
 	var freeze_local_jump := freeze_local.distance_to(pre_freeze_local)
-	var freeze_world_jump := actor.global_position.distance_to(pre_freeze_world)
+	var freeze_transition_world_jump := actor.global_position.distance_to(freeze_transaction_expected_world)
 	_check(actor.grounded, "actor remains grounded through dynamic→static provider replacement")
 	_check(actor.support_space == space, "actor retains logical support Space through freeze")
 	_check(actor.support_body == final_static, "actor automatically resolves support to the fresh static provider")
 	_check(actor.observed_support_transfers == transfers_before_freeze + 1, "freeze records exactly one provider support transfer")
 	_check(actor.observed_ground_acquisitions == acquisitions_before_freeze, "freeze provider transfer is not a fresh contact acquisition")
+	_check(provider_freeze_pose_jump < 0.000001, "dynamic→static provider replacement itself preserves pose at commit")
 	_check(freeze_local_jump < 0.00001, "freeze preserves actor local support coordinate")
-	_check(freeze_world_jump < 0.00001, "freeze introduces no synchronous actor world-space teleport")
+	_check(freeze_transition_world_jump < 0.00001, "freeze provider transition introduces no actor world-space teleport at the transaction boundary")
 	_check(actor.observed_support_velocity.length() < 0.00001, "actor support velocity coherently becomes zero on static provider")
 	_check(space.get_instance_id() == logical_space_id, "entire I2 cycle preserves logical Space identity")
 	_check(final_static_id != dynamic_id and final_static_id != initial_static_id, "I2 traverses three distinct provider instances")
@@ -175,7 +189,7 @@ func _run() -> void:
 	_check(max_static_local_drift < 0.02, "actor remains locally stable on final static provider")
 
 	print(
-		"LIFECYCLE_ACTOR_PROVIDER_TRANSITION_METRIC logical_space_id=%d initial_static_id=%d dynamic_id=%d final_static_id=%d activation_local_jump=%.10f activation_world_jump=%.10f max_dynamic_local_drift=%.10f dynamic_floor_loss=%d wrong_dynamic_support=%d linear_velocity_error=%.10f angular_velocity_error=%.10f freeze_local_jump=%.10f freeze_world_jump=%.10f max_static_local_drift=%.10f static_floor_loss=%d wrong_static_support=%d support_transfers=%d contact_acquisitions=%d"
+		"LIFECYCLE_ACTOR_PROVIDER_TRANSITION_METRIC logical_space_id=%d initial_static_id=%d dynamic_id=%d final_static_id=%d activation_local_jump=%.10f activation_world_jump=%.10f max_dynamic_local_drift=%.10f dynamic_floor_loss=%d wrong_dynamic_support=%d linear_velocity_error=%.10f angular_velocity_error=%.10f freeze_phase_advance=%.10f provider_freeze_pose_jump=%.10f freeze_local_jump=%.10f freeze_transition_world_jump=%.10f max_static_local_drift=%.10f static_floor_loss=%d wrong_static_support=%d support_transfers=%d contact_acquisitions=%d"
 		% [
 			logical_space_id,
 			initial_static_id,
@@ -188,8 +202,10 @@ func _run() -> void:
 			wrong_dynamic_support_frames,
 			max_linear_velocity_error,
 			max_angular_velocity_error,
+			freeze_phase_advance,
+			provider_freeze_pose_jump,
 			freeze_local_jump,
-			freeze_world_jump,
+			freeze_transition_world_jump,
 			max_static_local_drift,
 			static_floor_loss,
 			wrong_static_support_frames,
@@ -199,6 +215,14 @@ func _run() -> void:
 	)
 
 	_finish(world)
+
+
+func _transform_gap(a: Transform3D, b: Transform3D) -> float:
+	return max(a.origin.distance_to(b.origin), _basis_axis_error(a.basis.orthonormalized(), b.basis.orthonormalized()))
+
+
+func _basis_axis_error(a: Basis, b: Basis) -> float:
+	return max(a.x.distance_to(b.x), max(a.y.distance_to(b.y), a.z.distance_to(b.z)))
 
 
 func _finish(world: Node3D) -> void:
