@@ -10,7 +10,7 @@ Long-term product pressure remains deliberately simple:
 
 > walk → dig/build → activate a local Space → ride it → edit it while moving → use a simple mechanism → understand/debug the consequences.
 
-This is recurring pressure, not the current sprint goal.
+This is recurring pressure, not a product-sprint commitment.
 
 ## Decision rules
 
@@ -52,148 +52,145 @@ Bounded stateful partition↔contraction symmetry is sufficiently exercised. Mor
 
 R0 measured the intentionally naive reference representation and ranked one-node/one-shape-per-occupied-cell collision materialization as the dominant first scale pressure.
 
-At `14³` in the final control rerun:
-
-- dense: `2744` shapes, static init ~`1.88 s`, dynamic init ~`1.52 s`, full mutation/rebuild ~`2.43 s`,
-- shell: `1016` shapes, full mutation/rebuild ~`340 ms`,
-- skeleton: `40` shapes, full mutation/rebuild ~`8 ms`,
-- topology extraction remained tens of milliseconds rather than seconds,
-- disconnected split cost was dominated by successor/provider construction rather than split preflight.
-
 Evidence: `docs/evidence/r0-representation-scale-baseline.md`.
 
 ## R1 — exact merged-cuboid collision: **FULL PASS / CLOSED**
 
 R1 directly challenged the R0 bottleneck with an exact deterministic cuboid compiler while retaining `PER_CELL` as a reference mode.
 
-Final `14³` A/B result:
-
-- dense: `2744 → 1` shapes; static ~`76×`, dynamic ~`57×`, full rebuild ~`87×` faster,
-- shell: `1016 → 6` shapes; static ~`18×`, dynamic ~`13×`, full rebuild ~`20×` faster,
-- skeleton: `40 → 5` shapes; only ~`1.1×` faster, strengthening the diagnosis that R1 removed the shape-materialization pressure rather than producing an unrelated universal speedup,
-- exact occupied coverage remained error-free in every A/B case,
-- merged collision survived provider replacement, live occupancy mutation, solver mass properties, actor support and shared topology succession,
-- `MERGED_CUBOIDS` is now the current provider default; collider count is explicitly not Matter identity.
-
-The full post-promotion ratchet passed at commit `286758a9cdf895e569f8cbb1b300602005ae94e2`, workflow run `#182` / `34899262822`.
+Within the tested range it reduced dense/shell collider counts and provider/rebuild costs by orders of magnitude in the strongest cases while preserving Matter authority, Matter-derived mass properties and lifecycle/topology semantics. `MERGED_CUBOIDS` is now the provider default; collider count is explicitly not Matter identity.
 
 Evidence: `docs/evidence/r1-exact-collision-aggregation.md`.
 
+## R2P — post-aggregation profile: **PASS / CLOSED**
+
+R2P re-profiled the promoted merged-collision path instead of inheriting R0's old ranking.
+
+It establishes that:
+
+- engine installation of the now-small merged shape set is no longer the dominant update cost,
+- full visual mesh generation is the largest measured component in dense/shell provider rebuilds,
+- global cuboid compilation and Matter COM scans are also visible,
+- material-only and true occupancy edits currently pay almost identical whole-provider rebuild cost despite different implemented physical semantics,
+- split-commit economics improved enough that topology preflight/compaction/provider reconstruction are now visible instead of hidden by thousands of collision shapes.
+
+Evidence: `docs/evidence/r2p-post-aggregation-profile.md`.
+
+## R2A — bounded derived-region locality: **PASS AS CHALLENGER / NOT PROMOTED**
+
+R2A tested local derivation without changing runtime representation.
+
+It establishes that:
+
+- one logical Matter volume can preserve exact collision coverage and exposed mesh semantics while derivation work is partitioned into bounded update regions,
+- a one-cell edit can reduce derivation work by one to two orders of magnitude at larger tested extents,
+- naive fixed regions can simultaneously inflate dense/shell collider partitions by tens to hundreds of times relative to the global R1 compiler,
+- therefore **dirty/invalidation partition and final physical representation partition must not be assumed identical**.
+
+The fixed-region test mechanism is deliberately **not** promoted into `MatterRepresentation`/`ConstructBody`.
+
+Evidence: `docs/evidence/r2a-derived-region-locality.md`.
+
 ---
 
-# Active campaign — R2P post-aggregation profile / re-rank
+# Active campaign — P0 interactive consumer pressure
 
-R1 changed the cost structure enough that the R0 ranking is obsolete. Do not choose the next optimization from intuition or momentum.
+Representation research now has enough leverage to stop before becoming an architecture exercise.
+
+The current `lab/main.tscn` is useful lifecycle instrumentation, but it is still primarily a keyboard-driven representation/lifecycle console. It does not yet expose the north-star loop as an embodied experiment.
 
 ## Question
 
-After exact collision aggregation removes per-cell shape materialization, **what now dominates real provider rebuild, live edit and topology-transaction cost at representative local-Space sizes?**
+Can the currently defended substrate support a small coherent interactive loop in which a real actor **stands on, moves across, edits and transitions one logical local Space** without test-local orchestration or hidden semantic shortcuts?
 
-## Why profile before another mechanism
+## P0 target experience
 
-The promoted runtime still rebuilds whole derived representations, but several distinct costs are currently collapsed into one timing:
+The minimum pressure loop is:
 
-- full-volume Matter scans,
-- visual mesh generation,
-- merged-cuboid compilation,
-- engine collision-node/shape materialization,
-- dynamic mass/COM/solver refresh,
-- provider teardown/reconstruction,
-- topology extraction,
-- split successor construction.
+> walk on/around Matter → inspect/select a local cell → remove/place Matter → activate the same logical Space → remain supported/ride it → edit while moving → freeze it → inspect what happened.
 
-R1 shows that a dense `14³` full rebuild is now on the order of `27 ms`, not seconds. That may still matter for interactive editing, but it is no longer self-evident that dirty collision is the highest-leverage next task.
+A simple mechanism is deliberately optional for P0. Mechanics already has strong bounded evidence; forcing a joint into the first slice would add scope before the actor/edit/lifecycle composition itself is proven usable.
 
-## R2P measurement requirements
+## P0 implementation discipline
 
-Measure under the promoted `MERGED_CUBOIDS` path across controlled dense/shell/skeleton cases and at least one disconnected split case:
+Prefer composition of existing defended systems over new architecture:
 
-- logical occupied-count / scan cost,
-- visual mesh generation cost,
-- merged-cuboid compilation cost,
-- engine collision shape/node installation cost,
-- dynamic provider full rebuild cost,
-- static provider full rebuild cost,
-- live **occupancy-changing** edit cost,
-- retained-Matter/material-only edit cost separately,
-- topology extraction cost,
-- shared split preflight + commit cost,
-- resulting shape counts / mesh vertices / successor shapes.
+- reuse `LocalMatterSpace` as the logical owner,
+- reuse `FrameProbeCharacter` support-frame semantics rather than falling back to stock `CharacterBody3D` rigid interaction,
+- keep edits routed through shared `LocalMatterSpace.mutate_cell`,
+- keep static↔dynamic transitions on the shared lifecycle path,
+- keep the current merged-cuboid provider default,
+- add only the minimum interactive input/camera/selection/feedback required to exercise the loop.
 
-Where practical, use medians over repeated samples and preserve the same controlled patterns used by R0/R1 for causal comparability.
+Do **not** build a general player framework, inventory, block catalogue, chunk manager, world manager, save system or production UI for P0.
 
-## Critical edit-semantics distinction
+## P0 evidence requirements
 
-A retained-Matter material-ID edit is not automatically a physical occupancy edit.
+The slice is useful when an Owner can exercise it directly and the runtime can report at least:
 
-Current physical semantics do not yet define per-cell density/friction/material boundaries. Therefore an expensive full collision rebuild triggered by a material-only edit must be reported as **current execution behavior**, not evidence that future collision semantics require that rebuild.
+- actor support Space/provider and grounded state,
+- target cell / operation result,
+- Matter revision / occupied count / lineage behavior,
+- provider kind and provider transition count,
+- edit rebuild timing,
+- collision-shape count,
+- obvious discontinuities or support loss through activate/edit/freeze.
 
-At least one R2P occupancy-changing case must add/remove Matter so the physical representation genuinely changes.
+Automated smoke evidence should cover the new shared interactive path where practical, but P0 is the first campaign where **Owner interaction quality is itself material evidence**.
 
-## R2P outcome / decision rules
+## P0 decision outcomes
 
-R2P is a measurement campaign. It does not pass by making the runtime faster.
+### If the loop is coherent and editing latency is acceptable
 
-It succeeds when the next bottleneck is ranked strongly enough to choose among these possibilities:
+Do not optimize representation by inertia. Use Owner feedback to choose the next semantic pressure: volumetric actor behavior, finite force exchange, world transfer/reintegration, a simple mechanism, or richer editing.
 
-### Candidate R2A — edit-local / dirty rebuild
+### If editing latency materially harms the loop
 
-Enter if:
+Return to representation research with R2A as measured evidence. Challenge an update-local mechanism that does **not** blindly equate dirty regions with final collision partitions.
 
-- whole-provider rebuild remains materially costly at relevant sizes,
-- most cost can be avoided for spatially local edits,
-- the exact representation can be updated locally without disproportionate complexity or semantic risk.
+### If actor limitations dominate
 
-### Candidate R2B — bounded region/chunk representation
+Enter the volumetric/finite-force actor frontier rather than hiding the problem with movement hacks.
 
-Enter if:
+### If lifecycle/provider transitions dominate
 
-- global greedy cuboid partitioning makes true local updates structurally awkward,
-- bounded representation regions offer cleaner invalidation/update locality,
-- region boundaries can remain derived implementation rather than gameplay identity.
+Re-open the exact failing lifecycle invariant instead of building around it in the LAB.
 
-### Candidate R2C — visual/update separation
+### If the experiment feels technically correct but awkward/uninteresting
 
-Enter if:
+Treat that as evidence. Revisit interaction semantics and product pressure before expanding infrastructure.
 
-- mesh generation becomes dominant while physical collision is already cheap,
-- visual and physical optimal update partitions materially diverge.
+## P0 non-goals
 
-### Stop representation optimization and return to consumer pressure
-
-Prefer this if:
-
-- representative local-Space rebuild/edit costs are already adequate for the next interactive experiment,
-- remaining optimization would have lower information value than exercising volumetric interaction, finite force exchange, world transfer or the Owner-facing slice.
-
-### Re-rank elsewhere
-
-If topology transaction, actor/controller limitations, world transfer or another subsystem now dominates the next meaningful consumer, follow that evidence instead of forcing an R2 representation project.
-
-## R2P non-goals
-
-- implementing dirty regions,
-- introducing a chunk/world manager,
-- asynchronous job systems,
-- native Jolt compounds,
-- convex decomposition,
-- LOD/distance modes,
-- streaming architecture,
-- production material boundaries.
-
-Those remain candidate mechanisms until R2P evidence selects one.
+- final game controls,
+- production first-person controller,
+- content pipeline,
+- inventory/crafting,
+- world streaming,
+- network/multiplayer,
+- persistence,
+- arbitrary canonical-world reintegration,
+- curved/planetary Matter,
+- general vehicle system,
+- architectural commitment to R2A fixed regions.
 
 ---
 
-# Decision frontiers after R2P
+# Decision frontiers after / during P0
 
 ## A — volumetric actor + finite force exchange
 
-Entry trigger: an interactive/playable consumer needs walls/slopes/steps/ceilings or meaningful actor mass/reaction forces.
+Entry trigger: the interactive consumer needs walls/slopes/steps/ceilings or meaningful actor mass/reaction forces.
 
 ## W — canonical world extraction/reintegration
 
 Entry trigger: a real world consumer needs transfer between canonical lattice and independent local Space.
+
+## R2 — update-local representation follow-up
+
+Entry trigger: P0 or another concrete consumer demonstrates that whole-volume edit/rebuild cost materially limits the intended interaction.
+
+Constraint: preserve R2A's distinction between update locality and final physical partition; do not promote fixed region collision topology by default.
 
 ## P — persistence / durable logical identity
 
@@ -229,18 +226,6 @@ Entry trigger: the world substrate naturally hosts rich moving editable mechanis
 
 ---
 
-# Playability pressure frontier
-
-After sufficient lifecycle + representation + actor evidence, schedule a deliberately small Owner-facing slice:
-
-> walk → dig/place → activate/freeze a local Space → ride/build on it → use one simple mechanism → inspect/debug consequences.
-
-Purpose: test emergent freedom, feedback and comprehensibility — not content production.
-
-The slice should not be rushed merely because R1 passed. Conversely, representation research should stop when it is good enough to support a higher-information interactive challenge.
-
----
-
 # CI / evidence governance
 
 Separate tests conceptually into:
@@ -252,6 +237,8 @@ Separate tests conceptually into:
 Retiring an old probe from every-push CI does not erase evidence. Old green probes must not fossilize obsolete implementation details.
 
 The R1 promotion produced concrete examples: historical `shape count == occupied cells` assertions were test debt after the representation changed. The correct invariant is truth/representation coherence, not preservation of a superseded collider topology.
+
+R2A also showed why current-campaign challengers should remain separable from promoted runtime invariants: a large local timing win can still expose a serious representation tradeoff and therefore remain evidence without becoming architecture.
 
 ---
 
