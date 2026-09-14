@@ -58,51 +58,79 @@ Important host truth: velocity properties remained visible throughout freeze and
 
 Evidence: `docs/evidence/i0a-freeze-unfreeze-semantics.md`.
 
+## I0B / I1 baseline — logical Space + real provider replacement: **FULL PASS / INTEGRATED BASELINE CLOSED**
+
+One persistent logical `LocalMatterSpace` survived:
+
+`MatterRepresentation → ConstructBody → MatterRepresentation`
+
+while preserving one authoritative Matter + lineage pair, exactly one live provider, world-space continuity, dynamic motion/rotation, live edits, arbitrary-orientation freeze-to-static and post-freeze editing.
+
+The concrete provider IDs/classes changed; the logical Space ID did not. This is the first integrated evidence for **logical Space ≠ current engine provider**.
+
+Important timing refinement: a provider installed at `SceneTree.physics_frame` can participate in the upcoming PhysicsServer step even though its `RigidBody3D` node will not expose that solver transform until the next `PhysicsServer3D.sync()`. Same-step PhysicsServer truth and scene-node visibility are distinct observation layers.
+
+Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`.
+
+**STOP applied:** do not add another same-shaped provider replacement probe merely because I0B passed.
+
 ---
 
-# Active campaign — integrated local-Space lifecycle
+# Active campaign — independent interactive consumer
 
-Only this section is ordered. Everything below it is a decision frontier, not a queue.
+Only this section is ordered. Everything below it is a decision frontier or later integrated campaign, not an automatic queue.
 
-## I0B / I1 — logical Space + real representation replacement
+## LAB — make the shared lifecycle path visible and interactive
 
-**Question:** can one persistent logical local Space survive `static representation → dynamic representation → static representation` while representation/body identity changes?
+**Re-rank decision:** LAB now has higher information value than immediately stacking actor-transition complexity on top of a runtime path that has only one automated integrated consumer.
 
-**Why now:** I0A isolated host-mode behavior. The next uncertainty is stronger and architectural: logical identity and authority continuity when the concrete provider itself changes.
+**Question:** can the exact same `LocalMatterSpace` lifecycle/mutation path be exercised by an interactive visual workbench and remain understandable to a human observer?
 
-**Working hypothesis:** a persistent logical frame/Space identity survives while exactly one active provider owns current pose/velocity authority. This is not yet a prescribed final class design.
+**Why now:**
 
-**Minimal implementation constraint:** reuse the existing static `MatterRepresentation` and dynamic `ConstructBody`. Add only enough shared runtime to own one logical Matter+lineage state, select exactly one current provider, and commit provider replacement on the already defended pre-PhysicsServer boundary. Do not build a general Space manager/framework before this consumer requires it.
+- I0B established the automated integrated baseline.
+- A second independent consumer can move the lifecycle path toward reusable-substrate evidence.
+- Interactive inspection can expose authority/timing/visibility mistakes that scripted assertions hide.
+- It gives early ergonomics/product pressure without prematurely chasing the full gameplay slice.
 
-**Required evidence:**
+**Required behavior:**
 
-- one authoritative Matter + lineage state,
-- one logical Space/frame identity across host replacement,
-- no double ownership during commit,
-- static and dynamic providers are genuinely different engine instances/physics representations,
-- representation-changing commit occurs on the defended pre-PhysicsServer-step boundary,
-- activation preserves world-space cell centers within numerical tolerance,
-- the new dynamic provider participates in the upcoming solver tick rather than losing one phase,
-- dynamic translation/rotation and live Matter edits survive later freeze-to-static replacement,
-- static replacement preserves arbitrary current orientation rather than snapping to a world lattice,
-- post-freeze Space remains editable,
-- the test acts primarily as a client of the shared lifecycle path rather than implementing replacement orchestration itself.
+- start with one visible static local Space,
+- visible controls for static→dynamic activation and dynamic→static freeze/replacement,
+- visible controls for at least one Matter remove/create/material edit through `LocalMatterSpace.mutate_cell`,
+- dynamic provider actually moves/rotates after activation,
+- freeze preserves the current arbitrary pose,
+- edits work both while dynamic and after returning static,
+- debug presentation shows at minimum:
+  - persistent logical Space identity,
+  - current provider kind,
+  - current provider instance ID,
+  - occupied Matter count,
+  - a small lineage/mutation indicator,
+  - whether a provider transition is pending,
+- visual/debug state must read from the shared runtime path, not duplicate hidden test truth.
 
-**Non-goals:** canonical-world reintegration, bake/resample, production persistence, scalable collision representation, actor transition semantics.
+**Interaction goal:** low ceremony. Keyboard/buttons are sufficient; no polished UX, inventory, character controller or game rules are required.
 
-**Falsification trigger:** if authority becomes ambiguous, providers must duplicate logical truth, or a clean transition requires test-local hidden compensation, revise the Space/frame model rather than hiding ambiguity behind a manager class.
+**Non-goals:**
 
-**STOP / decision:** once one bounded static→dynamic→static replacement cycle is defended through shared runtime, re-evaluate whether LAB or another adversarial lifecycle challenger has higher information value than adding lifecycle features.
+- the long-term walk/dig/build/ride gameplay slice,
+- polished world art/UI,
+- actor provider handoff,
+- scalable collision,
+- mechanisms,
+- canonical-world extraction,
+- save/load.
 
-## LAB — restore the interactive lab as a real consumer
+**PASS is not purely CI:** automated parse/smoke checks can protect the lab, but this campaign ultimately needs an Owner-visible run/screenshot/manual interaction verdict before it can claim reusable-substrate or usability evidence.
 
-**Question:** can the same I0/I1 execution path be exercised interactively and inspected visually?
+**STOP / decision:** once the LAB demonstrably uses the same runtime path, pause and re-rank. Do not automatically turn it into a game prototype.
 
-**Required behavior:** edit → activate → move/rotate → live-edit → freeze, with visible frame/provider/lineage/debug state.
+---
 
-**Rule:** important reusable runtime behavior should be exercised by both automated adversarial tests and the interactive lab through the same path.
+# Next integrated campaigns — provisional order after LAB
 
-**Non-goal:** game content or polished UX.
+These remain candidates until LAB evidence is reviewed.
 
 ## I2 — actor continuity through provider transition
 
@@ -115,6 +143,7 @@ Only this section is ordered. Everything below it is a decision frontier, not a 
 - no teleport,
 - grounded state preserved where geometrically valid,
 - support velocity changes coherently as motion begins/ends,
+- solver-state vs synchronized-node-state timing is handled explicitly,
 - no return of uncontrolled kinematic actor→rigid-body impulse semantics.
 
 **Non-goal:** production volumetric controller.
@@ -128,15 +157,15 @@ Only this section is ordered. Everything below it is a decision frontier, not a 
 - retained/destroyed/created Matter identity handling,
 - compact local-coordinate mapping,
 - physical-state/velocity-field inheritance,
-- pre-step replacement timing,
-- actor support succession,
+- defended lifecycle timing,
+- actor support succession if I2 has already earned reuse,
 - at most one deliberately chosen mechanical relation if it increases information value.
 
 **PASS condition:** the new test is primarily an adversarial client of shared runtime execution rather than the place where topology behavior is implemented.
 
 ## Re-audit gate
 
-After I3, stop and re-rank all frontiers. Do not assume representation scaling is still next if integrated evidence reveals a more fundamental risk.
+After the LAB and before/after substantial I2/I3 work, re-rank all frontiers. Do not assume the written sequence remains optimal if interactive evidence reveals a more fundamental risk.
 
 ---
 
@@ -148,7 +177,7 @@ These are **not ordered commitments**. Each has an entry trigger.
 
 **Known pressure:** box-per-cell collision is already rejected as a scalable dynamic representation.
 
-**Entry trigger:** I1 establishes actual lifecycle/update granularity.
+**Entry trigger:** integrated lifecycle is coherent enough that update granularity and real consumer pressure can be measured rather than guessed.
 
 Potential questions:
 
@@ -172,7 +201,7 @@ Questions:
 
 ## W — canonical world extraction/reintegration
 
-**Entry trigger:** local-Space lifecycle is coherent.
+**Entry trigger:** local-Space lifecycle is coherent and a real world consumer needs transfer to/from a canonical lattice.
 
 ### W0 — lossless lattice-compatible transfer
 
@@ -236,13 +265,13 @@ Current architecture should avoid unnecessary impossibility, but should not impl
 
 # Playability pressure frontier
 
-After sufficient integrated lifecycle + representation evidence, schedule a deliberately small Owner-facing slice:
+After sufficient integrated lifecycle + representation + actor evidence, schedule a deliberately small Owner-facing gameplay slice:
 
 > walk → dig/place → activate/freeze a local Space → ride/build on it → use one simple mechanism → inspect/debug consequences.
 
 Its purpose is **not** content production. It asks whether system composition produces the emergent freedom, feedback and comprehensibility that justify the long-term direction.
 
-Do not rush to this slice before the substrate can teach us something useful through it; do not postpone it indefinitely either.
+The current LAB is deliberately earlier and narrower: a research workbench that keeps this north star visible without pretending the substrate is ready for the slice.
 
 ---
 
@@ -267,6 +296,7 @@ Replan immediately if any of the following occur:
 - logical Matter/lineage authority becomes ambiguous,
 - frame pose/velocity acquires two simultaneous authorities,
 - provider replacement cannot be made continuous without hidden compensation,
+- PhysicsServer truth and synchronized scene-node state are conflated in a way that breaks handoff/debug semantics,
 - integrated consumer requires repeated test-local orchestration that should have become shared runtime,
 - scalable representation needs contradict lifecycle assumptions,
 - Owner/playability pressure shows technically correct semantics are awkward or uninteresting,
