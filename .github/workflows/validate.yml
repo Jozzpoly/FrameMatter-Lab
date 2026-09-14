@@ -72,3 +72,6 @@ jobs:
 
       - name: Run topology inelastic merge probe
         run: godot --headless --path . --script res://tests/topology_inelastic_merge_probe.gd
+
+      - name: Run topology free split divergence probe
+        run: godot --headless --path . --script res://tests/topology_free_split_divergence_probe.gd
