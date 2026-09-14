@@ -87,3 +87,6 @@ jobs:
 
       - name: Run topology lineage challenger
         run: godot --headless --path . --script res://tests/topology_lineage_probe.gd
+
+      - name: Run topology lineage campaign
+        run: godot --headless --path . --script res://tests/topology_lineage_campaign.gd
