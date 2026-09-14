@@ -1,8 +1,8 @@
 class_name LocalMatterSpace
 extends Node
 
-# Experimental I0B/I1 lifecycle substrate. This is intentionally a single-Space
-# owner, not a general Space manager or final persistence/data-model API.
+# Experimental integrated lifecycle substrate. This is intentionally a local
+# single-Space owner, not a general Space manager or final persistence model.
 
 enum ProviderKind {
 	NONE,
@@ -11,6 +11,7 @@ enum ProviderKind {
 }
 
 signal provider_transition_committed(previous_provider_id: int, current_provider_id: int, provider_kind: int)
+signal topology_split_committed(result)
 
 var volume: CellVolume
 var lineage: MatterLineageMap
@@ -26,8 +27,11 @@ var _active_provider: Node3D
 var _pending_provider_kind := ProviderKind.NONE
 var _pending_linear_velocity := Vector3.ZERO
 var _pending_angular_velocity := Vector3.ZERO
+var _pending_connected_component_split := false
 var _last_transition_report: Dictionary = {}
+var _last_split_result: LocalMatterSplitResult
 var _physics_boundary_connected := false
+var _retired := false
 
 
 func initialize_static(
@@ -35,19 +39,29 @@ func initialize_static(
 	new_lineage: MatterLineageMap,
 	world_transform: Transform3D
 ) -> void:
-	assert(volume == null)
-	assert(new_volume != null)
-	assert(new_lineage != null)
-	assert(new_lineage.size == new_volume.size)
-	volume = new_volume
-	lineage = new_lineage
+	_initialize_authority(new_volume, new_lineage)
 	_active_provider = _create_static_provider(world_transform)
 	_provider_kind = ProviderKind.STATIC
 	_connect_physics_boundary()
 
 
+func initialize_dynamic(
+	new_volume: CellVolume,
+	new_lineage: MatterLineageMap,
+	world_transform: Transform3D,
+	linear_velocity: Vector3,
+	angular_velocity: Vector3
+) -> void:
+	_initialize_authority(new_volume, new_lineage)
+	_active_provider = _create_dynamic_provider(world_transform, linear_velocity, angular_velocity)
+	_provider_kind = ProviderKind.DYNAMIC
+	_connect_physics_boundary()
+
+
 func request_dynamic(linear_velocity: Vector3, angular_velocity: Vector3) -> bool:
-	if _active_provider == null or _provider_kind == ProviderKind.DYNAMIC or _pending_provider_kind != ProviderKind.NONE:
+	if _retired or _active_provider == null:
+		return false
+	if _provider_kind == ProviderKind.DYNAMIC or _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split:
 		return false
 	_pending_provider_kind = ProviderKind.DYNAMIC
 	_pending_linear_velocity = linear_velocity
@@ -56,14 +70,30 @@ func request_dynamic(linear_velocity: Vector3, angular_velocity: Vector3) -> boo
 
 
 func request_static() -> bool:
-	if _active_provider == null or _provider_kind == ProviderKind.STATIC or _pending_provider_kind != ProviderKind.NONE:
+	if _retired or _active_provider == null:
+		return false
+	if _provider_kind == ProviderKind.STATIC or _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split:
 		return false
 	_pending_provider_kind = ProviderKind.STATIC
 	return true
 
 
+func request_connected_component_split() -> bool:
+	if _retired or _active_provider == null or not (_active_provider is ConstructBody):
+		return false
+	if _provider_kind != ProviderKind.DYNAMIC or _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split:
+		return false
+	if MatterTopology.extract_connected_components(volume).size() <= 1:
+		return false
+	_pending_connected_component_split = true
+	return true
+
+
 func mutate_cell(cell: Vector3i, material_id: int, created_lineage_token: int = MatterLineageMap.NONE) -> bool:
-	assert(volume != null and lineage != null)
+	if _retired or volume == null or lineage == null or _active_provider == null:
+		return false
+	if _pending_connected_component_split:
+		return false
 	if not volume.in_bounds(cell):
 		return false
 	var previous_material: int = volume.get_cell(cell)
@@ -105,8 +135,30 @@ func get_last_transition_report() -> Dictionary:
 	return _last_transition_report.duplicate(true)
 
 
+func get_last_split_result() -> LocalMatterSplitResult:
+	return _last_split_result
+
+
 func is_transition_pending() -> bool:
 	return _pending_provider_kind != ProviderKind.NONE
+
+
+func is_topology_split_pending() -> bool:
+	return _pending_connected_component_split
+
+
+func is_retired() -> bool:
+	return _retired
+
+
+func _initialize_authority(new_volume: CellVolume, new_lineage: MatterLineageMap) -> void:
+	assert(not _retired)
+	assert(volume == null)
+	assert(new_volume != null)
+	assert(new_lineage != null)
+	assert(new_lineage.size == new_volume.size)
+	volume = new_volume
+	lineage = new_lineage
 
 
 func _connect_physics_boundary() -> void:
@@ -121,12 +173,15 @@ func _connect_physics_boundary() -> void:
 
 
 func _on_physics_frame() -> void:
-	# SceneTree.physics_frame is emitted before node _physics_process callbacks and
-	# before the PhysicsServer step. Fresh replacement RIDs must be installed here,
-	# not in _physics_process, if they are to participate in the upcoming solver tick.
-	if _pending_provider_kind == ProviderKind.NONE:
+	# SceneTree.physics_frame is emitted after PhysicsServer sync but before node
+	# _physics_process callbacks and before the upcoming PhysicsServer step.
+	if _retired:
 		return
-	_commit_pending_transition()
+	if _pending_connected_component_split:
+		_commit_connected_component_split()
+		return
+	if _pending_provider_kind != ProviderKind.NONE:
+		_commit_pending_transition()
 
 
 func _commit_pending_transition() -> void:
@@ -181,6 +236,120 @@ func _commit_pending_transition() -> void:
 	_pending_linear_velocity = Vector3.ZERO
 	_pending_angular_velocity = Vector3.ZERO
 	provider_transition_committed.emit(previous_id, current_id, target_kind)
+
+
+func _commit_connected_component_split() -> void:
+	assert(_active_provider is ConstructBody)
+	var source_body := _active_provider as ConstructBody
+	var components: Array[CellVolume] = MatterTopology.extract_connected_components(volume)
+	assert(components.size() > 1)
+
+	# Snapshot the synchronized source frame/velocity field before retiring its
+	# concrete provider. Successors are derived entirely from this transaction
+	# boundary, never from later solver observations.
+	var source_provider_id := source_body.get_instance_id()
+	var source_transform := source_body.global_transform
+	var source_linear := source_body.linear_velocity
+	var source_angular := source_body.angular_velocity
+	var source_com_world := source_transform * source_body.matter_center_of_mass_local
+	var parent_node := get_parent()
+	assert(parent_node != null)
+
+	var successor_specs: Array = []
+	for component in components:
+		var compact_info: Dictionary = MatterTopology.compact_volume(component)
+		var source_origin: Vector3i = compact_info["origin"]
+		var compact_volume: CellVolume = compact_info["volume"]
+		var compact_lineage := _compact_lineage(component, source_origin, compact_volume.size)
+		var successor_transform := source_transform * Transform3D(Basis.IDENTITY, Vector3(source_origin))
+		var successor_com_local := MatterTopology.center_of_mass_local(compact_volume)
+		var successor_com_world := successor_transform * successor_com_local
+		var inherited_linear := _velocity_at_point(
+			source_linear,
+			source_angular,
+			source_com_world,
+			successor_com_world
+		)
+		successor_specs.append({
+			"component": component,
+			"source_origin": source_origin,
+			"volume": compact_volume,
+			"lineage": compact_lineage,
+			"transform": successor_transform,
+			"linear_velocity": inherited_linear,
+			"angular_velocity": source_angular,
+		})
+
+	var result := LocalMatterSplitResult.new()
+	result.source_space = self
+	result.source_provider_id = source_provider_id
+	result.source_transform = source_transform
+	result.source_linear_velocity = source_linear
+	result.source_angular_velocity = source_angular
+	result.source_com_world = source_com_world
+
+	# No live source provider remains while successor providers are installed.
+	source_body.free()
+	_active_provider = null
+	_provider_kind = ProviderKind.NONE
+	_pending_connected_component_split = false
+	_retired = true
+	assert(get_provider_node_count() == 0)
+
+	for index in range(successor_specs.size()):
+		var spec: Dictionary = successor_specs[index]
+		var successor := LocalMatterSpace.new()
+		successor.name = "%s_Successor_%d" % [name, index]
+		_copy_runtime_configuration_to(successor)
+		parent_node.add_child(successor)
+		successor.initialize_dynamic(
+			spec["volume"],
+			spec["lineage"],
+			spec["transform"],
+			spec["linear_velocity"],
+			spec["angular_velocity"]
+		)
+		result.successors.append(successor)
+		result.source_origins.append(spec["source_origin"])
+		result.source_components.append(spec["component"])
+
+	# The retired source keeps no live Matter authority. The transaction result
+	# and successor Spaces carry the mappings/evidence needed by dependents.
+	volume = null
+	lineage = null
+	_last_split_result = result
+	topology_split_committed.emit(result)
+
+
+func _compact_lineage(component: CellVolume, source_origin: Vector3i, compact_size: Vector3i) -> MatterLineageMap:
+	var compact_lineage := MatterLineageMap.new(compact_size)
+	for z in range(component.size.z):
+		for y in range(component.size.y):
+			for x in range(component.size.x):
+				var source_cell := Vector3i(x, y, z)
+				if component.get_cell(source_cell) == CellVolume.EMPTY:
+					continue
+				var lineage_token := lineage.get_lineage(source_cell)
+				assert(lineage_token != MatterLineageMap.NONE)
+				compact_lineage.set_lineage(source_cell - source_origin, lineage_token)
+	return compact_lineage
+
+
+func _copy_runtime_configuration_to(successor: LocalMatterSpace) -> void:
+	successor.mass_per_cell = mass_per_cell
+	successor.dynamic_gravity_scale = dynamic_gravity_scale
+	successor.dynamic_linear_damp = dynamic_linear_damp
+	successor.dynamic_angular_damp = dynamic_angular_damp
+	successor.dynamic_can_sleep = dynamic_can_sleep
+
+
+func _velocity_at_point(
+	linear_velocity: Vector3,
+	angular_velocity: Vector3,
+	com_world: Vector3,
+	point_world: Vector3
+) -> Vector3:
+	return linear_velocity + angular_velocity.cross(point_world - com_world)
 
 
 func _create_static_provider(world_transform: Transform3D) -> MatterRepresentation:
