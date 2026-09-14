@@ -57,9 +57,10 @@ func _run() -> void:
 	var removed_expected_com := _expected_com(volume)
 	var removed_solver_com := construct.observed_center_of_mass_local
 	var removed_inverse_inertia := construct.observed_inverse_inertia
+	var removed_expected_shapes := CellCollisionBoxer.build_boxes(volume, construct.collision_mode).size()
 
 	_check(volume.revision == initial_revision + 1, "Matter revision advances for live removal")
-	_check(construct.get_collision_shape_count() == 4, "live removal rebuilds collision shape count")
+	_check(construct.get_collision_shape_count() == removed_expected_shapes, "live removal rebuilds collision from Matter through the active collision compiler")
 	_check(construct.mass == 4.0, "live removal refreshes body mass")
 	_check(abs(construct.observed_inverse_mass - 0.25) < 0.0001, "solver sees refreshed inverse mass after removal")
 	_check(removed_solver_com.distance_to(removed_expected_com) < 0.001, "solver COM follows analytic Matter COM after removal")
@@ -80,8 +81,9 @@ func _run() -> void:
 
 	var added_expected_com := _expected_com(volume)
 	var added_solver_com := construct.observed_center_of_mass_local
+	var added_expected_shapes := CellCollisionBoxer.build_boxes(volume, construct.collision_mode).size()
 
-	_check(construct.get_collision_shape_count() == 5, "live addition rebuilds collision shape count")
+	_check(construct.get_collision_shape_count() == added_expected_shapes, "live addition rebuilds collision from Matter through the active collision compiler")
 	_check(construct.mass == 5.0, "live addition refreshes body mass")
 	_check(abs(construct.observed_inverse_mass - 0.2) < 0.0001, "solver sees refreshed inverse mass after addition")
 	_check(added_solver_com.distance_to(added_expected_com) < 0.001, "solver COM follows analytic Matter COM after addition")
