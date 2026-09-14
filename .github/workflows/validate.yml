@@ -78,3 +78,6 @@ jobs:
 
       - name: Run topology actor inelastic merge probe
         run: godot --headless --path . --script res://tests/topology_actor_inelastic_merge_probe.gd
+
+      - name: Run topology round-trip campaign
+        run: godot --headless --path . --script res://tests/topology_roundtrip_campaign.gd
