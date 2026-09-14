@@ -85,8 +85,8 @@ func _run() -> void:
 	await physics_frame
 	var hinge_world_before: Transform3D = parent.global_transform * hinge_parent_local
 	_set_common_rigid_motion(parent, sibling, hinge_world_before.origin, common_anchor_velocity, common_angular)
-	var relative_speed_before := _relative_hinge_speed(parent, hinge_parent_local, sibling, hinge_sibling_local)
-	var relative_angle_before := abs(_signed_hinge_angle(parent, hinge_parent_local, sibling, hinge_sibling_local))
+	var relative_speed_before: float = _relative_hinge_speed(parent, hinge_parent_local, sibling, hinge_sibling_local)
+	var relative_angle_before: float = abs(_signed_hinge_angle(parent, hinge_parent_local, sibling, hinge_sibling_local))
 	_check(relative_speed_before < 0.001, "motor-limit succession starts from essentially zero relative hinge speed")
 	_check(relative_angle_before < 0.03, "motor-limit succession starts near the neutral hinge angle")
 
@@ -220,8 +220,8 @@ func _run() -> void:
 	for frame in range(POST_SPLIT_FRAMES):
 		await physics_frame
 		await process_frame
-		var angle := abs(_signed_hinge_angle(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local))
-		var relative_speed := _relative_hinge_speed(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local)
+		var angle: float = abs(_signed_hinge_angle(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local))
+		var relative_speed: float = _relative_hinge_speed(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local)
 		max_abs_angle = max(max_abs_angle, angle)
 		max_relative_speed = max(max_relative_speed, relative_speed)
 		max_anchor_gap = max(max_anchor_gap, _hinge_anchor_gap(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local))
@@ -231,10 +231,10 @@ func _run() -> void:
 			angle_after_30 = angle
 		_check(_finite_body_state(anchor_child) and _finite_body_state(sibling) and _finite_body_state(free_child), "stateful hinge succession remains numerically finite")
 
-	var final_angle := abs(_signed_hinge_angle(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local))
-	var final_relative_speed := _relative_hinge_speed(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local)
-	var final_anchor_gap := _hinge_anchor_gap(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local)
-	var final_axis_error := _hinge_axis_error(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local)
+	var final_angle: float = abs(_signed_hinge_angle(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local))
+	var final_relative_speed: float = _relative_hinge_speed(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local)
+	var final_anchor_gap: float = _hinge_anchor_gap(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local)
+	var final_axis_error: float = _hinge_axis_error(anchor_child, mapped_hinge_local, sibling, hinge_sibling_local)
 
 	# The motor must create substantial new relative rotation after succession.
 	# The symmetric limit must then prevent continuous spin and arrest the motor at
@@ -327,7 +327,7 @@ func _signed_hinge_angle(body_a: ConstructBody, frame_a: Transform3D, body_b: Co
 	var normal_a := (body_a.global_basis * frame_a.basis.x).normalized()
 	var normal_b := (body_b.global_basis * frame_b.basis.x).normalized()
 	var sin_term := axis.dot(normal_a.cross(normal_b))
-	var cos_term := clamp(normal_a.dot(normal_b), -1.0, 1.0)
+	var cos_term: float = clampf(normal_a.dot(normal_b), -1.0, 1.0)
 	return atan2(sin_term, cos_term)
 
 
