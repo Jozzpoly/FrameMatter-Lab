@@ -170,6 +170,10 @@ func _rigid_velocity_at_point(body: Node3D, world_point: Vector3) -> Vector3:
 	var rigid: RigidBody3D = body as RigidBody3D
 	var center_world: Vector3 = rigid.global_position
 	if body is ConstructBody:
+		# Frame kinematics must be available in the same transaction that creates
+		# or rebuilds a construct. The solver-observed COM updates only on the next
+		# integration callback, while Matter COM is synchronous and independently
+		# validated against Jolt by the mass-properties probe.
 		var construct: ConstructBody = body as ConstructBody
-		center_world = construct.to_global(construct.observed_center_of_mass_local)
+		center_world = construct.to_global(construct.matter_center_of_mass_local)
 	return rigid.linear_velocity + rigid.angular_velocity.cross(world_point - center_world)
