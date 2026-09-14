@@ -59,12 +59,13 @@ func _run() -> void:
 		var expected_mass: float = float(solid_count)
 		var expected_inverse_mass: float = 1.0 / expected_mass
 		var expected_com: Vector3 = _expected_com(volume)
+		var expected_collision_count: int = CellCollisionBoxer.build_boxes(volume, construct.collision_mode).size()
 		var com_error: float = construct.observed_center_of_mass_local.distance_to(expected_com)
 		var inverse_mass_error: float = abs(construct.observed_inverse_mass - expected_inverse_mass)
 		max_com_error = max(max_com_error, com_error)
 		max_inverse_mass_error = max(max_inverse_mass_error, inverse_mass_error)
 
-		_check(construct.get_collision_shape_count() == solid_count, "step %d collision count follows Matter" % step)
+		_check(construct.get_collision_shape_count() == expected_collision_count, "step %d collision count follows active compiled Matter representation" % step)
 		_check(abs(construct.mass - expected_mass) < 0.0001, "step %d mass follows Matter" % step)
 		_check(com_error < 0.001, "step %d solver COM follows analytic Matter COM" % step)
 		_check(inverse_mass_error < 0.0001, "step %d solver inverse mass follows Matter mass" % step)
