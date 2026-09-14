@@ -40,48 +40,49 @@ A PASS at one level must never be silently promoted to the next.
 
 ---
 
-# Active campaign
+# Recently closed campaign
+
+## M-CAP — standalone mechanics expansion: **FULL PASS / CLOSED**
+
+The stateful graph-contraction capstone closed the intended partition↔contraction symmetry: two distinct external motorized/limited hinges converged onto one inelastic merged successor while retaining separate owner lineage, full constraint frames, joint identities and active state; the relation that became internal/self-edge retired.
+
+The mechanics-only expansion is deliberately stopped here. Longer chains, loops, breakable links and mechanism catalogues are not the next research direction. They return only when an integrated/playable consumer creates a concrete information need.
+
+Evidence: `docs/evidence/stateful-graph-contraction-capstone.md`.
+
+---
+
+# Active campaign — integrated local-Space lifecycle
 
 Only this section is ordered. Everything below it is a decision frontier, not a queue.
-
-## M-CAP — close standalone mechanics expansion
-
-**Question:** can stateful graph contraction preserve two distinct external motorized/limited hinges while an internal A↔B relation disappears after A+B become one rigid successor?
-
-**Why now:** it closes the clean inverse of the already defended stateful partition result. More mechanics-only graph expansion after this has sharply lower information value.
-
-**Required evidence:**
-
-- both external owners/lineages survive,
-- both external full constraint frames converge onto the merged successor,
-- distinct motor/limit behavior remains physically active,
-- logical edge identities survive for the external relations,
-- the relation that becomes internal/self-edge is retired,
-- merge P/L/energy behavior remains consistent with the bounded inelastic-bind contract.
-
-**Non-goals:** longer chains, loops, breakable links, mechanism catalogue, production constraint graph.
-
-**STOP:** PASS or FAIL ends the current standalone mechanics-probe expansion.
-
-**Unlocks:** re-audit → integrated local-Space lifecycle.
 
 ## I0A — in-place static/dynamic control
 
 **Question:** what lifecycle behavior is possible when one `RigidBody3D` keeps its engine identity and changes between dynamic and frozen/static behavior?
 
-**Why now:** establishes a low-churn control before testing representation replacement.
+**Why now:** establishes a low-churn control before testing representation replacement. The first pass is a host-semantics probe: measure what Godot/Jolt actually preserves or changes before writing our lifecycle contract.
 
-**Required evidence:**
+**Host-semantics measurements first:**
+
+- RID / instance identity,
+- transform/orientation continuity,
+- linear/angular velocity behavior across freeze/unfreeze,
+- collision/mass/COM/inertia continuity,
+- sleeping/activation observations where relevant,
+- edit/rebuild behavior while frozen and after unfreeze,
+- lineage/Matter continuity.
+
+**Gate evidence after host truth is known:**
 
 - same logical Matter/lineage authority throughout,
-- no world-space cell jump on mode changes,
+- no unexplained world-space cell jump on mode changes,
 - arbitrary orientation survives freeze,
 - edits remain valid before/after transition,
 - lifecycle is observable through one integrated path rather than test-local reconstruction.
 
-**Non-goal:** proving representation independence.
+**Non-goal:** proving representation independence or assuming velocity semantics the engine does not promise.
 
-**Decision:** establishes baseline behavior and exposes which problems are intrinsic to lifecycle versus replacement.
+**Decision:** establishes baseline behavior and exposes which problems are intrinsic to lifecycle versus provider/body replacement.
 
 ## I0B / I1 — logical Space + real representation replacement
 
