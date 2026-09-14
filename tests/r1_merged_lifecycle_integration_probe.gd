@@ -277,14 +277,14 @@ func _run() -> void:
 
 
 func _check_solver_mass_properties(body: ConstructBody, truth: CellVolume, label: String) -> void:
-	var props := MatterMassProperties.calculate(truth, MASS_PER_CELL)
+	var props: Dictionary = MatterMassProperties.calculate(truth, MASS_PER_CELL)
 	var expected_mass: float = props["mass"]
 	var expected_com: Vector3 = props["center_of_mass_local"]
 	var local_inertia: Basis = props["inertia_tensor_local"]
 	var expected_world_inverse: Basis = MatterMassProperties.world_inverse_inertia(local_inertia, body.global_transform.basis)
-	var com_error := body.observed_center_of_mass_local.distance_to(expected_com)
-	var inverse_mass_error := abs(body.observed_inverse_mass - 1.0 / expected_mass)
-	var tensor_error := _basis_action_error(body.observed_inverse_inertia_tensor, expected_world_inverse)
+	var com_error: float = body.observed_center_of_mass_local.distance_to(expected_com)
+	var inverse_mass_error: float = abs(body.observed_inverse_mass - 1.0 / expected_mass)
+	var tensor_error: float = _basis_action_error(body.observed_inverse_inertia_tensor, expected_world_inverse)
 	_check(com_error < COM_TOLERANCE, "R1 %s merged solver COM matches Matter" % label)
 	_check(inverse_mass_error < INVERSE_MASS_TOLERANCE, "R1 %s merged solver inverse mass matches Matter" % label)
 	_check(tensor_error < TENSOR_TOLERANCE, "R1 %s merged solver inertia tensor matches Matter" % label)
