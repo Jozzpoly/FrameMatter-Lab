@@ -2,136 +2,164 @@
 
 Status: **live truth document**. Update when evidence materially changes what the project currently believes.
 
-This is not a roadmap and not a historical log. See `ROADMAP.md` for current decision order and the evidence notes/checkpoints for measurements/history.
+This is not a roadmap and not a historical log. See `ROADMAP.md` for decision order and `docs/evidence/` for measurements/history.
 
 ## Evidence language
 
-- **DEFENDED (bounded)** — strong evidence inside an explicitly limited scope.
-- **DEFENDED (integrated)** — behavior has survived composition through a shared runtime consumer, still without implying scale/product readiness.
-- **PROVISIONAL** — useful current mechanism/hypothesis, not yet established by enough integrated consumers.
-- **FALSIFIED / REJECTED** — a tempting shortcut or claim contradicted by evidence in the tested scope.
+- **DEFENDED (bounded)** — strong evidence inside an explicitly limited probe.
+- **DEFENDED (integrated)** — behavior has survived composition through shared runtime and neighboring systems.
+- **DEFENDED (reusable-substrate, narrow)** — materially different consumers exercise the same shared path successfully.
+- **PROVISIONAL** — useful current mechanism/hypothesis; implementation shape is not established strongly enough to freeze.
+- **FALSIFIED / REJECTED** — shortcut or claim contradicted by evidence in the tested scope.
 - **OPEN** — material unanswered question/debt.
 
-No result at one maturity level silently implies the next.
+No result at one maturity level silently implies the next. In particular, integrated lifecycle evidence is not scale evidence and neither is playability/product evidence.
 
 ---
 
 # DEFENDED
 
-## Matter authority — bounded
+## Matter authority — bounded/integrated
 
 - Logical `CellVolume` is authoritative; render/collision state is derived and reconstructible.
 - Matter coordinates are local and independent of world transform.
 - Moving a representation does not mutate logical Matter.
-- Retained Matter can survive representation/body replacement without being redefined by engine IDs.
+- Matter identity is not coordinate identity and not physics-body/shape identity.
+- Retained Matter lineage survives the tested compact rebases, split/merge replacement and provider changes.
+- Destroy/recreate at the same address creates fresh lineage rather than resurrecting the old logical Matter.
+- Shared `LocalMatterSpace.mutate_cell` exercises deletion, creation and retained-Matter material mutation while preserving the one authority pair.
 
-## Dynamic construct representation — bounded
+## Logical local Space / provider lifecycle — reusable-substrate evidence in a narrow scope
 
-- The same logical Matter can back a dynamic `RigidBody3D` representation.
-- A moving construct can rebuild mesh/collision/mass/COM/inertia after Matter mutation while remaining numerically coherent in the tested sizes.
-- Box-per-cell collision is useful as a truth/reference representation but is already rejected as scalable.
-
-## Mass properties — bounded
-
-- Equal-density unit-cell Matter mass/COM/full inertia can be computed independently from Jolt and matches solver observations to tight numerical tolerance in the tested shapes.
-- Solver-observed COM is validation telemetry, not same-transaction authority for freshly created/rebuilt successors.
-
-## Actor/support semantics — bounded
-
-- Stock `CharacterBody3D` semantics are unsuitable for standing on a freely simulated construct in the tested setup; catastrophic, largely mass-insensitive rigid-body acceleration was observed.
-- Support-frame transport can be represented explicitly above the rigid solver without scene-tree parenting and without granting the actor unlimited force authority over the construct.
-- Query-driven ordinary contact reacquisition is not sufficient for lossless topology replacement; explicit successor mapping removes the one-tick slip observed in the tested split.
-
-## Topology split / merge — bounded
-
-- A moving rigid Matter frame can split into connected-component successors while preserving retained-cell world position and instantaneous rigid velocity field within numerical tolerance.
-- Successors may compact/rebase local Matter storage while preserving world continuity through an explicit mapping.
-- Frames already sharing one rigid velocity field can be compatibly merged/reframed with negligible discontinuity in the tested case.
-- Incompatible rigid binding can preserve total linear and angular momentum while dissipating kinetic energy as an explicitly inelastic bind.
-- Split is not the physical inverse of later merge: once constraints are released, successor frames naturally diverge.
-
-## Lifecycle timing — bounded, now refined by integration
-
-- Destroy/recreate replacement performed only after the relevant solver step loses a simulation phase and accumulates large drift under repetition.
-- Replacement requested/committed at the `SceneTree.physics_frame` boundary can preserve phase and install a fresh RID in time for the upcoming `PhysicsServer3D.step()` in the tested cases.
-- Godot's relevant ordering is materially distinct:
-  1. `PhysicsServer3D.sync()`,
-  2. `SceneTree.physics_frame`,
-  3. node `_physics_process`,
-  4. `PhysicsServer3D.end_sync()`,
-  5. `PhysicsServer3D.step()`.
-- A fresh RID can already move in that upcoming solver step while its `RigidBody3D` node still exposes the pre-step transform until the next `PhysicsServer3D.sync()`.
-- Same-step physical truth and same-frame scene-node visibility are therefore different authority/observation questions.
-- PhysicsServer/RID state is the correct observer when validating the first solver result of a freshly installed provider; node state becomes synchronized on the next physics boundary.
-- The earlier shorthand **pre-physics commit boundary** should now be read specifically as a lifecycle commit before the upcoming server `step`, not as a claim that every observer layer updates synchronously.
-
-This distinction is independently visible in both provider-replacement evidence and earlier binding telemetry (`server_step_displacement > 0`, `node_process_displacement == 0`, later `node_sync_gap == 0`).
-
-## In-place static/dynamic lifecycle control — bounded
-
-- One `ConstructBody` can survive dynamic → `FREEZE_MODE_STATIC` → dynamic → `FREEZE_MODE_STATIC` while keeping the same instance and RID.
-- When measured at the actual transaction boundary, freeze/unfreeze produces no synchronous pose jump in the tested case; arbitrary orientation remains stable while frozen.
-- Matter, lineage and derived collision/mass state can be mutated/rebuilt while the same host body is frozen without moving its pose.
-- The same host can resume active rigid motion after unfreeze when velocity is explicitly commanded again.
-- Godot/Jolt freeze is **not** a general pause/resume guarantee for solver velocity state: linear/angular velocity properties remain visible through the frozen window and immediately after unfreeze, but the first subsequent solver step zeroed them in the bounded probe.
-- In-place freeze is therefore a defended low-churn lifecycle control, not the only provider strategy.
-
-Evidence: `docs/evidence/i0a-freeze-unfreeze-semantics.md`.
-
-## Logical local Space / real provider lifecycle — integrated
-
-I0B supplies the first integrated evidence for the semantic separation:
+The defended semantic separation is:
 
 **logical Space ≠ current engine provider**.
 
-In the tested shared runtime path:
+I0B established the first integrated lifecycle path; the actual interactive LAB then became a materially different consumer of the same provider/mutation execution path.
 
-- one persistent logical Space identity survives `MatterRepresentation → ConstructBody → MatterRepresentation`,
-- each concrete provider has a different engine identity,
-- one authoritative `CellVolume` + `MatterLineageMap` pair remains owned by the logical Space rather than cloned into provider truth,
-- the old provider is retired before the new provider is installed (`0` provider nodes after retire, `1` after install),
-- static→dynamic activation preserves provider pose and occupied-Matter world positions to measured zero error,
-- the fresh dynamic provider participates in the first upcoming solver step (`0.0746193230` displacement observed directly through PhysicsServer),
-- the dynamic Node matches that server result on the next sync (`0` measured gap),
-- dynamic translation/rotation and live Matter+lineage edits compose with the lifecycle path,
-- dynamic→static replacement preserves the current arbitrary orientation/pose with no measured jump,
-- the replacement-backed static Space remains stable and editable through the same mutation path.
+Within that scope:
 
-This defends the underlying ownership/lifecycle semantics at **integrated** maturity. It does **not** make the current `LocalMatterSpace` class/API canonical or establish reusable-substrate maturity; one independent second consumer is still needed.
+- one logical `LocalMatterSpace` owns one authoritative Matter + lineage pair,
+- static and dynamic engine providers are replaceable derived hosts,
+- concrete provider identity/class may change without redefining logical Space identity,
+- old provider authority retires before replacement authority is installed,
+- static→dynamic and dynamic→static provider replacement preserve the tested arbitrary world pose,
+- dynamic motion/rotation composes with live Matter mutation,
+- post-freeze static Matter remains editable through the same mutation authority,
+- LAB uses this shared runtime path rather than owning a parallel replacement implementation.
 
-Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`.
+This is the first narrow reusable-substrate evidence in FrameMatter. It does **not** make the current class/API/layout canonical.
 
-## Matter lineage — bounded, with first integrated lifecycle use
+Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`, `docs/evidence/lifecycle-lab-consumer.md`.
 
-- Matter identity is not coordinate identity and not physics-body identity.
-- Retained Matter lineage can survive compact rebase, split, merge and body replacement.
-- Destroyed/recreated Matter at the same address receives a new lineage in the tested sidecar model.
-- Repeated lineage campaigns produced no duplicate live tokens or resurrection of retired tokens in the tested scope.
-- I0B additionally exercised one shared runtime mutation path where deletion retired lineage, creation assigned fresh lineage and retained-Matter material mutation preserved lineage through provider changes.
+## Actor support across provider replacement — integrated
 
-## Binding policy / mechanical relations — bounded
+I2 establishes a narrow but important relation:
 
-- Contact/connectivity, mechanical constraint and rigid bind/reframe are distinct relations.
-- Independent Matter/frame identities can remain separate while being physically coupled by joints.
-- Constraint ownership can follow retained Matter lineage through topology replacement.
-- Destroying anchor-owner Matter retires that mechanical relation; recreating Matter at the same address does not resurrect it automatically.
-- One topology event can make different per-anchor lifecycle decisions (`SUCCESSION` vs `RETIRE`).
-- Constraint graphs can partition on split and contract on merge; a relation that becomes an internal/self-edge can retire.
+**actor support can refer to a logical Space while the concrete provider underneath that relation changes.**
 
-## Oriented/stateful constraints — bounded
+In the tested static→dynamic→static lifecycle:
 
-- `PinJoint3D` point constraints can survive endpoint succession when the logical joint anchor/frame is correctly rebased before endpoint replacement.
-- `HingeJoint3D` succession requires preserving a full oriented constraint frame, not only an anchor position.
-- In the tested hinge case, full-frame rebasing preserved axis alignment and real relative hinge motion.
-- Motor and angular-limit behavior can survive topology succession.
-- One split can partition two independently configured active hinges onto different successors while preserving distinct owner lineage, frame, identity, motor target and limit behavior.
-- The inverse bounded contraction case also passes: two distinct external motorized/limited hinges can converge onto one inelastic merged successor while retaining separate owner lineage, full frames, joint identities and active state; the source relation that becomes an internal/self-edge retires.
-- This closes the intended standalone stateful partition↔contraction research symmetry at bounded evidence maturity. It is **not** a production mechanics architecture claim.
+- actor acquired support through ordinary contact once,
+- provider replacement did not require test-local manual handoff,
+- logical `support_space` remained stable,
+- concrete support provider changed coherently,
+- no grounded frame was lost,
+- no wrong support frame was observed,
+- dynamic local drift remained very small,
+- support linear/angular velocity matched the dynamic provider,
+- freeze-to-static produced no transaction jump when measured at the correct boundary.
 
-## Host viability — bounded/integrated current layer
+Topology rebasing remains a different case: if local coordinates change, explicit source→successor mapping is still required.
 
-- Godot 4.7.x + built-in Jolt remains adequate for the current research layer.
-- No defended result currently requires replacing the host engine or moving the core research layer to native C++.
+Evidence: `docs/evidence/i2-actor-provider-transition.md`.
+
+## One→many topology split through shared runtime — integrated
+
+I3 moves connected-component split from giant test-local orchestration into shared lifecycle execution.
+
+In the tested dynamic split:
+
+- ordinary shared mutation destroys bridge Matter and retires its lineage,
+- split is queued and committed at the defended lifecycle boundary,
+- source Space/provider authority retires explicitly,
+- the source keeps no live Matter/lineage authority after commit,
+- no fragment arbitrarily inherits source Space identity,
+- fresh successor Spaces receive compact Matter + lineage storage,
+- retained Matter world placement is preserved within numerical tolerance,
+- source rigid velocity field is inherited at retained Matter points within numerical tolerance,
+- fresh successor RIDs participate in the first upcoming solver step,
+- actor support consumes explicit source→successor mapping and remains grounded/stable on the compact successor.
+
+The final I3 run measured 65/65 retained cells and 65/65 retained lineage tokens across two successors, with world-position and velocity-field errors on the order of `1e-6`, no actor floor loss and post-split local drift on the order of `1e-5`.
+
+Evidence: `docs/evidence/i3-shared-topology-split.md`.
+
+## Lifecycle timing / observation layers — integrated and repeatedly reproduced
+
+The current timing model is materially important:
+
+1. `PhysicsServer3D.sync()` exposes the prior solver result to scene nodes,
+2. `SceneTree.physics_frame` is emitted,
+3. node `_physics_process` callbacks run,
+4. `PhysicsServer3D.end_sync()`,
+5. the upcoming solver `step()` runs.
+
+Consequences established repeatedly across provider replacement, actor lifecycle and topology split:
+
+- a fresh RID installed at `physics_frame` can participate in the upcoming solver step,
+- the corresponding `RigidBody3D` node does not expose that new solver transform until the next sync,
+- transaction truth, current PhysicsServer/solver truth and synchronized consumer/node visibility are therefore related but not universally simultaneous,
+- phase advance of the old provider must not be misdiagnosed as a replacement teleport,
+- observer code/tests must state which layer/time they are sampling.
+
+Both I2 and I3 produced initial false-negative assertions when two observation phases were mixed; correcting the observer without changing runtime behavior removed the apparent discontinuity.
+
+## In-place static/dynamic lifecycle control — bounded
+
+- One `ConstructBody` can survive dynamic → `FREEZE_MODE_STATIC` → dynamic → `FREEZE_MODE_STATIC` while keeping the same instance/RID.
+- Arbitrary pose remains stable while frozen in the tested case.
+- Matter/lineage and derived collision/mass state can rebuild on the frozen host.
+- Freeze is not an implicit velocity pause/resume contract: properties remained visible, but the first solver step after unfreeze zeroed them in the bounded probe.
+
+Therefore in-place freeze is a useful control, not the only or automatically preferred provider strategy.
+
+Evidence: `docs/evidence/i0a-freeze-unfreeze-semantics.md`.
+
+## Dynamic construct / mass properties — bounded
+
+- Logical Matter can back a dynamic `RigidBody3D` representation.
+- Moving constructs survive live mesh/collision/mass/COM/inertia rebuilds in tested small sizes.
+- Equal-density unit-cell mass/COM/full inertia calculations independently match solver observations tightly in tested shapes.
+- Synchronous logical/topology code uses Matter-derived COM; solver-observed COM remains telemetry rather than fresh-transaction authority.
+
+## Actor/controller semantics — bounded
+
+- Stock `CharacterBody3D` interaction with freely simulated constructs is unsuitable in the tested setup; severe largely mass-insensitive rigid-body acceleration was observed.
+- Explicit support-frame transport above the rigid solver avoids scene-tree parenting and does not grant the actor unlimited force authority.
+- Ordinary query/contact reacquisition alone is not lossless for topology replacement; explicit successor mapping is required when local coordinates rebase.
+- The current actor evidence is not a production volumetric controller claim.
+
+## Topology / binding / mechanics — bounded
+
+- Moving rigid Matter frames can split into connected components while preserving retained-cell world position and instantaneous rigid velocity field in tested cases.
+- Compact/rebased successor storage is compatible with explicit world mapping.
+- Compatible frames may merge/reframe with negligible discontinuity when already sharing a rigid velocity field.
+- Incompatible rigid binding can preserve total linear/angular momentum while dissipating kinetic energy under explicit inelastic policy.
+- Split is not the physical inverse of later merge; released successors naturally diverge.
+- Contact, mechanical constraint and rigid bind/reframe are distinct relations.
+- Independent frames can remain distinct while physically coupled by joints.
+- Mechanical ownership can follow retained Matter lineage through topology changes.
+- Destroying anchor-owner Matter retires the relation; same-address recreation does not resurrect it.
+- Constraint graphs can partition on split and contract on merge.
+- Pin and oriented hinge relations, including motor/limit state, survive the bounded succession/partition/contraction cases already recorded.
+
+The standalone mechanics expansion is deliberately stopped. More joint catalogue/graph complexity requires a real integrated consumer trigger.
+
+## Host viability — current layer
+
+- Godot 4.7.x + built-in Jolt remains adequate for the present research layer.
+- No defended result currently requires replacing the host or moving the core research path to native C++.
 
 ---
 
@@ -139,127 +167,150 @@ Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`.
 
 ## `LocalMatterSpace` implementation shape
 
-The current class is deliberately small and experimental:
+The current class now owns more real execution than during I0B:
 
-- it owns the one Matter + lineage pair,
-- points to one active static/dynamic provider,
-- queues provider transitions,
-- commits them on `SceneTree.physics_frame`,
-- provides a minimal mutation path.
+- Matter + lineage authority,
+- one active provider,
+- static/dynamic provider transitions,
+- shared mutation path,
+- bounded queued connected-component split,
+- source retirement and successor creation,
+- explicit split mapping result.
 
-The **semantics** above now have integrated evidence. The class name, API, ownership layout, signal shape and exact scheduling mechanism remain provisional until at least one independent consumer uses the same path successfully.
+The semantics have materially stronger evidence than the class structure itself. Name, API, signal layout, direct parent/child ownership, scheduling mechanism and split-result representation remain provisional.
 
-Do not expand it into a general manager/framework merely because I0B passed.
-
-## Matter + lineage mutation authority
-
-I0B validates one coherent shared mutation path for deletion/creation/retained material changes across provider lifecycle.
-
-Still unresolved: whether lineage ultimately belongs inside a larger Matter-space aggregate, remains a sidecar under one mutation controller, or takes another durable representation. Current storage is not a persistence schema.
+Do not expand this into a general world/Space manager merely because the current campaign passed.
 
 ## Static/dynamic host strategy
 
-Two useful strategies are now evidenced for different purposes:
+Both approaches remain useful evidence-backed tools:
 
-- in-place `RigidBody3D` freeze/mode switching — low-churn control with explicit velocity caveat,
-- true static/dynamic provider replacement — integrated continuity across provider identity/class change.
+- in-place rigid-host freeze — low churn, explicit velocity caveat,
+- true static/dynamic provider replacement — identity/class replacement while logical Space remains stable.
 
-Do not prematurely collapse them into one canonical execution mode. A real interactive/actor consumer should reveal which transitions or representations are useful in practice.
+A later real consumer may use one, both, or a different optimized representation.
 
-## Physics material model
+## Matter + lineage storage
 
-Current mass-property evidence assumes equal mass per occupied cell. `material_id` is not yet a complete physical material/density model.
+Current sidecar ownership is coherent under one mutation controller, but it is not a save schema or final data model. Persistence identity is intentionally deferred.
+
+## Physical material model
+
+Current mass properties assume equal mass per occupied cell. `material_id` is not yet a complete density/friction/material system.
 
 ---
 
-# FALSIFIED / REJECTED (tested scope)
+# FALSIFIED / REJECTED in tested scope
 
-- Matter truth as scene nodes / cubes rather than logical data.
-- Physics body/shape IDs as persistent gameplay identity.
-- Scene-tree parenting as the physical model for actors/vehicles merely standing on moving constructs.
-- Contact alone as sufficient support/frame membership semantics.
-- One independent PhysicsSystem/domain per construct as a default architecture.
-- Artificially enormous construct mass as a fix for stock kinematic actor→rigid-body interaction.
-- Box-per-cell as a scalable final dynamic collision representation.
-- Query-only contact reacquisition as a lossless topology successor handoff.
-- Solver-observed COM as synchronous authority inside fresh topology transactions.
-- Post-step physics-body replacement as an acceptable repeated topology commit point.
+- Matter truth as scene nodes/cubes rather than logical data.
+- Physics body/shape IDs as durable gameplay identity.
 - Coordinate identity as Matter identity.
-- Automatic nearest-cell resurrection of a destroyed mechanical anchor.
-- Treating arbitrary rotated `local Space → canonical world voxel grid` as a trivially lossless representation transition.
-- Treating `RigidBody3D.freeze` as an implicit promise that prior dynamic velocity will automatically resume on the next solver step after unfreeze.
-- Treating an immediately-read `RigidBody3D.global_transform` after a server step as proof that a fresh RID did or did not participate in that same step; node visibility lags until server sync.
+- Scene-tree parenting as the physical model for actors/vehicles merely standing on moving constructs.
+- Contact alone as sufficient logical support/frame membership.
+- Query-only reacquisition as lossless topology successor handoff.
+- One independent PhysicsSystem/domain per construct as a default architecture.
+- Artificially enormous construct mass as a fix for stock kinematic actor→rigid interaction.
+- Box-per-cell collision as a **scalable final** representation.
+- Solver-observed COM as synchronous authority inside fresh topology transactions.
+- Post-step body replacement as acceptable repeated topology commit timing.
+- Automatic nearest-cell resurrection of destroyed mechanical anchors.
+- Arbitrary rotated local Space → canonical voxel grid as trivially lossless reintegration.
+- `RigidBody3D.freeze` as an implicit automatic velocity pause/resume guarantee.
+- Immediately-read node transform after a server step as proof that a fresh RID did or did not participate in that same step.
+- Arbitrarily assigning retired source Space identity to one topology fragment without an explicit policy.
 
 ---
 
-# OPEN — high-value debts
+# OPEN — re-audited priorities
 
-## Immediate / active-campaign debts
+## Active: R0 — representation / scale baseline
 
-- Independent second consumer of the shared local-Space lifecycle path; current highest-value candidate is the interactive LAB.
-- Interactive inspection of logical Space identity, active provider identity/kind, lineage/mutation state and lifecycle timing.
-- Actor support relation surviving static↔dynamic provider-class changes.
-- One topology split implemented through shared runtime execution rather than giant test-local orchestration.
+The lifecycle path is coherent enough to stop guessing about representation cost.
 
-## Important after integration
+Current reference implementation deliberately does expensive/simple work:
+
+- `MatterRepresentation` and `ConstructBody` rebuild the entire visual mesh,
+- all previous collision shapes are destroyed,
+- one `BoxShape3D`/`CollisionShape3D` is created per occupied cell,
+- mass properties are recomputed over Matter,
+- connected-component topology scans the full volume and materializes full-size component volumes before compaction.
+
+R0 must measure these costs across controlled sizes and occupancy patterns **before** choosing an optimization.
+
+Required baseline dimensions include at least:
+
+- occupied cell count,
+- volume extent / scanned cell count,
+- collision shape count,
+- mesh vertex count,
+- initial static provider build cost,
+- initial dynamic provider build cost,
+- dynamic one-cell mutation/full rebuild cost,
+- connectivity/component extraction cost,
+- shared split transaction cost for a deliberately disconnected case.
+
+R0 is instrumentation/measurement. No greedy collision, dirty regions, chunk system or asynchronous scheduler should be introduced until the baseline identifies the dominant pressure.
+
+## Important after R0 / consumer-triggered
 
 - scalable dynamic collision representation,
-- dirty/local physical rebuild strategy,
-- volumetric actor controller (walls/slopes/steps/ceilings),
+- edit-local/dirty physical rebuild strategy,
+- volumetric actor controller for walls/slopes/steps/ceilings,
 - finite physically meaningful actor→construct force exchange,
 - persistence identity across save/load,
-- canonical-world extraction/reintegration under lattice-compatible transforms.
+- canonical-world extraction/reintegration for lattice-compatible transforms.
 
-## Deferred until consumer pressure
+## Deferred until real pressure
 
-- richer/breakable/looped mechanics and larger mechanics graphs,
-- streaming and world scale,
-- multiple simulation domains and migration,
+- richer/breakable/looped mechanics,
+- streaming/world scale,
+- multiple simulation domains/migration,
 - nested frames,
-- spatial links/portals and query routing,
+- spatial links/portals/query routing,
 - curved/Planet Matter providers,
 - JV-like vehicle integration,
-- arbitrary bake/resample back into a canonical world lattice,
+- arbitrary bake/resample to canonical lattice,
 - networking/multiplayer.
 
 ---
 
 # Important semantic distinctions
 
-## Freeze vs provider replacement vs reintegration vs bake
+## Freeze vs provider replacement vs split vs reintegration vs bake
 
-- **In-place freeze:** one dynamic host body changes host mode; no engine-identity replacement.
-- **Provider replacement:** one logical local Space keeps its Matter/lineage truth while the concrete static/dynamic host changes; arbitrary world pose can remain lossless.
-- **Lossless lattice reintegration:** local Space is absorbed into a canonical lattice only when the relative transform maps cells exactly to cells.
-- **Bake / resample:** incompatible pose is converted to a target lattice; may create/destroy/merge/split cells and needs an explicit provenance/error policy.
-
-Do not use the word “deactivate” to blur these operations.
+- **In-place freeze:** same dynamic host changes host mode; no engine-identity replacement.
+- **Provider replacement:** same logical Space retains Matter/lineage while concrete host changes.
+- **Topology split:** one logical Space retires and produces one or more successor Spaces according to explicit Matter mappings; no fragment automatically inherits source Space identity.
+- **Lossless lattice reintegration:** local Space is absorbed into canonical lattice only when relative transform maps cells exactly to cells.
+- **Bake/resample:** incompatible pose is converted to target lattice and requires geometry/material/provenance error policy.
 
 ## Space vs representation vs simulation domain
 
-- Logical Space is not an engine node/body provider identity.
-- Representation/provider is the current host for rendering/physics/pose authority.
-- Simulation domain is the solver context in which direct interactions occur.
-- These concepts may correlate in simple tests but must not be defined as identical.
+- logical Space is not provider identity,
+- provider/representation is the current engine host,
+- simulation domain is the solver context for direct physical interaction,
+- these may correlate in simple tests but are not defined as identical.
 
-## Solver state vs synchronized scene-node state
+## Transaction vs solver vs synchronized consumer state
 
-- PhysicsServer/RID state can already contain the result of the current solver step.
-- A `RigidBody3D` node may still expose the previously synchronized transform until the next `PhysicsServer3D.sync()`.
-- Debugging, actor handoff and future lifecycle observers must state which layer/time they are reading rather than treating both as one instantaneous truth.
+- lifecycle transaction records the authoritative mapping/commit state,
+- PhysicsServer may already contain the result of the current solver step,
+- scene nodes/consumers may still expose the prior synchronized state until the next sync or their own update phase.
+
+Debugging and handoff logic must not collapse these into one instantaneous “current transform”.
 
 ## Contact vs constraint vs rigid bind
 
-- Contact may create forces without changing logical relation.
-- Constraint keeps distinct frame identities while coupling motion.
-- Rigid bind/reframe replaces several rigid frames with one successor according to explicit policy.
+- contact creates forces without changing logical relation,
+- constraint couples distinct frames,
+- rigid bind/reframe replaces several rigid frames with one successor under explicit policy.
 
 ---
 
 # Product pressure kept in view
 
-Long-term validation must eventually include a deliberately small Owner-facing slice:
+Long-term validation still needs a deliberately small Owner-facing slice:
 
 > walk → dig/place → activate/freeze a local Space → ride/build on it → use one simple mechanism → inspect/debug consequences.
 
-This is **not** the next implementation target. The immediate interactive LAB should remain a research consumer/debug workbench, not prematurely become this gameplay slice.
+That is not R0. R0 exists so the substrate can reach representative size without optimizing blindly or allowing the current reference representation to become accidental architecture.
