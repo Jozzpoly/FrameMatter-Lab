@@ -29,7 +29,7 @@ This is recurring pressure, not the current sprint goal.
 2. Bounded evidence
 3. Integrated evidence
 4. Reusable-substrate evidence
-5. Scale evidence
+5. Scale-pressure / scale evidence
 6. Playability/product evidence
 
 A PASS at one level never silently implies the next.
@@ -40,7 +40,7 @@ A PASS at one level never silently implies the next.
 
 ## I0B → LAB → I2 → I3 lifecycle line: **CLOSED FOR CURRENT SCOPE**
 
-The line now has integrated provider replacement, a second independent consumer, actor provider-transition continuity and shared one→many topology execution. These semantics are strong enough to serve as invariants while representation scale is challenged.
+The line has integrated provider replacement, a second independent consumer, actor provider-transition continuity and shared one→many topology execution. These semantics are strong enough to act as invariants while representation/update strategies are challenged.
 
 Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`, `lifecycle-lab-consumer.md`, `i2-actor-provider-transition.md`, `i3-shared-topology-split.md`.
 
@@ -50,103 +50,142 @@ Bounded stateful partition↔contraction symmetry is sufficiently exercised. Mor
 
 ## R0 — representation / scale baseline: **PASS / CLOSED**
 
-R0 measured the unoptimized reference representation across dense, shell, sparse and disconnected cases.
+R0 measured the intentionally naive reference representation and ranked one-node/one-shape-per-occupied-cell collision materialization as the dominant first scale pressure.
 
-Key result at `14³`:
+At `14³` in the final control rerun:
 
-- dense static init: `1.497 s`, dynamic init: `1.132 s`, one-cell full rebuild: `1.748 s`, topology extract: `22.5 ms`,
-- shell has **more visual mesh vertices** than dense but is ~7× faster because it has far fewer collision shapes,
-- sparse skeleton shares the same extent but rebuilds in only `7.3 ms`,
-- disconnected split preflight is `21 ms` while commit is `558 ms`.
-
-The dominant first scale pressure is therefore the one-node/one-shape-per-occupied-cell collision representation, not connectivity scanning or visual mesh complexity.
+- dense: `2744` shapes, static init ~`1.88 s`, dynamic init ~`1.52 s`, full mutation/rebuild ~`2.43 s`,
+- shell: `1016` shapes, full mutation/rebuild ~`340 ms`,
+- skeleton: `40` shapes, full mutation/rebuild ~`8 ms`,
+- topology extraction remained tens of milliseconds rather than seconds,
+- disconnected split cost was dominated by successor/provider construction rather than split preflight.
 
 Evidence: `docs/evidence/r0-representation-scale-baseline.md`.
 
+## R1 — exact merged-cuboid collision: **FULL PASS / CLOSED**
+
+R1 directly challenged the R0 bottleneck with an exact deterministic cuboid compiler while retaining `PER_CELL` as a reference mode.
+
+Final `14³` A/B result:
+
+- dense: `2744 → 1` shapes; static ~`76×`, dynamic ~`57×`, full rebuild ~`87×` faster,
+- shell: `1016 → 6` shapes; static ~`18×`, dynamic ~`13×`, full rebuild ~`20×` faster,
+- skeleton: `40 → 5` shapes; only ~`1.1×` faster, strengthening the diagnosis that R1 removed the shape-materialization pressure rather than producing an unrelated universal speedup,
+- exact occupied coverage remained error-free in every A/B case,
+- merged collision survived provider replacement, live occupancy mutation, solver mass properties, actor support and shared topology succession,
+- `MERGED_CUBOIDS` is now the current provider default; collider count is explicitly not Matter identity.
+
+The full post-promotion ratchet passed at commit `286758a9cdf895e569f8cbb1b300602005ae94e2`, workflow run `#182` / `34899262822`.
+
+Evidence: `docs/evidence/r1-exact-collision-aggregation.md`.
+
 ---
 
-# Active campaign — R1 exact collision aggregation
+# Active campaign — R2P post-aggregation profile / re-rank
+
+R1 changed the cost structure enough that the R0 ranking is obsolete. Do not choose the next optimization from intuition or momentum.
 
 ## Question
 
-Can the physical collision representation be compressed from one box/node per occupied Matter cell to a much smaller exact set of axis-aligned cuboids **without changing logical Matter, lineage, mass properties, lifecycle semantics or occupied collision volume**?
+After exact collision aggregation removes per-cell shape materialization, **what now dominates real provider rebuild, live edit and topology-transaction cost at representative local-Space sizes?**
 
-## Why this challenger first
+## Why profile before another mechanism
 
-R0 ranked this pressure directly. Dense provider build/rebuild cost becomes strongly superlinear in occupied-cell count in the tested range. Shell-vs-dense results specifically separate collision-shape materialization from visual mesh complexity.
+The promoted runtime still rebuilds whole derived representations, but several distinct costs are currently collapsed into one timing:
 
-## R1 mechanism hypothesis
+- full-volume Matter scans,
+- visual mesh generation,
+- merged-cuboid compilation,
+- engine collision-node/shape materialization,
+- dynamic mass/COM/solver refresh,
+- provider teardown/reconstruction,
+- topology extraction,
+- split successor construction.
 
-Introduce a deterministic derived collision compiler that partitions occupied unit cells into non-overlapping axis-aligned integer cuboids.
+R1 shows that a dense `14³` full rebuild is now on the order of `27 ms`, not seconds. That may still matter for interactive editing, but it is no longer self-evident that dirty collision is the highest-leverage next task.
 
-Important semantics:
+## R2P measurement requirements
 
-- `CellVolume` remains truth.
-- Cuboids are disposable derived representation, never gameplay identity.
-- Cuboids must exactly cover occupied unit-cell volume with no holes and no overlap.
-- Matter-derived mass/COM/inertia remain authoritative; collider aggregation must not redefine mass semantics.
-- Current material IDs are not yet a per-cell physics-material model, so R1 may merge occupied cells across visual/material IDs. Record this scope explicitly.
-- Static and dynamic providers should consume the same collision-box derivation path.
+Measure under the promoted `MERGED_CUBOIDS` path across controlled dense/shell/skeleton cases and at least one disconnected split case:
 
-## A/B requirements
+- logical occupied-count / scan cost,
+- visual mesh generation cost,
+- merged-cuboid compilation cost,
+- engine collision shape/node installation cost,
+- dynamic provider full rebuild cost,
+- static provider full rebuild cost,
+- live **occupancy-changing** edit cost,
+- retained-Matter/material-only edit cost separately,
+- topology extraction cost,
+- shared split preflight + commit cost,
+- resulting shape counts / mesh vertices / successor shapes.
 
-Keep the current per-cell representation available as a reference during the challenger.
+Where practical, use medians over repeated samples and preserve the same controlled patterns used by R0/R1 for causal comparability.
 
-Measure at least dense/shell/skeleton cases for:
+## Critical edit-semantics distinction
 
-- occupied cells,
-- reference shape count,
-- aggregated cuboid count,
-- compression ratio,
-- static provider build,
-- dynamic provider build,
-- one-cell full rebuild,
-- exact collision coverage verification.
+A retained-Matter material-ID edit is not automatically a physical occupancy edit.
 
-Then integrate the aggregated path into lifecycle tests that exercise:
+Current physical semantics do not yet define per-cell density/friction/material boundaries. Therefore an expensive full collision rebuild triggered by a material-only edit must be reported as **current execution behavior**, not evidence that future collision semantics require that rebuild.
 
-- dynamic motion,
-- live mutation,
-- provider replacement,
-- actor support,
-- shared topology split.
+At least one R2P occupancy-changing case must add/remove Matter so the physical representation genuinely changes.
 
-## R1 PASS condition
+## R2P outcome / decision rules
 
-R1 passes only if both are true:
+R2P is a measurement campaign. It does not pass by making the runtime faster.
 
-1. **semantic/correctness:** exact occupied collision volume and current mass/lifecycle invariants remain coherent;
-2. **scale:** shape count and measured provider/rebuild cost improve materially on the R0 pressure cases.
+It succeeds when the next bottleneck is ranked strongly enough to choose among these possibilities:
 
-A faster but approximate collider is not a PASS. A geometrically exact compiler that does not improve the dominant cost is also not sufficient.
+### Candidate R2A — edit-local / dirty rebuild
 
-## R1 non-goals
+Enter if:
 
-- dirty-region rebuild scheduling,
-- chunk/world partitioning,
+- whole-provider rebuild remains materially costly at relevant sizes,
+- most cost can be avoided for spatially local edits,
+- the exact representation can be updated locally without disproportionate complexity or semantic risk.
+
+### Candidate R2B — bounded region/chunk representation
+
+Enter if:
+
+- global greedy cuboid partitioning makes true local updates structurally awkward,
+- bounded representation regions offer cleaner invalidation/update locality,
+- region boundaries can remain derived implementation rather than gameplay identity.
+
+### Candidate R2C — visual/update separation
+
+Enter if:
+
+- mesh generation becomes dominant while physical collision is already cheap,
+- visual and physical optimal update partitions materially diverge.
+
+### Stop representation optimization and return to consumer pressure
+
+Prefer this if:
+
+- representative local-Space rebuild/edit costs are already adequate for the next interactive experiment,
+- remaining optimization would have lower information value than exercising volumetric interaction, finite force exchange, world transfer or the Owner-facing slice.
+
+### Re-rank elsewhere
+
+If topology transaction, actor/controller limitations, world transfer or another subsystem now dominates the next meaningful consumer, follow that evidence instead of forcing an R2 representation project.
+
+## R2P non-goals
+
+- implementing dirty regions,
+- introducing a chunk/world manager,
+- asynchronous job systems,
+- native Jolt compounds,
 - convex decomposition,
-- asynchronous rebuilds,
-- native-Jolt custom compounds,
-- LOD or distance-based representation modes,
-- production physical material boundaries.
+- LOD/distance modes,
+- streaming architecture,
+- production material boundaries.
 
-## STOP / re-rank
-
-After R1 A/B + integrated ratchets, stop and measure again. If full rebuild cost remains material, dirty/edit-local rebuild becomes a strong R2 candidate. If provider construction becomes cheap enough and topology scanning becomes visible, re-rank instead of assuming the next optimization.
+Those remain candidate mechanisms until R2P evidence selects one.
 
 ---
 
-# Decision frontiers after R1
-
-## R2+ — remaining representation/update pressure
-
-Possible triggers after new measurements:
-
-- dirty/edit-local collision/mesh rebuild,
-- chunk/region representation boundaries,
-- separate visual/physical partitions,
-- convex clusters/decomposition,
-- inactive/far/frozen simplification.
+# Decision frontiers after R2P
 
 ## A — volumetric actor + finite force exchange
 
@@ -198,6 +237,8 @@ After sufficient lifecycle + representation + actor evidence, schedule a deliber
 
 Purpose: test emergent freedom, feedback and comprehensibility — not content production.
 
+The slice should not be rushed merely because R1 passed. Conversely, representation research should stop when it is good enough to support a higher-information interactive challenge.
+
 ---
 
 # CI / evidence governance
@@ -210,6 +251,8 @@ Separate tests conceptually into:
 
 Retiring an old probe from every-push CI does not erase evidence. Old green probes must not fossilize obsolete implementation details.
 
+The R1 promotion produced concrete examples: historical `shape count == occupied cells` assertions were test debt after the representation changed. The correct invariant is truth/representation coherence, not preservation of a superseded collider topology.
+
 ---
 
 # Current stop / replan rules
@@ -218,10 +261,10 @@ Replan immediately if:
 
 - Matter/lineage authority becomes ambiguous,
 - representation optimization begins defining gameplay identity,
-- aggregated collision cannot preserve exact occupied geometry in the bounded voxel provider,
 - mass/COM/inertia accidentally become collider-derived instead of Matter-derived,
 - lifecycle timing or actor support changes merely to accommodate an optimization,
-- measured R1 results show collision aggregation was not actually the dominant leverage point,
+- profiling shows whole-volume representation work is no longer the important next pressure,
+- an optimization requires disproportionate architecture before a real consumer demonstrates the need,
 - Owner/playability pressure shows the technically correct substrate is awkward or uninteresting,
 - host-engine limitations materially distort intended invariants.
 
