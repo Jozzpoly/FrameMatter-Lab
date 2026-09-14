@@ -81,3 +81,6 @@ jobs:
 
       - name: Run topology round-trip campaign
         run: godot --headless --path . --script res://tests/topology_roundtrip_campaign.gd
+
+      - name: Run rigid replacement timing probe
+        run: godot --headless --path . --script res://tests/rigid_replacement_timing_probe.gd
