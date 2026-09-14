@@ -99,3 +99,6 @@ jobs:
 
       - name: Run integrated binding transaction challenger
         run: godot --headless --path . --script res://tests/topology_binding_transaction_probe.gd
+
+      - name: Run multi-frame pin-joint mechanics probe
+        run: godot --headless --path . --script res://tests/multiframe_pin_joint_probe.gd
