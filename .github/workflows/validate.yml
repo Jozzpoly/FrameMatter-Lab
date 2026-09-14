@@ -114,3 +114,6 @@ jobs:
 
       - name: Run multi-anchor graph partition integration probe
         run: godot --headless --path . --script res://tests/multiframe_multi_anchor_split_partition_probe.gd
+
+      - name: Run mechanical anchor destruction semantics probe
+        run: godot --headless --path . --script res://tests/multiframe_anchor_destruction_probe.gd
