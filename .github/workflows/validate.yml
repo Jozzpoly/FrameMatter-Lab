@@ -90,3 +90,6 @@ jobs:
 
       - name: Run topology lineage campaign
         run: godot --headless --path . --script res://tests/topology_lineage_campaign.gd
+
+      - name: Run topology binding policy challenger
+        run: godot --headless --path . --script res://tests/topology_binding_policy_probe.gd
