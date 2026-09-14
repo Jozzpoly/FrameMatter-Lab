@@ -147,6 +147,7 @@ G3 does **not** establish a production character controller. `FrameProbeCharacte
 - **A construct can be treated as dynamic local space.** The same Matter can move, rotate and mutate while retaining coherent local coordinates and derived mass properties.
 - **Frame relationships should be explicit state, not scene-tree parenting.** G3's successful actor stores a support-local anchor and crosses between support-frame and world-space states deliberately.
 - **Support transport and force exchange are separate problems.** A body can carry an actor kinematically relative to its frame without granting the actor unlimited authority over the body's rigid-body motion.
+- **Synchronous frame kinematics must come from synchronous construct state, not delayed solver telemetry.** Matter-derived COM is available in the same topology transaction that creates or rebuilds a construct; solver-observed COM remains validation evidence.
 - **Godot + Jolt remains viable for the current research layer.** No first-campaign result currently justifies replacing the host engine or introducing native code merely to preserve the core invariants.
 
 ### Falsified or rejected as scalable foundations
@@ -155,6 +156,7 @@ G3 does **not** establish a production character controller. `FrameProbeCharacte
 - **Stock `CharacterBody3D` directly standing on a free `RigidBody3D` is not accepted as our actor/construct interaction model.** The bounded probe produced catastrophic, mass-insensitive rigid-body acceleration.
 - **Making constructs artificially enormous in mass is not an architectural fix** for actor/support semantics.
 - **Contact alone is insufficient to define frame membership.** Support-frame acquisition and release need explicit semantics.
+- **Solver-observed mass properties cannot be used as same-transaction topology authority.** `PhysicsDirectBodyState3D` observations arrive during integration and can be stale for a newly created successor frame.
 
 ### Open debts before a broader substrate claim
 
@@ -171,7 +173,7 @@ The first campaign therefore does **not** define a final architecture. It establ
 
 ## Exploratory topology evidence — after G3
 
-Topology work has started as a separate exploratory line. These probes are **not yet a topology gate PASS**; they establish narrower semantics that can now be challenged by repeated fragmentation/reassembly, dependent-frame handoffs, larger-scale cases and more general binding semantics.
+Topology work has started as a separate exploratory line. These probes are **not yet a topology gate PASS**; they establish narrower semantics that can now be challenged by repeated fragmentation/reassembly, larger-scale cases and more general binding semantics.
 
 ### Moving split continuity
 
@@ -269,6 +271,51 @@ This is evidence for a second bounded merge regime: **when source rigid motions 
 
 The stronger architecture implication is that **topological connectivity and rigid physical binding are separate semantics**. Matter becoming connected does not by itself determine that two currently independent frames must instantly become one body; a bind/merge event needs an explicit physical policy.
 
+### Free divergence after split
+
+A split is lossless only at the topology instant. A follow-up probe started two collisionless successor bodies from the same parent rigid velocity field and then let Jolt integrate them independently with no additional impulses.
+
+After 120 physics frames:
+
+- the former seam had separated by ~`4.714 m`,
+- the former seam points differed in velocity by ~`4.367 m/s`,
+- total linear-momentum drift was `0` at test precision,
+- relative kinetic-energy drift was ~`8.5e-9`,
+- split-system angular-momentum drift measured ~`0.544%`.
+
+An unsplit control body with the same initial Matter, pose and rigid motion was integrated beside the successors. Its measured angular-momentum drift was much larger at ~`5.71%`, while its linear momentum and kinetic energy were also effectively constant. The topology-specific excess angular-momentum drift was therefore `0` under the comparison contract.
+
+This separates a topology result from a host-solver limitation. The split preserves the parent's instantaneous conservation state to float precision, but once the constraint is removed the child COMs follow independent free trajectories; the centripetal acceleration that previously kept them in one rigid frame no longer exists. **A later merge cannot be treated as a mathematical inverse of split merely because the two pieces once belonged to the same construct.**
+
+For this solver configuration, angular-momentum measurements for general asymmetric free rotation must be calibrated against an unsplit control rather than assumed exact. Upstream Jolt supports optional gyroscopic-force handling, but this research path does not currently expose or rely on it through the Godot `RigidBody3D` API.
+
+### Actor handoff through incompatible binding
+
+The dependent-frame merge probe combined the earlier actor-handoff and inelastic-binding results. An actor first rode one source frame under real translation while two source lattices stayed aligned. At the binding instant the second source was assigned an incompatible horizontal/yaw rigid state, and the two sources were collapsed into one momentum-derived successor.
+
+The first implementation exposed a real same-transaction bug: position mapping, floor continuity and later riding were correct, but actor velocity was wrong by `1.21 m/s`. The cause was not the merge equations. `FrameProbeCharacter` was using `ConstructBody.observed_center_of_mass_local`, which is populated only when Jolt reaches `_integrate_forces()`. A newly created topology successor therefore still reported the default COM during the atomic handoff.
+
+The fix made the distinction explicit:
+
+- `matter_center_of_mass_local` is derived synchronously from authoritative Matter during every construct rebuild and is used for same-transaction frame kinematics,
+- `observed_center_of_mass_local` remains solver telemetry used to validate Matter against Jolt after integration.
+
+The complete regression suite remained green after this change. In the strengthened actor-merge case CI measured:
+
+- source lattice alignment error ~`8.60e-7 m`,
+- pre-merge actor local drift ~`4.77e-6 m`, with zero floor loss,
+- actor pre-bind support-velocity error ~`8.22e-5 m/s`,
+- dissipated binding energy ~`179.04 J`,
+- physical support velocity-field change at the actor ~`1.352 m/s`,
+- actor world-position discontinuity during handoff ~`4.77e-7 m`,
+- actor successor-velocity error after the fix ~`1.19e-7 m/s`,
+- mapped local-coordinate error `0`,
+- post-merge local ride drift ~`1.09e-5 m`,
+- zero support loss,
+- zero measured extra linear/angular kick to the merged body.
+
+This extends the atomic topology-handoff invariant: **a dependent frame can cross an incompatible rigid bind while preserving world position and local support continuity, yet intentionally adopt the successor's new physically derived velocity field in the same transaction.** A topology handoff is therefore not just an identity/local-coordinate rewrite; it can also carry an explicit velocity-state transition.
+
 ### Topology checkpoint
 
 Current defended exploratory results now cover:
@@ -278,15 +325,18 @@ Current defended exploratory results now cover:
 - explicit dependent-frame succession for actor support,
 - compatible multi-frame merge as near-lossless reframing,
 - incompatible rigid merge with explicit conservation/dissipation semantics,
-- independently verified Matter mass/COM/inertia needed to reason about those transitions.
+- free successor divergence after a lossless instantaneous split,
+- actor succession through a dissipative incompatible merge including the successor velocity impulse,
+- independently verified Matter mass/COM/inertia needed to reason about those transitions,
+- an explicit separation between synchronous Matter-derived frame kinematics and delayed solver telemetry.
 
 This is still **not a topology PASS**. Important open questions include:
 
 - repeated split → rebase → merge cycles and accumulated transform/momentum/storage drift,
 - logical identity and provenance across fragmentation/reassembly,
-- actor or other dependent-frame succession during merge, especially when binding applies a physical impulse,
 - binding triggers and policies: when mere contact/connectivity should or should not collapse frames,
 - non-lattice-aligned and nested frame relationships,
+- multiple dependents and dependents spanning different successor regions,
 - larger topology operations and scalable representations,
 - arbitrary frame orientation/gravity for actors,
 - general material attachment/detachment carrying independent momentum.
