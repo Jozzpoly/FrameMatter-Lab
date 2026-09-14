@@ -108,3 +108,6 @@ jobs:
 
       - name: Run live-mutation joint integration probe
         run: godot --headless --path . --script res://tests/multiframe_live_mutation_joint_probe.gd
+
+      - name: Run joint split succession integration probe
+        run: godot --headless --path . --script res://tests/multiframe_joint_split_succession_probe.gd
