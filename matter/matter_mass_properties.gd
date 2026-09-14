@@ -47,6 +47,10 @@ static func calculate(volume: CellVolume, mass_per_cell: float = 1.0) -> Diction
 	}
 
 
-static func world_inverse_inertia(local_inertia: Basis, world_basis: Basis) -> Basis:
+static func world_inertia(local_inertia: Basis, world_basis: Basis) -> Basis:
 	var rotation := world_basis.orthonormalized()
-	return rotation * local_inertia.inverse() * rotation.transposed()
+	return rotation * local_inertia * rotation.transposed()
+
+
+static func world_inverse_inertia(local_inertia: Basis, world_basis: Basis) -> Basis:
+	return world_inertia(local_inertia, world_basis).inverse()

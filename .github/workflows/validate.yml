@@ -69,3 +69,6 @@ jobs:
 
       - name: Run Matter mass-properties probe
         run: godot --headless --path . --script res://tests/matter_mass_properties_probe.gd
+
+      - name: Run topology inelastic merge probe
+        run: godot --headless --path . --script res://tests/topology_inelastic_merge_probe.gd
