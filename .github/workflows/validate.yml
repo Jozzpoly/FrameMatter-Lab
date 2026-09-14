@@ -6,6 +6,25 @@ on:
   pull_request:
 
 jobs:
+  current-campaign-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Run interactive lifecycle LAB smoke test
+        run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
+
+      - name: Run P0 interactive consumer smoke test
+        run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
+
   fast-invariant-validation:
     runs-on: ubuntu-latest
     steps:
@@ -39,6 +58,9 @@ jobs:
 
       - name: Run interactive lifecycle LAB smoke test
         run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
+
+      - name: Run P0 interactive consumer smoke test
+        run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
 
       - name: Run I2 actor provider-transition challenger
         run: godot --headless --path . --script res://tests/lifecycle_actor_provider_transition_probe.gd
@@ -139,6 +161,9 @@ jobs:
 
       - name: Run interactive lifecycle LAB smoke test
         run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
+
+      - name: Run P0 interactive consumer smoke test
+        run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
 
       - name: Run I2 actor provider-transition challenger
         run: godot --headless --path . --script res://tests/lifecycle_actor_provider_transition_probe.gd
