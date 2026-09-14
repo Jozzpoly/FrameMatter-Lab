@@ -121,7 +121,6 @@ func _run() -> void:
 	_check(max_pre_left_gap < 0.01 and max_pre_right_gap < 0.01, "both passive external hinge anchors are stable before contraction")
 	_check(max_pre_left_axis_error < 0.01 and max_pre_right_axis_error < 0.01, "both passive external hinge axes are aligned before contraction")
 
-	# Commit the capstone contraction before the upcoming PhysicsServer step.
 	await physics_frame
 	var merge_transform: Transform3D = left.global_transform
 	var expected_right_transform := merge_transform * Transform3D(Basis.IDENTITY, Vector3(RIGHT_ORIGIN))
@@ -148,9 +147,6 @@ func _run() -> void:
 	var right_origin_staleness := right_joint.global_position.distance_to(right_world_before.origin)
 	_check(left_origin_staleness > 0.1 and right_origin_staleness > 0.1, "both persistent external hinge origins are materially stale before contraction")
 
-	# Enter an incompatible A/B source state only at the explicit bind boundary.
-	# The internal relation never sees this state in a solver step: it is retired
-	# when A+B are replaced by one inelastic rigid successor.
 	var left_linear := Vector3(2.4, 0.15, 0.8)
 	var right_linear := Vector3(-0.9, -0.05, 2.0)
 	var left_angular := Vector3.ZERO
@@ -219,12 +215,8 @@ func _run() -> void:
 	var merged_left_frame := left_source_frame
 	var merged_right_frame := Transform3D(right_source_frame.basis, Vector3(RIGHT_ORIGIN) + right_source_frame.origin)
 
-	# Put unaffected external bodies onto the new successor's instantaneous rigid
-	# velocity field. This removes inherited relative spin as an explanation for
-	# post-contraction hinge motion: the two motors start the successor phase from
-	# essentially zero relative angular speed.
 	for body in [left_external, right_external]:
-		var body_com_world := body.to_global(body.matter_center_of_mass_local)
+		var body_com_world: Vector3 = body.to_global(body.matter_center_of_mass_local)
 		body.linear_velocity = _velocity_at_point(merged_linear, merged_angular, merged_com_world, body_com_world)
 		body.angular_velocity = merged_angular
 
