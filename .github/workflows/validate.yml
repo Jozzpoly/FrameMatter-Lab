@@ -76,6 +76,9 @@ jobs:
       - name: Run stateful hinge graph partition probe
         run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_partition_probe.gd
 
+      - name: Run stateful hinge graph contraction capstone
+        run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_contraction_probe.gd
+
   research-validation:
     runs-on: ubuntu-latest
     steps:
@@ -202,3 +205,6 @@ jobs:
 
       - name: Run stateful hinge graph partition probe
         run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_partition_probe.gd
+
+      - name: Run stateful hinge graph contraction capstone
+        run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_contraction_probe.gd
