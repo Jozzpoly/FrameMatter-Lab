@@ -48,6 +48,43 @@ static func extract_connected_components(source: CellVolume) -> Array[CellVolume
 	return components
 
 
+static func compact_volume(source: CellVolume) -> Dictionary:
+	assert(source.count_solid() > 0)
+
+	var min_cell := Vector3i(source.size.x, source.size.y, source.size.z)
+	var max_cell := Vector3i(-1, -1, -1)
+
+	for z in range(source.size.z):
+		for y in range(source.size.y):
+			for x in range(source.size.x):
+				var cell := Vector3i(x, y, z)
+				if source.get_cell(cell) == CellVolume.EMPTY:
+					continue
+				min_cell.x = min(min_cell.x, x)
+				min_cell.y = min(min_cell.y, y)
+				min_cell.z = min(min_cell.z, z)
+				max_cell.x = max(max_cell.x, x)
+				max_cell.y = max(max_cell.y, y)
+				max_cell.z = max(max_cell.z, z)
+
+	var compact_size: Vector3i = max_cell - min_cell + Vector3i.ONE
+	var compact := CellVolume.new(compact_size)
+
+	for z in range(min_cell.z, max_cell.z + 1):
+		for y in range(min_cell.y, max_cell.y + 1):
+			for x in range(min_cell.x, max_cell.x + 1):
+				var source_cell := Vector3i(x, y, z)
+				var material_id: int = source.get_cell(source_cell)
+				if material_id == CellVolume.EMPTY:
+					continue
+				compact.set_cell(source_cell - min_cell, material_id)
+
+	return {
+		"origin": min_cell,
+		"volume": compact,
+	}
+
+
 static func center_of_mass_local(volume: CellVolume) -> Vector3:
 	var weighted_sum := Vector3.ZERO
 	var solid_count := 0
