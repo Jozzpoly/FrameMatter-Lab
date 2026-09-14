@@ -40,7 +40,7 @@ A PASS at one level must never be silently promoted to the next.
 
 ---
 
-# Recently closed campaign
+# Recently closed work
 
 ## M-CAP — standalone mechanics expansion: **FULL PASS / CLOSED**
 
@@ -50,60 +50,49 @@ The mechanics-only expansion is deliberately stopped here. Longer chains, loops,
 
 Evidence: `docs/evidence/stateful-graph-contraction-capstone.md`.
 
+## I0A — in-place static/dynamic control: **FULL PASS / CONTROL CLOSED**
+
+One `ConstructBody` / RID survived dynamic → `FREEZE_MODE_STATIC` → frozen live edit → dynamic → second static freeze while preserving pose, arbitrary orientation, Matter/lineage authority and derived-state coherence in the bounded probe.
+
+Important host truth: velocity properties remained visible throughout freeze and immediately after unfreeze, but the first subsequent solver step zeroed linear/angular velocity. Therefore in-place freeze is a useful low-churn control, **not** an implicit pause/resume contract and not automatically the final provider strategy.
+
+Evidence: `docs/evidence/i0a-freeze-unfreeze-semantics.md`.
+
 ---
 
 # Active campaign — integrated local-Space lifecycle
 
 Only this section is ordered. Everything below it is a decision frontier, not a queue.
 
-## I0A — in-place static/dynamic control
-
-**Question:** what lifecycle behavior is possible when one `RigidBody3D` keeps its engine identity and changes between dynamic and frozen/static behavior?
-
-**Why now:** establishes a low-churn control before testing representation replacement. The first pass is a host-semantics probe: measure what Godot/Jolt actually preserves or changes before writing our lifecycle contract.
-
-**Host-semantics measurements first:**
-
-- RID / instance identity,
-- transform/orientation continuity,
-- linear/angular velocity behavior across freeze/unfreeze,
-- collision/mass/COM/inertia continuity,
-- sleeping/activation observations where relevant,
-- edit/rebuild behavior while frozen and after unfreeze,
-- lineage/Matter continuity.
-
-**Gate evidence after host truth is known:**
-
-- same logical Matter/lineage authority throughout,
-- no unexplained world-space cell jump on mode changes,
-- arbitrary orientation survives freeze,
-- edits remain valid before/after transition,
-- lifecycle is observable through one integrated path rather than test-local reconstruction.
-
-**Non-goal:** proving representation independence or assuming velocity semantics the engine does not promise.
-
-**Decision:** establishes baseline behavior and exposes which problems are intrinsic to lifecycle versus provider/body replacement.
-
 ## I0B / I1 — logical Space + real representation replacement
 
 **Question:** can one persistent logical local Space survive `static representation → dynamic representation → static representation` while representation/body identity changes?
 
-**Working hypothesis:** a persistent logical frame/Space identity survives while exactly one active provider owns current pose/velocity authority. This is not yet a prescribed class design.
+**Why now:** I0A isolated host-mode behavior. The next uncertainty is stronger and architectural: logical identity and authority continuity when the concrete provider itself changes.
+
+**Working hypothesis:** a persistent logical frame/Space identity survives while exactly one active provider owns current pose/velocity authority. This is not yet a prescribed final class design.
+
+**Minimal implementation constraint:** reuse the existing static `MatterRepresentation` and dynamic `ConstructBody`. Add only enough shared runtime to own one logical Matter+lineage state, select exactly one current provider, and commit provider replacement on the already defended pre-PhysicsServer boundary. Do not build a general Space manager/framework before this consumer requires it.
 
 **Required evidence:**
 
 - one authoritative Matter + lineage state,
 - one logical Space/frame identity across host replacement,
 - no double ownership during commit,
+- static and dynamic providers are genuinely different engine instances/physics representations,
 - representation-changing commit occurs on the defended pre-PhysicsServer-step boundary,
-- activation and freeze preserve world-space cell centers within numerical tolerance,
-- dynamic translation/rotation and live Matter edits survive later freeze,
-- freeze preserves arbitrary current orientation rather than snapping to a world lattice,
-- post-freeze Space remains editable.
+- activation preserves world-space cell centers within numerical tolerance,
+- the new dynamic provider participates in the upcoming solver tick rather than losing one phase,
+- dynamic translation/rotation and live Matter edits survive later freeze-to-static replacement,
+- static replacement preserves arbitrary current orientation rather than snapping to a world lattice,
+- post-freeze Space remains editable,
+- the test acts primarily as a client of the shared lifecycle path rather than implementing replacement orchestration itself.
 
-**Non-goals:** canonical-world reintegration, bake/resample, production persistence, scalable collision representation.
+**Non-goals:** canonical-world reintegration, bake/resample, production persistence, scalable collision representation, actor transition semantics.
 
-**Falsification trigger:** if authority becomes ambiguous or logical state must be duplicated between providers, revise the Space/frame model rather than hiding the ambiguity behind a manager class.
+**Falsification trigger:** if authority becomes ambiguous, providers must duplicate logical truth, or a clean transition requires test-local hidden compensation, revise the Space/frame model rather than hiding ambiguity behind a manager class.
+
+**STOP / decision:** once one bounded static→dynamic→static replacement cycle is defended through shared runtime, re-evaluate whether LAB or another adversarial lifecycle challenger has higher information value than adding lifecycle features.
 
 ## LAB — restore the interactive lab as a real consumer
 
