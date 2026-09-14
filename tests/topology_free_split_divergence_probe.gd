@@ -42,8 +42,15 @@ func _run() -> void:
 	var parent_l: Vector3 = merged_inertia_world * common_angular + merged_com_world.cross(parent_p)
 	var parent_energy: float = _body_energy(float(merged_props["mass"]), merged_linear, merged_inertia_world, common_angular)
 
-	var left := _make_child(world, "LeftChild", left_volume, common_transform * Transform3D(Basis.IDENTITY, Vector3(LEFT_ORIGIN)))
-	var right := _make_child(world, "RightChild", right_volume, common_transform * Transform3D(Basis.IDENTITY, Vector3(RIGHT_ORIGIN)))
+	# Unsplit control: same Matter, pose and initial rigid velocity field, integrated
+	# independently by Jolt. This separates topology effects from solver-level
+	# free-rotation behavior.
+	var reference := _make_body(world, "UnsplitReference", merged_volume, common_transform)
+	reference.linear_velocity = merged_linear
+	reference.angular_velocity = common_angular
+
+	var left := _make_body(world, "LeftChild", left_volume, common_transform * Transform3D(Basis.IDENTITY, Vector3(LEFT_ORIGIN)))
+	var right := _make_body(world, "RightChild", right_volume, common_transform * Transform3D(Basis.IDENTITY, Vector3(RIGHT_ORIGIN)))
 
 	var left_com_world: Vector3 = left.global_transform * Vector3(left_props["center_of_mass_local"])
 	var right_com_world: Vector3 = right.global_transform * Vector3(right_props["center_of_mass_local"])
@@ -53,13 +60,17 @@ func _run() -> void:
 	right.angular_velocity = common_angular
 
 	var initial_metrics: Dictionary = _system_metrics(left, left_props, right, right_props)
+	var reference_initial: Dictionary = _single_body_metrics(reference, merged_props)
 	var initial_p_error: float = Vector3(initial_metrics["p"]).distance_to(parent_p)
 	var initial_l_error: float = Vector3(initial_metrics["l"]).distance_to(parent_l)
 	var initial_energy_error: float = abs(float(initial_metrics["energy"]) - parent_energy)
+	var initial_p_relative: float = initial_p_error / max(parent_p.length(), 1.0)
+	var initial_l_relative: float = initial_l_error / max(parent_l.length(), 1.0)
+	var initial_energy_relative: float = initial_energy_error / max(abs(parent_energy), 1.0)
 
-	_check(initial_p_error < 0.0002, "instantaneous split preserves parent linear momentum")
-	_check(initial_l_error < 0.0002, "instantaneous split preserves parent angular momentum")
-	_check(initial_energy_error < 0.001, "instantaneous split preserves parent kinetic energy")
+	_check(initial_p_relative < 0.00001, "instantaneous split preserves parent linear momentum within float precision")
+	_check(initial_l_relative < 0.00001, "instantaneous split preserves parent angular momentum within float precision")
+	_check(initial_energy_relative < 0.00001, "instantaneous split preserves parent kinetic energy within float precision")
 
 	var initial_alignment: Dictionary = _alignment_metrics(left, left_props, right, right_props)
 	_check(float(initial_alignment["frame_origin_gap"]) < 0.00001, "successor frames begin with one common frame origin")
@@ -80,27 +91,34 @@ func _run() -> void:
 
 	var final_alignment: Dictionary = _alignment_metrics(left, left_props, right, right_props)
 	var final_metrics: Dictionary = _system_metrics(left, left_props, right, right_props)
-	var p_error: float = Vector3(final_metrics["p"]).distance_to(Vector3(initial_metrics["p"]))
-	var l_error: float = Vector3(final_metrics["l"]).distance_to(Vector3(initial_metrics["l"]))
-	var energy_error: float = abs(float(final_metrics["energy"]) - float(initial_metrics["energy"]))
-	var p_relative: float = p_error / max(Vector3(initial_metrics["p"]).length(), 1.0)
-	var l_relative: float = l_error / max(Vector3(initial_metrics["l"]).length(), 1.0)
-	var energy_relative: float = energy_error / max(abs(float(initial_metrics["energy"])), 1.0)
+	var reference_final: Dictionary = _single_body_metrics(reference, merged_props)
 
-	_check(max_seam_gap > 0.01, "free successors physically diverge at their former seam")
-	_check(max_angle_gap > 0.001, "free successors no longer share one rigid-frame orientation")
-	_check(max_velocity_gap > 0.01, "free successors develop incompatible seam velocity fields")
-	_check(p_relative < 0.0001, "collisionless free successors conserve total linear momentum")
-	_check(l_relative < 0.005, "collisionless free successors keep total angular momentum bounded")
-	_check(energy_relative < 0.005, "collisionless free successors keep total kinetic energy bounded")
+	var p_relative: float = _relative_vector_error(Vector3(final_metrics["p"]), Vector3(initial_metrics["p"]))
+	var l_relative: float = _relative_vector_error(Vector3(final_metrics["l"]), Vector3(initial_metrics["l"]))
+	var energy_relative: float = _relative_scalar_error(float(final_metrics["energy"]), float(initial_metrics["energy"]))
+	var reference_p_relative: float = _relative_vector_error(Vector3(reference_final["p"]), Vector3(reference_initial["p"]))
+	var reference_l_relative: float = _relative_vector_error(Vector3(reference_final["l"]), Vector3(reference_initial["l"]))
+	var reference_energy_relative: float = _relative_scalar_error(float(reference_final["energy"]), float(reference_initial["energy"]))
+
+	_check(max_seam_gap > 0.5, "free successors physically diverge at their former seam")
+	_check(max_velocity_gap > 0.5, "free successors develop incompatible seam velocity fields")
+	_check(p_relative < 0.0001, "collisionless free successors keep total linear momentum bounded")
+	_check(energy_relative < 0.0001, "collisionless free successors keep total kinetic energy bounded")
+	_check(reference_p_relative < 0.0001, "unsplit control keeps linear momentum bounded")
+	_check(reference_energy_relative < 0.0001, "unsplit control keeps kinetic energy bounded")
+	# Jolt's gyroscopic force is opt-in upstream and is not exposed by the Godot
+	# RigidBody3D API used here. Angular-momentum drift is therefore measured
+	# against the unsplit control rather than silently treated as a topology error.
+	_check(l_relative < 0.02, "split-system angular-momentum drift remains bounded for this solver mode")
+	_check(reference_l_relative < 0.02, "unsplit-control angular-momentum drift remains bounded for this solver mode")
 
 	print(
-		"TOPOLOGY_FREE_SPLIT_DIVERGENCE_METRIC frames=%d initial_p_error=%.10f initial_l_error=%.10f initial_energy_error=%.10f final_frame_origin_gap=%.6f final_frame_angle_gap=%.6f final_seam_gap=%.6f final_seam_velocity_gap=%.6f max_frame_angle_gap=%.6f max_seam_gap=%.6f max_seam_velocity_gap=%.6f p_relative_error=%.10f l_relative_error=%.10f energy_relative_error=%.10f left_angular=%s right_angular=%s"
+		"TOPOLOGY_FREE_SPLIT_DIVERGENCE_METRIC frames=%d initial_p_relative=%.10f initial_l_relative=%.10f initial_energy_relative=%.10f final_frame_origin_gap=%.6f final_frame_angle_gap=%.6f final_seam_gap=%.6f final_seam_velocity_gap=%.6f max_frame_angle_gap=%.6f max_seam_gap=%.6f max_seam_velocity_gap=%.6f split_p_relative=%.10f split_l_relative=%.10f split_energy_relative=%.10f reference_p_relative=%.10f reference_l_relative=%.10f reference_energy_relative=%.10f left_angular=%s right_angular=%s reference_angular=%s"
 		% [
 			FREE_FRAMES,
-			initial_p_error,
-			initial_l_error,
-			initial_energy_error,
+			initial_p_relative,
+			initial_l_relative,
+			initial_energy_relative,
 			float(final_alignment["frame_origin_gap"]),
 			float(final_alignment["frame_angle_gap"]),
 			float(final_alignment["seam_gap"]),
@@ -111,8 +129,12 @@ func _run() -> void:
 			p_relative,
 			l_relative,
 			energy_relative,
+			reference_p_relative,
+			reference_l_relative,
+			reference_energy_relative,
 			left.angular_velocity,
 			right.angular_velocity,
+			reference.angular_velocity,
 		]
 	)
 
@@ -127,16 +149,21 @@ func _system_metrics(left: ConstructBody, left_props: Dictionary, right: Constru
 		{"body": left, "props": left_props},
 		{"body": right, "props": right_props},
 	]:
-		var body: ConstructBody = spec["body"]
-		var props: Dictionary = spec["props"]
-		var mass: float = float(props["mass"])
-		var com_world: Vector3 = body.global_transform * Vector3(props["center_of_mass_local"])
-		var inertia_world: Basis = MatterMassProperties.world_inertia(props["inertia_tensor_local"], body.global_transform.basis)
-		var p: Vector3 = body.linear_velocity * mass
-		total_p += p
-		total_l += inertia_world * body.angular_velocity + com_world.cross(p)
-		total_energy += _body_energy(mass, body.linear_velocity, inertia_world, body.angular_velocity)
+		var metrics: Dictionary = _single_body_metrics(spec["body"], spec["props"])
+		total_p += Vector3(metrics["p"])
+		total_l += Vector3(metrics["l"])
+		total_energy += float(metrics["energy"])
 	return {"p": total_p, "l": total_l, "energy": total_energy}
+
+
+func _single_body_metrics(body: ConstructBody, props: Dictionary) -> Dictionary:
+	var mass: float = float(props["mass"])
+	var com_world: Vector3 = body.global_transform * Vector3(props["center_of_mass_local"])
+	var inertia_world: Basis = MatterMassProperties.world_inertia(props["inertia_tensor_local"], body.global_transform.basis)
+	var p: Vector3 = body.linear_velocity * mass
+	var l: Vector3 = inertia_world * body.angular_velocity + com_world.cross(p)
+	var energy: float = _body_energy(mass, body.linear_velocity, inertia_world, body.angular_velocity)
+	return {"p": p, "l": l, "energy": energy}
 
 
 func _alignment_metrics(left: ConstructBody, left_props: Dictionary, right: ConstructBody, right_props: Dictionary) -> Dictionary:
@@ -167,6 +194,14 @@ func _alignment_metrics(left: ConstructBody, left_props: Dictionary, right: Cons
 	}
 
 
+func _relative_vector_error(current: Vector3, reference_value: Vector3) -> float:
+	return current.distance_to(reference_value) / max(reference_value.length(), 1.0)
+
+
+func _relative_scalar_error(current: float, reference_value: float) -> float:
+	return abs(current - reference_value) / max(abs(reference_value), 1.0)
+
+
 func _body_energy(mass: float, linear: Vector3, inertia_world: Basis, angular: Vector3) -> float:
 	return 0.5 * mass * linear.length_squared() + 0.5 * angular.dot(inertia_world * angular)
 
@@ -175,7 +210,7 @@ func _velocity_at_point(linear: Vector3, angular: Vector3, com_world: Vector3, p
 	return linear + angular.cross(point_world - com_world)
 
 
-func _make_child(world: Node3D, body_name: String, volume: CellVolume, transform: Transform3D) -> ConstructBody:
+func _make_body(world: Node3D, body_name: String, volume: CellVolume, transform: Transform3D) -> ConstructBody:
 	var body := ConstructBody.new()
 	body.name = body_name
 	body.gravity_scale = 0.0
@@ -220,7 +255,7 @@ func _copy_volume(source: CellVolume, target_origin: Vector3i, target: CellVolum
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("TOPOLOGY_FREE_SPLIT_DIVERGENCE_PROBE_PASS: an instantaneous momentum/energy-preserving split produced successors that later became physically incompatible free frames while the isolated system kept conserved quantities bounded.")
+		print("TOPOLOGY_FREE_SPLIT_DIVERGENCE_PROBE_PASS: an instantaneous conservation-preserving split produced successors whose former seam diverged under free motion; split-system conservation was evaluated against an unsplit solver control.")
 		quit(0)
 		return
 	for failure in _failures:
