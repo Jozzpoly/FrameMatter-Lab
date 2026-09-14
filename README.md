@@ -1,396 +1,84 @@
 # FrameMatter Lab
 
-Research lab for an editable 3D world substrate where local matter can become a dynamic physical construct without losing its identity as editable matter.
+Research lab for an editable systemic-world substrate where local Matter can become static or dynamic physical space **without logical identity collapsing into engine representation**.
 
-This repository is intentionally **not** a Minecraft clone, vehicle game, portal demo, or final engine architecture. Its first job is to produce evidence about the smallest substrate that could later support those directions.
+This repository is intentionally **not** a Minecraft clone, vehicle game, portal demo, or final engine architecture. It exists to produce falsifiable evidence for the smallest substrate that could later support those directions.
 
-## 0.1 research thesis
+## North star
 
-An editable local space should be able to preserve its logical matter state while its render and physics representations are destroyed, rebuilt, moved, and eventually changed in fidelity.
+> Build an editable systemic-world substrate where local Matter, moving/static frames, actors and mechanisms can compose without logical identity being defined by render/physics objects.
 
-Early invariants under test:
+Long-term product pressure remains deliberately simple:
 
-- Matter is the source of truth; mesh and physics are derived representations.
-- Matter coordinates are local and do not depend on world transforms.
-- Logical identity is not a physics body/shape identity.
-- A spatial frame is not equivalent to scene-tree parenting.
-- Contact does not imply parenting.
-- A construct is editable local space with a dynamic representation, not a vehicle type.
-- Space and physics/simulation domain are separate concepts.
+> walk → dig/build → activate a local Space → ride it → edit it while moving → use one simple mechanism → inspect/debug the consequences.
 
-All of these remain falsifiable by evidence.
+That is a recurring pressure test, **not the current feature target**.
 
-## First campaign
+## Current live state
 
-| Gate | Question |
-| --- | --- |
-| **G0 — Matter Truth** | Can a minimal local editable matter model regenerate its mesh and collision representation from logical data alone? |
-| **G1 — Dynamic Construct** | Can the same matter become a stable dynamic physical construct without changing data model? |
-| **G2 — Live Mutation** | Can a moving construct rebuild geometry/collision/mass properties safely after matter edits? |
-| **G3 — Relative Actor** | Can an actor stand, walk, jump, and re-contact reliably relative to translating and rotating constructs? |
+The first campaign (**G0–G3**) is closed as bounded evidence:
 
-G0–G3 are now closed as bounded research gates. The architecture review below is the checkpoint before expanding scope.
+- logical Matter regenerates derived mesh/collision state,
+- the same Matter can back a dynamic Jolt `RigidBody3D`,
+- moving constructs can live-edit geometry/collision/mass/COM/inertia,
+- explicit support-frame actor semantics work on freely simulated constructs without scene parenting or uncontrolled kinematic pushing.
 
-## 0.1 stack
+Post-G3 bounded probes additionally established useful split/merge/rebase, lineage, pre-physics replacement timing, explicit binding, mechanical constraint succession/retirement, graph partition/contraction, oriented hinge succession and stateful motor/limit continuity.
 
-- Godot 4.7.2 stable
+These results are **not** production architecture or scale claims. Most are bounded evidence; the next campaign is designed to force them to compose through shared runtime paths.
+
+## Current active campaign
+
+Standalone mechanics expansion is ending deliberately.
+
+1. **M-CAP** — one final stateful graph-contraction capstone, then stop mechanics-only expansion.
+2. **I0A** — same-body dynamic ↔ frozen/static control lifecycle.
+3. **I0B / I1** — persistent logical local Space/frame identity across real static ↔ dynamic representation replacement.
+4. **LAB** — restore the interactive lab as a consumer of the same lifecycle path.
+5. **I2** — actor support continuity through representation/provider transfer.
+6. **I3** — one topology split through the shared integrated execution path.
+7. **Re-audit** — re-rank representation, actor, world-transfer and other frontiers from fresh evidence.
+
+The sequence is intentionally revisable. A material FAIL can reorder or invalidate later gates immediately.
+
+## Important current distinctions
+
+- **Matter ≠ mesh/collision/body identity.**
+- **Space/frame identity ≠ current representation/provider.**
+- **Space ≠ simulation domain.**
+- **contact ≠ mechanical constraint ≠ rigid bind.**
+- **freeze/static transition ≠ canonical-world reintegration ≠ bake/resample.**
+- **bounded PASS ≠ integrated/scale/product proof.**
+
+## Stack
+
+- Godot 4.7.2
 - built-in Jolt Physics
-- GDScript for fast falsification
-- standard float precision / local coordinates
-- custom minimal integer-grid matter model
-- intentionally simple derived mesh/collision representations
+- GDScript for rapid falsification
+- standard float precision + local coordinates
+- minimal custom integer-grid Matter model
+- intentionally simple truth/reference render + collision representations
 
-Voxel plugins, C++, portals, procedural terrain, streaming, multiplayer, Planet Matter, Create-like machinery, and JV/VAW-grade vehicle systems remain outside the first campaign unless later evidence makes one necessary.
+Box-per-cell dynamic collision is already rejected as scalable; optimization is deferred until the integrated lifecycle exposes the representation/update granularity actually required.
+
+## Documentation
+
+- **[ROADMAP.md](ROADMAP.md)** — living adaptive decision map: active campaign, stop conditions and future frontiers.
+- **[docs/research-state.md](docs/research-state.md)** — current defended / provisional / falsified / open truth.
+- **[docs/evidence/](docs/evidence/)** — durable campaign evidence and measurements.
+- **[docs/archive/](docs/archive/)** — historical direction checkpoints once they stop being live guidance.
+- **[docs/roadmap-readiness-audit.md](docs/roadmap-readiness-audit.md)** — audit that motivated the current roadmap/documentation model; transitional historical material.
 
 ## Evidence standard
 
-A gate is not a PASS because it looks correct once. We seek:
+A gate is not a PASS because it looks correct once. We seek explicit correctness, stability and performance evidence, and we distinguish:
 
-1. **Correctness** — expected behavior can be checked against explicit truth.
-2. **Stability** — repeated mutations/motion do not accumulate hidden failure.
-3. **Performance evidence** — costs and cliffs are measured before optimization.
+**Hypothesis → bounded evidence → integrated evidence → reusable-substrate evidence → scale evidence → playability/product evidence.**
 
-A local failure is useful evidence. The repository is allowed to replace representations, controller strategies, or even the host engine if the experiment justifies it.
+A failure is useful evidence. Representations, controllers, execution mechanisms and even the host engine remain replaceable if stronger consumers falsify current assumptions.
 
-## Current state
+## Working rule
 
-### G0 — PASS (bounded)
+The project should stabilize **intent and defended invariants**, not prematurely stabilize class names, API layouts or implementation mechanisms.
 
-Validated on Godot 4.7.2 in headless CI:
-
-- known geometry truth cases pass (isolated cell, adjacent pair, full 4³ cube),
-- mesh and collision representations regenerate from `CellVolume` after destruction,
-- moving a representation in world space does not mutate local Matter,
-- 500 deterministic Matter mutations preserve representation consistency,
-- baseline rebuild costs were measured before optimization.
-
-Baseline CI measurements for the intentionally naive box-per-cell representation:
-
-| Full cube | Cells / collision shapes | Mesh rebuild | Full representation rebuild |
-| --- | ---: | ---: | ---: |
-| 4³ | 64 | ~1.0 ms | ~1.5 ms |
-| 8³ | 512 | ~4.9 ms | ~7.1 ms |
-| 12³ | 1728 | ~16.5 ms | ~26.2 ms |
-
-These are one-run CI baselines, not performance targets. Later runs vary substantially with runner load. The scaling cliff is the useful result.
-
-### G1 — PASS (bounded)
-
-The same `CellVolume` is used by a real dynamic `RigidBody3D` under Jolt without changing the logical Matter model.
-
-Validated in headless CI:
-
-- a 2×1×2 construct falls, collides, settles, receives a mass-normalized impulse, and preserves its Matter snapshot,
-- settling horizontal drift for the symmetric smoke case was ~0.000065 world units,
-- an asymmetric 8-cell construct remains bounded through translation, rotation, collision and a torque impulse while preserving Matter truth,
-- a deliberately naive full 8³ construct with 512 independent collision shapes remains numerically stable and preserves Matter truth.
-
-The 512-shape probe exposes the expected representation cliff: across CI runs, rebuild and physics costs vary materially with runner load but are already far beyond a reasonable realtime budget. This is sufficient evidence that box-per-cell cannot be the scalable dynamic representation.
-
-This is **not** evidence for large voxel constructs, nested frames, live mutation, or actor-relative locomotion. It only closes G1's bounded question.
-
-### G2 — PASS (bounded)
-
-Live Matter edits rebuild a moving construct's mesh, collision representation, mass, center of mass and inertia while keeping the logical `CellVolume` authoritative.
-
-Validated in headless CI:
-
-- analytic equal-density Matter COM matches Jolt's observed local COM before and after asymmetric removals/additions,
-- mass and inverse mass follow solid-cell count after rebuilds,
-- inertia is refreshed and remains numerically bounded,
-- a deterministic 120-mutation campaign runs while the construct continuously translates and rotates,
-- every campaign step keeps mesh topology, collision-shape count, mass and solver COM coherent with current Matter,
-- the campaign's maximum COM error was ~0.00000122 and maximum inverse-mass error was effectively zero,
-- small-construct rebuilds remain in the low-millisecond range in CI, while the intentionally naive larger compound representation already shows a clear scaling cliff.
-
-G2 deliberately **does not solve momentum semantics** for physical attachment/detachment of material. A newly added cell's prior momentum and the momentum carried away by removed material remain a separate assembly/mechanics question. G2 only establishes bounded representation/mass-property coherence during live mutation.
-
-### G3 — PASS (bounded support-frame semantics)
-
-G3 produced both a useful failure and a successful replacement strategy.
-
-**Controlled moving-frame baseline.** Stock `CharacterBody3D` behaved well on a controlled Matter-derived `AnimatableBody3D`: translation, rotation and combined motion maintained floor contact for the complete probes. Measured construct-local horizontal drift was roughly 2–3 cm in the original sampling setup, and Godot reported the expected platform linear/angular velocities.
-
-**Free-dynamic failure.** The same stock kinematic character semantics were unsuitable when the support was a freely simulated `ConstructBody` (`RigidBody3D`). In the probe, the actor never acquired stable floor contact and the construct was accelerated to roughly 277 m/s. Increasing total construct mass from 49 kg through 4,900 kg to 490,000 kg barely changed the failure. This rules out "make the construct heavier" as an acceptable fix for this research case.
-
-**Frame-aware challenger.** A minimal query-based `FrameProbeCharacter` separates support-frame transport from physical actor→construct force exchange. While grounded it maintains an explicit construct-local support anchor; while airborne it moves in world space and can only re-enter a frame through a new physics query. It is not scene-tree parented to the construct and it intentionally applies no reaction force to the rigid body.
-
-The first challenger case passed ride → walk → jump → re-contact on a freely simulated construct with:
-
-- maximum ride local drift ~0.000016 m,
-- zero grounded-frame loss,
-- ~0.9 m × 0.5 m local walking displacement,
-- jump re-contact after 34 physics frames,
-- post-recontact local drift ~0.000010 m,
-- no measurable change to the construct's commanded linear or angular velocity in the test precision.
-
-A follow-up campaign varied translation, rotation, actor offset and construct mass:
-
-| Case | Construct motion | Total mass | Max ride drift | Jump re-contact | Velocity perturbation |
-| --- | --- | ---: | ---: | ---: | ---: |
-| `linear_fast` | 5 m/s, -3 m/s | 121 kg | 0.00000000 m | 34 frames | 0 |
-| `spin_offset` | 0.9 rad/s yaw | 121 kg | 0.00001775 m | 34 frames | 0 |
-| `combined_reverse` | -2.5/+2.0 m/s, -0.8 rad/s | 6,050 kg | 0.00001614 m | 34 frames | 0 |
-| `combined_heavy` | 3.5/-1.5 m/s, 1.1 rad/s | 121,000 kg | 0.00001628 m | 34 frames | 0 |
-
-All cases kept support during riding/walking, completed a bounded jump/re-contact, stayed below the 2 mm drift contract by a wide margin, and did not perturb the free construct's prescribed linear/angular velocity.
-
-G3 therefore establishes a narrower but important result: **support-frame locomotion can be represented explicitly above the rigid-body solver without transform parenting and without conflating contact transport with physical force exchange.**
-
-G3 does **not** establish a production character controller. `FrameProbeCharacter` currently uses a downward ray and does not solve capsule volume, walls, slopes, steps, ceilings, arbitrary gravity, tilted walk surfaces, actor–actor collision, physical pushing, or nested frames. Those remain separate questions.
-
-## Post-G3 architecture review — 0.1
-
-### Defended foundations
-
-- **Logical Matter remains independent of representation.** G0–G2 repeatedly reconstruct render/physics state from `CellVolume` without changing Matter identity.
-- **A construct can be treated as dynamic local space.** The same Matter can move, rotate and mutate while retaining coherent local coordinates and derived mass properties.
-- **Frame relationships should be explicit state, not scene-tree parenting.** G3's successful actor stores a support-local anchor and crosses between support-frame and world-space states deliberately.
-- **Support transport and force exchange are separate problems.** A body can carry an actor kinematically relative to its frame without granting the actor unlimited authority over the body's rigid-body motion.
-- **Synchronous frame kinematics must come from synchronous construct state, not delayed solver telemetry.** Matter-derived COM is available in the same topology transaction that creates or rebuilds a construct; solver-observed COM remains validation evidence.
-- **Godot + Jolt remains viable for the current research layer.** No first-campaign result currently justifies replacing the host engine or introducing native code merely to preserve the core invariants.
-
-### Falsified or rejected as scalable foundations
-
-- **One collision box per solid cell is not a scalable dynamic representation.** It remains useful as a truth/reference implementation only.
-- **Stock `CharacterBody3D` directly standing on a free `RigidBody3D` is not accepted as our actor/construct interaction model.** The bounded probe produced catastrophic, mass-insensitive rigid-body acceleration.
-- **Making constructs artificially enormous in mass is not an architectural fix** for actor/support semantics.
-- **Contact alone is insufficient to define frame membership.** Support-frame acquisition and release need explicit semantics.
-- **Solver-observed mass properties cannot be used as same-transaction topology authority.** `PhysicsDirectBodyState3D` observations arrive during integration and can be stale for a newly created successor frame.
-
-### Open debts before a broader substrate claim
-
-- scalable mesh/collision representations for larger editable constructs,
-- durable lineage allocation/persistence across save/load or network boundaries and semantics for fusion, mixing or transformation of material,
-- momentum semantics for general matter attachment/detachment beyond the bounded rigid split/merge cases below,
-- finite, physically meaningful actor→construct force exchange,
-- a volumetric actor controller (capsule/shape queries, walls, slopes, steps and ceilings),
-- nested/moving frames and frame transitions beyond one actor→construct relationship,
-- larger-coordinate/origin-management questions,
-- performance and stability under multiple simultaneous constructs and actors.
-
-The first campaign therefore does **not** define a final architecture. It establishes a small set of defended invariants and rejects several tempting shortcuts. The next campaign should be chosen from the open debts by information value, rather than by automatically adding game features.
-
-## Exploratory topology evidence — after G3
-
-Topology work has started as a separate exploratory line. These probes are **not yet a topology gate PASS**; they establish narrower semantics that can now be challenged by larger-scale cases and more general binding/frame semantics.
-
-### Moving split continuity
-
-A moving 66-cell Matter construct was cut into two 6-connected components containing 28 and 37 retained cells. The two new free `ConstructBody` instances inherited the parent's instantaneous rigid velocity field at their own centers of mass.
-
-Measured in CI:
-
-- all 65 retained cells survived the split,
-- maximum retained-cell velocity-field error was ~`5.46e-7 m/s`,
-- maximum child COM error was ~`1.03e-6 m`,
-- child angular-velocity error was zero at test precision,
-- summed child linear momentum matched retained-Matter linear momentum to float precision.
-
-This establishes a bounded split rule: when material removal partitions a rigid Matter frame, each successor can preserve the parent's instantaneous velocity field without preserving the parent's physics-body identity.
-
-### Actor support across frame replacement
-
-Query-only contact reacquisition was deliberately tested first when the actor's support parent was destroyed and replaced by two successor frames. It reacquired the correct child in one frame, but produced ~`7.21 cm` of one-tick local slip. That failure rejected ordinary contact reacquisition as a lossless topology-transition mechanism.
-
-An explicit **topology frame handoff** was then introduced. The topology transaction supplies the actor with the successor frame and mapped support-local point before the old frame disappears. In the same split case this reduced the handoff world discontinuity to ~`2.38e-7 m`, horizontal local-coordinate error to zero, later ride drift to ~`5.74e-6 m`, and preserved support without perturbing either successor rigid body's commanded motion.
-
-Current invariant candidate: **ordinary contact transitions may be query-driven, but topology replacement needs an atomic frame-successor mapping when continuity matters.**
-
-### Compact frame rebasing
-
-The next probe removed an accidental assumption from the first split implementation: successors no longer keep the parent's full sparse Matter address range. Each connected component is cropped into a compact `CellVolume` with an explicit source-origin offset, and its frame transform is shifted so retained Matter stays in the same world-space locations.
-
-For the actor-side successor, the source origin was `(5, 0, 0)` and its compact size became `(5, 3, 3)`. The actor's support coordinate therefore changed non-trivially from approximately `(7.552, 3.902, 1.514)` in the parent to `(2.552, 3.902, 1.514)` in the compact child.
-
-Measured in CI:
-
-- retained-cell world-position error ~`2.70e-6 m`,
-- retained-cell velocity-field error ~`2.02e-6 m/s`,
-- actor handoff world discontinuity ~`1.91e-6 m`,
-- mapped horizontal local-coordinate error `0`,
-- post-handoff ride drift ~`7.46e-6 m`,
-- zero support loss,
-- zero measured child linear/angular velocity perturbation,
-- jump/re-contact completed after 34 physics frames.
-
-An earlier version of this probe used a tilted parent with three-axis angular velocity and failed before the topology transaction because the bounded G3 ray-based actor does not establish tilted-frame/arbitrary-gravity locomotion. The probe was corrected rather than broadening the controller implicitly. Tilted walk surfaces remain explicitly unproven.
-
-The rebased result is important because it separates **Matter storage coordinates from spatial continuity**: a successor frame may choose a new compact local origin while world-space Matter, velocity field and actor support remain continuous through an explicit mapping.
-
-### Compatible frame merge
-
-The first merge probe deliberately used two separate source constructs that were lattice-aligned and already shared one common instantaneous rigid velocity field. This isolates merge/reframe semantics from collision or binding policy.
-
-The 25-cell and 34-cell sources became one 59-cell successor. Measured in CI:
-
-- maximum source-cell world-position error ~`2.70e-6 m`,
-- maximum velocity-field error ~`1.83e-6 m/s`,
-- retained Matter mass error `0`,
-- linear-momentum error ~`8.90e-5` in the float test accumulation,
-- solver COM error ~`7.91e-7 m`.
-
-This establishes a bounded **compatible merge** case: multiple frames that already describe the same rigid motion can be replaced by one successor without a meaningful physical discontinuity. It is better understood as lossless topology reframing than as a collision response.
-
-### Analytic Matter mass properties
-
-Incompatible merge requires angular momentum to be reasoned about explicitly rather than delegated blindly to the solver. `MatterMassProperties` therefore computes equal-density unit-cube mass, COM and the full local inertia tensor independently from Jolt, including the parallel-axis terms and products of inertia.
-
-The analytic result was compared with Jolt's full world-space inverse inertia tensor for a single cube, a rectangular block and an asymmetric sparse 12-cell compound under different 3D orientations.
-
-Across the campaign:
-
-- maximum COM error ~`4.92e-7 m`,
-- maximum inverse-mass error ~`6.0e-9`,
-- maximum full inverse-inertia-tensor action error ~`7.34e-7`,
-- the asymmetric sparse compound's tensor error was ~`6.2e-9`.
-
-This gives the research layer an independently verified physical description of Matter mass properties. Jolt remains the runtime solver, but topology reasoning no longer needs to treat its inertia as an opaque authority.
-
-### Incompatible perfectly-inelastic merge
-
-A second merge probe deliberately gave the two source frames incompatible linear and angular velocities. There is no single rigid successor velocity field that can preserve both source fields simultaneously, so the experiment used an explicit perfectly-inelastic rigid-binding contract rather than arbitrary velocity averaging:
-
-- successor linear velocity is derived from total linear momentum,
-- successor angular velocity is derived from total angular momentum about the merged COM and the merged Matter inertia tensor,
-- kinetic energy is allowed to dissipate,
-- the imposed per-cell velocity discontinuity is measured rather than hidden.
-
-For source masses `57.5 kg` and `78.2 kg` merging into `135.7 kg`, CI measured:
-
-- linear-momentum error `0` at test precision,
-- angular-momentum error ~`4.89e-5`,
-- kinetic energy before merge ~`989.05 J`,
-- kinetic energy after merge ~`607.19 J`,
-- dissipated kinetic energy ~`381.85 J`,
-- maximum retained-cell velocity change ~`4.59 m/s`,
-- RMS retained-cell velocity change ~`2.31 m/s`,
-- `ConstructBody` mass-vs-analytic-Matter error ~`3.05e-6 kg`.
-
-This is evidence for a second bounded merge regime: **when source rigid motions are incompatible, physical binding is not a lossless frame rewrite.** A perfectly-inelastic successor can conserve total linear and angular momentum while necessarily changing source velocity fields and dissipating kinetic energy.
-
-The stronger architecture implication is that **topological connectivity and rigid physical binding are separate semantics**. Matter becoming connected does not by itself determine that two currently independent frames must instantly become one body; a bind/merge event needs an explicit physical policy.
-
-### Free divergence after split
-
-A split is lossless only at the topology instant. A follow-up probe started two collisionless successor bodies from the same parent rigid velocity field and then let Jolt integrate them independently with no additional impulses.
-
-After 120 physics frames:
-
-- the former seam had separated by ~`4.714 m`,
-- the former seam points differed in velocity by ~`4.367 m/s`,
-- total linear-momentum drift was `0` at test precision,
-- relative kinetic-energy drift was ~`8.5e-9`,
-- split-system angular-momentum drift measured ~`0.544%`.
-
-An unsplit control body with the same initial Matter, pose and rigid motion was integrated beside the successors. Its measured angular-momentum drift was much larger at ~`5.71%`, while its linear momentum and kinetic energy were also effectively constant. The topology-specific excess angular-momentum drift was therefore `0` under the comparison contract.
-
-This separates a topology result from a host-solver limitation. The split preserves the parent's instantaneous conservation state to float precision, but once the constraint is removed the child COMs follow independent free trajectories; the centripetal acceleration that previously kept them in one rigid frame no longer exists. **A later merge cannot be treated as a mathematical inverse of split merely because the two pieces once belonged to the same construct.**
-
-For this solver configuration, angular-momentum measurements for general asymmetric free rotation must be calibrated against an unsplit control rather than assumed exact. Upstream Jolt supports optional gyroscopic-force handling, but this research path does not currently expose or rely on it through the Godot `RigidBody3D` API.
-
-### Actor handoff through incompatible binding
-
-The dependent-frame merge probe combined the earlier actor-handoff and inelastic-binding results. An actor first rode one source frame under real translation while two source lattices stayed aligned. At the binding instant the second source was assigned an incompatible horizontal/yaw rigid state, and the two sources were collapsed into one momentum-derived successor.
-
-The first implementation exposed a real same-transaction bug: position mapping, floor continuity and later riding were correct, but actor velocity was wrong by `1.21 m/s`. The cause was not the merge equations. `FrameProbeCharacter` was using `ConstructBody.observed_center_of_mass_local`, which is populated only when Jolt reaches `_integrate_forces()`. A newly created topology successor therefore still reported the default COM during the atomic handoff.
-
-The fix made the distinction explicit:
-
-- `matter_center_of_mass_local` is derived synchronously from authoritative Matter during every construct rebuild and is used for same-transaction frame kinematics,
-- `observed_center_of_mass_local` remains solver telemetry used to validate Matter against Jolt after integration.
-
-The complete regression suite remained green after this change. In the strengthened actor-merge case CI measured:
-
-- source lattice alignment error ~`8.60e-7 m`,
-- pre-merge actor local drift ~`4.77e-6 m`, with zero floor loss,
-- actor pre-bind support-velocity error ~`8.22e-5 m/s`,
-- dissipated binding energy ~`179.04 J`,
-- physical support velocity-field change at the actor ~`1.352 m/s`,
-- actor world-position discontinuity during handoff ~`4.77e-7 m`,
-- actor successor-velocity error after the fix ~`1.19e-7 m/s`,
-- mapped local-coordinate error `0`,
-- post-merge local ride drift ~`1.09e-5 m`,
-- zero support loss,
-- zero measured extra linear/angular kick to the merged body.
-
-This extends the atomic topology-handoff invariant: **a dependent frame can cross an incompatible rigid bind while preserving world position and local support continuity, yet intentionally adopt the successor's new physically derived velocity field in the same transaction.** A topology handoff is therefore not just an identity/local-coordinate rewrite; it can also carry an explicit velocity-state transition.
-
-### Repeated topology replacement and PhysicsServer timing
-
-A 48-cycle split → compact-rebase → compatible-merge campaign initially exposed a large apparent accumulation failure. Logical Matter storage stayed bit-identical and each individual topology mapping remained micrometric, yet a repeatedly replaced dynamic body drifted from a never-replaced control by ~`4.59 m` and ~`0.623 rad`.
-
-A replacement-only control reproduced the same phase loss without performing any topology work, separating the failure from split/merge mathematics. A dedicated timing probe then compared identical `RigidBody3D` destroy/recreate operations in two scheduling phases. After 32 replacements:
-
-- post-PhysicsServer-step linear replacement accumulated ~`1.484 m` origin error,
-- pre-PhysicsServer-step linear replacement stayed at ~`7.69e-6 m`,
-- post-step rotating replacement accumulated ~`2.155 m` and ~`0.415 rad`,
-- pre-step rotating replacement stayed at ~`3.72e-6 m` and ~`0.000977 rad`.
-
-The topology campaign was therefore moved to the `physics_frame` boundary before the upcoming PhysicsServer step, without any manual `velocity * delta` compensation. Over 48 replacement cycles CI then measured:
-
-- Matter storage mismatches: `0`,
-- maximum split world-position error ~`4.27e-6 m`,
-- maximum split velocity-field error ~`3.16e-6 m/s`,
-- merge COM error `0`,
-- maximum reconstructed linear-velocity error ~`1.75e-6 m/s`,
-- maximum reconstructed angular-velocity error ~`1.45e-6 rad/s`,
-- maximum subject-vs-never-replaced origin gap ~`8.86e-6 m`,
-- maximum retained-cell world-position gap ~`1.43e-5 m`,
-- final origin gap ~`1.07e-6 m`,
-- final orientation gap `0` at test precision.
-
-This establishes an execution invariant for the current host: **dynamic topology transactions that replace physics-body identity must commit before the upcoming PhysicsServer step if phase continuity is required.** Replacement scheduling is part of topology correctness, not merely an implementation detail.
-
-### Experimental Matter lineage
-
-A minimal `MatterLineageMap` sidecar was introduced to test logical identity semantics without committing lineage storage to canonical `CellVolume` or choosing a final UUID/persistence format. Tokens are opaque experimental identities only.
-
-The first challenger assigned unique lineage to 46 live Matter cells, split the Matter into two components, compact-rebased both, reassembled them into a third address frame, and replaced the physics body. All 46 cells underwent non-identity address remapping with zero lineage or material mismatches. One tracked cell moved through:
-
-`(10, 1, 2) → (1, 1, 1) → (8, 1, 1)`
-
-while retaining lineage token `10026`; the source and successor also had different physics-body identities. Destroying that Matter and recreating the same material at the same final coordinate deliberately produced a new lineage token instead of resurrecting the old one.
-
-A stronger 32-cycle campaign then repeated offset → split → compact → merge while destroying and recreating exactly one occupied cell per cycle. Across the campaign:
-
-- 46 live cells were maintained,
-- 32 explicit recreation events retired 32 lineage tokens,
-- 1,472 address moves were exercised,
-- lineage mismatches: `0`,
-- material mismatches: `0`,
-- duplicate live lineage tokens: `0`,
-- retired lineage tokens resurrected: `0`,
-- final assigned lineage count remained 46.
-
-This defends a bounded identity distinction: **storage coordinate identity, retained-Matter lineage identity, spatial-frame identity and physics-body identity are separate concepts.** Split/rebase/merge may replace coordinates and representations without replacing retained Matter lineage; actual destruction/recreation may deliberately start a new lineage even when coordinate and material are identical.
-
-This is not yet a production identity system. Durable allocation, serialization, save/load, networking, cross-session uniqueness and lineage semantics for material fusion, mixing, conversion or partial continuity remain open.
-
-### Topology checkpoint
-
-Current defended exploratory results now cover:
-
-- one rigid frame splitting into multiple successors while preserving retained-Matter instantaneous motion,
-- non-identity local-coordinate rebasing during split,
-- explicit dependent-frame succession for actor support,
-- compatible multi-frame merge as near-lossless reframing,
-- incompatible rigid merge with explicit conservation/dissipation semantics,
-- free successor divergence after a lossless instantaneous split,
-- actor succession through a dissipative incompatible merge including the successor velocity impulse,
-- independently verified Matter mass/COM/inertia needed to reason about those transitions,
-- an explicit separation between synchronous Matter-derived frame kinematics and delayed solver telemetry,
-- 48 repeated pre-PhysicsServer split/compact/merge replacements with exact Matter storage and micrometric absolute drift against a never-replaced control,
-- a host scheduling invariant for phase-preserving dynamic body replacement,
-- experimental retained-Matter lineage continuity across address/frame/body replacement,
-- fresh lineage for explicit destruction/recreation without retired-token resurrection across 32 repeated cycles.
-
-This is still **not a topology PASS**. Important open questions include:
-
-- binding triggers and policies: when mere contact/connectivity should or should not collapse frames,
-- non-lattice-aligned and nested frame relationships,
-- multiple dependents and dependents spanning different successor regions,
-- larger topology operations and scalable representations,
-- arbitrary frame orientation/gravity for actors,
-- general material attachment/detachment carrying independent momentum,
-- durable lineage allocation/persistence and semantics for fusion, mixing or transformation of material.
+When evidence and roadmap disagree, update the roadmap.
