@@ -9,6 +9,7 @@ var last_rebuild_usec := 0
 
 var observed_center_of_mass_local := Vector3.ZERO
 var observed_inverse_inertia := Vector3.ZERO
+var observed_inverse_inertia_tensor := Basis.IDENTITY
 var observed_inverse_mass := 0.0
 
 var _mesh_instance: MeshInstance3D
@@ -78,6 +79,7 @@ func _refresh_mass_properties() -> void:
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	observed_center_of_mass_local = state.center_of_mass_local
 	observed_inverse_inertia = state.inverse_inertia
+	observed_inverse_inertia_tensor = state.inverse_inertia_tensor
 	observed_inverse_mass = state.inverse_mass
 
 

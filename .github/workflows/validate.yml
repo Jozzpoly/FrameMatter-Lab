@@ -66,3 +66,6 @@ jobs:
 
       - name: Run topology compatible merge probe
         run: godot --headless --path . --script res://tests/topology_compatible_merge_probe.gd
+
+      - name: Run Matter mass-properties probe
+        run: godot --headless --path . --script res://tests/matter_mass_properties_probe.gd
