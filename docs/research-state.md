@@ -55,6 +55,17 @@ No bounded result implies production readiness, scale readiness or product value
 - Equivalent replacement committed before the upcoming PhysicsServer step preserves continuity to micrometer-scale error in the tested round trips.
 - Representation-changing transactions that replace physics-body identity therefore require a defended **pre-physics commit boundary**.
 
+## In-place static/dynamic lifecycle control
+
+- One `ConstructBody` can survive dynamic → `FREEZE_MODE_STATIC` → dynamic → `FREEZE_MODE_STATIC` while keeping the same instance and RID.
+- When measured at the actual transaction boundary, freeze/unfreeze produces no synchronous pose jump in the tested case; arbitrary orientation remains stable while frozen.
+- Matter, lineage and derived collision/mass state can be mutated/rebuilt while the same host body is frozen without moving its pose.
+- The same host can resume active rigid motion after unfreeze when velocity is explicitly commanded again.
+- Godot/Jolt freeze is **not** a general pause/resume guarantee for solver velocity state: linear/angular velocity properties remain visible through the frozen window and immediately after unfreeze, but the first subsequent solver step zeroed them in the bounded probe.
+- In-place freeze is therefore a defended low-churn lifecycle control, not yet the preferred representation strategy.
+
+Evidence: `docs/evidence/i0a-freeze-unfreeze-semantics.md`.
+
 ## Matter lineage
 
 - Matter identity is not coordinate identity and not physics-body identity.
@@ -99,7 +110,7 @@ Current working hypothesis:
 - provider replacement atomically transfers authority,
 - dependents refer to logical frame/ownership relations and resolve kinematics through the current provider.
 
-This is **not** yet a canonical class/API design and has not yet passed the integrated static↔dynamic lifecycle campaign.
+This is **not** yet a canonical class/API design and has not yet passed the integrated static↔dynamic provider-replacement campaign.
 
 ## Matter + lineage mutation authority
 
@@ -111,16 +122,13 @@ It is not yet established whether lineage belongs inside a larger `MatterSpace`,
 
 The timing invariant is defended, but a reusable runtime queue/boundary does not yet exist. Tests currently orchestrate the timing manually.
 
-A minimal shared pre-physics commit path is likely justified by the next representation lifecycle consumer.
+A minimal shared pre-physics commit path is now directly justified by the provider-replacement lifecycle consumer.
 
 ## Static/dynamic host strategy
 
-At least two strategies remain viable:
+I0A establishes in-place `RigidBody3D` freeze/mode switching as a viable bounded control with explicit host velocity caveats.
 
-- in-place `RigidBody3D` freeze/mode changes,
-- true replacement between distinct static and dynamic representations.
-
-The new lifecycle campaign begins by measuring in-place host semantics before choosing a lifecycle contract, then challenges representation replacement separately.
+The stronger strategy remains open: true replacement between distinct static and dynamic providers while logical Space identity and Matter authority remain continuous. I0B/I1 now tests that claim rather than assuming the in-place control is the final architecture.
 
 ## Physics material model
 
@@ -143,6 +151,7 @@ Current mass-property evidence assumes equal mass per occupied cell. `material_i
 - Coordinate identity as Matter identity.
 - Automatic nearest-cell resurrection of a destroyed mechanical anchor.
 - Treating arbitrary rotated `local Space → canonical world voxel grid` as a trivially lossless representation transition.
+- Treating `RigidBody3D.freeze` as an implicit promise that prior dynamic velocity will automatically resume on the next solver step after unfreeze.
 
 ---
 
@@ -150,12 +159,10 @@ Current mass-property evidence assumes equal mass per occupied cell. `material_i
 
 ## Immediate / active-campaign debts
 
-- Measure same-body `RigidBody3D` freeze/unfreeze semantics before defining the in-place lifecycle contract.
-- Persistent logical Space/frame identity through real representation lifecycle.
+- Persistent logical Space/frame identity through real static↔dynamic provider replacement.
 - Pose/velocity authority transfer between providers without dual truth.
 - One coherent Matter+lineage mutation authority for an interactive consumer.
 - Shared pre-physics commit path instead of test-local scheduling.
-- Static↔dynamic lifecycle through both in-place control and true replacement.
 - Interactive lab using the same lifecycle execution path as automated tests.
 - Actor support relation surviving provider-class changes.
 - One topology split implemented through shared runtime execution rather than giant test-local orchestration.
