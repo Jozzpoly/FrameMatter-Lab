@@ -111,3 +111,6 @@ jobs:
 
       - name: Run joint split succession integration probe
         run: godot --headless --path . --script res://tests/multiframe_joint_split_succession_probe.gd
+
+      - name: Run multi-anchor graph partition integration probe
+        run: godot --headless --path . --script res://tests/multiframe_multi_anchor_split_partition_probe.gd
