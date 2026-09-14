@@ -8,6 +8,8 @@ Evidence is **historical truth about what was tested**, not automatically live a
 
 The repository predates this directory, so the first evidence files still live directly under `docs/` and are indexed here until a later cleanup moves them without rewriting history:
 
+- `i2-actor-provider-transition.md` — actor support remains a logical `LocalMatterSpace` relation through static→dynamic→static provider replacement without test-local handoff; records the sync/phase-advance distinction discovered by the first challenger run.
+- `lifecycle-lab-consumer.md` — the real interactive LAB front door consumes the shared local-Space lifecycle for activation, motion, live mutation, freeze and post-freeze edit; second independent consumer shape for the lifecycle substrate.
 - `i0b-provider-replacement-lifecycle.md` — first integrated logical-Space lifecycle evidence: one authoritative Matter+lineage pair survives real `MatterRepresentation → ConstructBody → MatterRepresentation` provider replacement, live motion/editing and arbitrary-orientation freeze-to-static.
 - `i0a-freeze-unfreeze-semantics.md` — in-place `RigidBody3D` dynamic↔`FREEZE_MODE_STATIC` lifecycle control, frozen live edit, identity/pose continuity and measured host velocity semantics.
 - `stateful-graph-contraction-capstone.md` — standalone mechanics capstone closing the bounded stateful partition↔contraction campaign.
@@ -43,4 +45,4 @@ Evidence levels used by the project:
 5. Scale evidence
 6. Playability/product evidence
 
-Most older FrameMatter results are strong **bounded evidence**. I0B begins the integrated-evidence layer by exercising provider replacement and mutation through shared runtime rather than test-local reconstruction. Reusable-substrate evidence still requires an independent second consumer of that same path.
+Most older FrameMatter results are strong **bounded evidence**. I0B established the first integrated local-Space lifecycle consumer. The real LAB then exercised the same lifecycle through a materially different consumer shape, providing the first narrow **reusable-substrate evidence** for `LocalMatterSpace` lifecycle/mutation behavior. I2 adds integrated actor-support evidence on top of that substrate. None of this is scale or product evidence, and it does not make the current classes/APIs final architecture.
