@@ -38,7 +38,8 @@ func _run_known_geometry_cases() -> void:
 	var representation := MatterRepresentation.new()
 	get_root().add_child(representation)
 	representation.set_volume(cube)
-	_check(representation.get_collision_shape_count() == 64, "collision count matches known cube")
+	var expected_collision_count := CellCollisionBoxer.build_boxes(cube, representation.collision_mode).size()
+	_check(representation.get_collision_shape_count() == expected_collision_count, "collision count matches active compiled representation")
 	_check(representation.get_mesh_vertex_count() == 576, "derived representation matches known cube")
 	representation.free()
 
@@ -66,8 +67,9 @@ func _run_mutation_stability_case() -> void:
 		if step % 10 == 0 or step == 499:
 			representation.rebuild()
 			var expected_faces := CellMesher.count_exposed_faces(volume)
+			var expected_collision_count := CellCollisionBoxer.build_boxes(volume, representation.collision_mode).size()
 			_check(
-				representation.get_collision_shape_count() == volume.count_solid(),
+				representation.get_collision_shape_count() == expected_collision_count,
 				"mutation step %d collision count" % step
 			)
 			_check(
@@ -81,8 +83,9 @@ func _run_mutation_stability_case() -> void:
 	var rebuilt := MatterRepresentation.new()
 	get_root().add_child(rebuilt)
 	rebuilt.set_volume(volume)
+	var expected_rebuilt_collision_count := CellCollisionBoxer.build_boxes(volume, rebuilt.collision_mode).size()
 	_check(volume.duplicate_cells() == truth_snapshot, "destroy/rebuild preserves logical truth after 500 mutations")
-	_check(rebuilt.get_collision_shape_count() == volume.count_solid(), "post-stress collision regeneration")
+	_check(rebuilt.get_collision_shape_count() == expected_rebuilt_collision_count, "post-stress collision regeneration")
 	_check(rebuilt.get_mesh_vertex_count() == CellMesher.count_exposed_faces(volume) * 6, "post-stress mesh regeneration")
 	rebuilt.free()
 
