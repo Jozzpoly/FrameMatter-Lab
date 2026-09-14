@@ -250,3 +250,6 @@ jobs:
 
       - name: Run R2P post-aggregation profile
         run: godot --headless --path . --script res://tests/r2p_post_aggregation_profile.gd
+
+      - name: Run R2A derived-region locality challenger
+        run: godot --headless --path . --script res://tests/r2a_derived_region_locality_challenger.gd
