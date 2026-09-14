@@ -105,3 +105,6 @@ jobs:
 
       - name: Run actor-on-joint multi-frame integration probe
         run: godot --headless --path . --script res://tests/multiframe_actor_joint_probe.gd
+
+      - name: Run live-mutation joint integration probe
+        run: godot --headless --path . --script res://tests/multiframe_live_mutation_joint_probe.gd
