@@ -12,34 +12,35 @@ Long-term product pressure remains deliberately simple:
 
 > walk → dig/build → activate a local Space → ride it → edit it while moving → use one simple mechanism → inspect/debug the consequences.
 
-That is a recurring pressure test, **not the current feature target**.
+That is a recurring pressure test, not a promise to build those features in sequence.
 
 ## Current live state
 
-The first campaign (**G0–G3**) is closed as bounded evidence:
+The repository now has defended evidence across several layers:
 
-- logical Matter regenerates derived mesh/collision state,
-- the same Matter can back a dynamic Jolt `RigidBody3D`,
-- moving constructs can live-edit geometry/collision/mass/COM/inertia,
-- explicit support-frame actor semantics work on freely simulated constructs without scene parenting or uncontrolled kinematic pushing.
+- logical `CellVolume` Matter regenerates disposable mesh/collision representation,
+- the same logical Matter can be hosted by static or dynamic providers while logical `LocalMatterSpace` identity remains stable,
+- moving constructs survive live occupancy edits with Matter-derived mass/COM/inertia refresh,
+- actor support can remain a logical-Space relation through static↔dynamic provider replacement,
+- one logical moving Space can retire into compact topology successors with retained Matter lineage/world/velocity-field continuity,
+- independent frames can remain distinct while mechanically constrained; bounded joint state can survive split/partition/contraction cases,
+- exact merged-cuboid collision removed the demonstrated one-shape-per-cell scale bottleneck in dense/shell cases,
+- post-R1 profiling shows full mesh/cuboid/COM derivation—not installing a handful of merged shapes—now dominates representative full rebuilds,
+- bounded derived-region experiments prove strong edit locality is possible without making regions logical identity, but naive fixed regions can badly inflate final collider partitions.
 
-Post-G3 bounded probes additionally established useful split/merge/rebase, lineage, pre-physics replacement timing, explicit binding, mechanical constraint succession/retirement, graph partition/contraction, oriented hinge succession and stateful motor/limit continuity.
-
-These results are **not** production architecture or scale claims. Most are bounded evidence; the next campaign is designed to force them to compose through shared runtime paths.
+These are not production architecture, world-scale or product-quality claims.
 
 ## Current active campaign
 
-Standalone mechanics expansion is ending deliberately.
+The project has deliberately stopped representation optimization before it becomes architecture by inertia.
 
-1. **M-CAP** — one final stateful graph-contraction capstone, then stop mechanics-only expansion.
-2. **I0A** — same-body dynamic ↔ frozen/static control lifecycle.
-3. **I0B / I1** — persistent logical local Space/frame identity across real static ↔ dynamic representation replacement.
-4. **LAB** — restore the interactive lab as a consumer of the same lifecycle path.
-5. **I2** — actor support continuity through representation/provider transfer.
-6. **I3** — one topology split through the shared integrated execution path.
-7. **Re-audit** — re-rank representation, actor, world-transfer and other frontiers from fresh evidence.
+Active pressure is **P0 — a deliberately small interactive consumer**:
 
-The sequence is intentionally revisable. A material FAIL can reorder or invalidate later gates immediately.
+> walk on/around Matter → inspect/select a local cell → remove/place Matter → activate the same logical Space → ride it → edit while moving → freeze it → inspect/debug the result.
+
+The goal is not to make a game. It is to force the current substrate to compose under direct Owner interaction and reveal which pressure actually matters next.
+
+If edit latency becomes limiting, R2A already provides measured locality evidence. If actor limitations dominate, the actor frontier should move next. If lifecycle or topology semantics fail under interaction, those exact invariants should be reopened instead of hidden behind LAB-specific hacks.
 
 ## Important current distinctions
 
@@ -48,6 +49,7 @@ The sequence is intentionally revisable. A material FAIL can reorder or invalida
 - **Space ≠ simulation domain.**
 - **contact ≠ mechanical constraint ≠ rigid bind.**
 - **freeze/static transition ≠ canonical-world reintegration ≠ bake/resample.**
+- **dirty/invalidation region ≠ final physical representation partition.**
 - **bounded PASS ≠ integrated/scale/product proof.**
 
 ## Stack
@@ -57,9 +59,10 @@ The sequence is intentionally revisable. A material FAIL can reorder or invalida
 - GDScript for rapid falsification
 - standard float precision + local coordinates
 - minimal custom integer-grid Matter model
-- intentionally simple truth/reference render + collision representations
+- exact merged-cuboid collision as current provider default
+- intentionally simple truth/reference visuals and interaction surfaces
 
-Box-per-cell dynamic collision is already rejected as scalable; optimization is deferred until the integrated lifecycle exposes the representation/update granularity actually required.
+`PER_CELL` collision remains as a historical/reference control, not a scalability candidate.
 
 ## Documentation
 
