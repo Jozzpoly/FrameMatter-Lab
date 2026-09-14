@@ -42,6 +42,7 @@ func initialize_static(
 	lineage = new_lineage
 	_active_provider = _create_static_provider(world_transform)
 	_provider_kind = ProviderKind.STATIC
+	set_physics_process(true)
 
 
 func request_dynamic(linear_velocity: Vector3, angular_velocity: Vector3) -> bool:
