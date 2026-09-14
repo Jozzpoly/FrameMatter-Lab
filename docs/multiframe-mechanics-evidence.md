@@ -196,7 +196,35 @@ Fast and full validation both passed. CI evidence:
 
 Bounded result: **topology replacement can contract a constraint graph as well as partition it.** External relations may preserve logical identity while multiple endpoint frames collapse into one successor, whereas relations that become internal to the same rigid frame should be explicitly retired rather than converted into self-constraints.
 
-Within the currently tested `PinJoint3D` scope, partition and contraction therefore form a useful pair of graph-rewrite semantics driven by retained Matter ownership and successor-frame mapping rather than by source-object lifetime alone.
+Within the tested `PinJoint3D` graph-rewrite scope, partition and contraction form a useful pair of semantics driven by retained Matter ownership and successor-frame mapping rather than source-object lifetime alone.
+
+## Hinge succession preserves a full constraint frame
+
+A `HingeJoint3D` challenger tested whether the split-succession model generalized beyond a point constraint. Godot 4.7 configures a hinge from the full `Joint3D.global_transform`; with Jolt, the constraint frame's Z axis is the hinge axis and X is the normal/reference axis. The persistent scene joint therefore carried meaningful orientation as well as anchor position.
+
+The moving parent was split and compacted exactly as in the pin succession line. The endpoint successor was selected by retained owner-Matter lineage, but the topology transaction mapped and rebased the **entire logical hinge transform** before replacing the endpoint.
+
+Fast and full validation both passed. CI evidence:
+
+- owner lineage: `140038 -> 140038`,
+- lineage mismatches: `0`,
+- retained Matter world-position error: `0.0000021851 m`,
+- retained Matter velocity-field error: `0.0000011135 m/s`,
+- pre-split anchor gap: `0.0004014664 m`,
+- pre-split hinge-axis error: `0.0000728736 rad`,
+- stale persistent hinge origin before succession: `1.3354126215 m`,
+- stale hinge-basis error before succession: `0.4588833451`,
+- explicit origin/basis rebase errors: `0 / 0`,
+- maximum/final inherited hinge anchor gaps: `0.0006350714 m / 0.0006056876 m`,
+- maximum/final physical hinge-axis errors: `0.0001077580 / 0.0000831856 rad`,
+- relative reference-normal rotation reached `0.549711 rad` (~`31.5°`), proving that the inherited constraint still allowed material rotation around the preserved hinge axis,
+- non-owning successor separated by `10.922044 m`,
+- inherited-successor mechanical response: `Δv = 0.858740 m/s`, `Δω = 0.258670 rad/s`,
+- logical `HingeJoint3D` identity survived endpoint replacement.
+
+Bounded result: **mechanical succession is not inherently pin-specific. A topology transaction may need to preserve a logical constraint frame, not merely a point anchor.** For oriented constraints, continuity includes position and basis/axis semantics before the host endpoint is reconfigured.
+
+This strengthens the abstraction boundary: Matter lineage determines which successor owns an attachment, spatial mapping determines where its logical constraint frame moves, and host-specific joint reconstruction consumes that frame. The three concerns should remain distinct.
 
 ## Current invariant candidate
 
@@ -206,7 +234,7 @@ Topology replacement is becoming a multi-domain transaction rather than merely a
 - successor spatial frames and local coordinates,
 - dependent actor support frames,
 - mechanical-anchor ownership,
-- constraint-frame spatial state,
+- logical constraint-frame position and orientation,
 - per-anchor endpoint succession or retirement,
 - graph-edge contraction/retirement when endpoint frames merge,
 - pre-PhysicsServer scheduling.
@@ -215,7 +243,8 @@ These are related but must not be conflated. A retained Matter lineage may survi
 
 ## Still unproven
 
-- whether the same ownership/rebase/succession semantics generalize beyond `PinJoint3D`, especially hinges, motors and limits,
+- stateful hinge semantics through topology replacement: angular limits, motor state/target and motor authority,
+- whether partition/contraction graph rewrites generalize cleanly to oriented/stateful constraints,
 - multi-joint chains and loops under repeated topology rewrites,
 - graph-level conservation semantics during more complex simultaneous topology + constraint changes,
 - breakable-link policy and force/impulse thresholds,
