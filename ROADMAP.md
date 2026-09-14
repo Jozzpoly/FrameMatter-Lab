@@ -1,6 +1,6 @@
 # FrameMatter Lab — adaptive roadmap
 
-Status: **living research decision map**. This is not a fixed release plan, feature checklist, or promise of implementation order.
+Status: **living research decision map**. This is not a fixed release plan, feature checklist or promise of implementation order.
 
 ## North star
 
@@ -10,296 +10,268 @@ Long-term product pressure remains deliberately simple:
 
 > walk → dig/build → activate a local Space → ride it → edit it while moving → use a simple mechanism → understand/debug the consequences.
 
-This is a recurring pressure test, **not** the current sprint goal.
+This is recurring pressure, not the current sprint goal.
 
-## How this roadmap is allowed to change
+## Decision rules
 
-- Evidence outranks sequence. A material FAIL may reorder, split, replace or delete later work immediately.
+- Evidence outranks sequence.
 - PASS does not automatically unlock the next thematically similar feature.
-- Every major campaign ends with a re-audit before scope expands.
-- Future frontiers are not commitments until their entry trigger is satisfied.
-- Stop conditions are first-class. A successful research line may be deliberately stopped when information value falls.
-- No sunk-cost protection. A stronger integrated consumer may falsify a mechanism with many green isolated probes.
-- Stable intent/invariants are preferred over stable class names, APIs or host-engine mechanisms.
-- Historical evidence is preserved even when live guidance changes.
-- Work is ranked by **information value × leverage × risk reduction / cost**, not by thematic neatness.
-- Interactive/playability pressure must recur periodically so the project does not become an isolated technology exercise.
+- Every major campaign ends in re-audit before scope expands.
+- Stop conditions are first-class.
+- No sunk-cost protection.
+- Stable intent/invariants matter more than stable class names/APIs/host mechanisms.
+- Work is ranked by **information value × leverage × risk reduction / cost**.
+- Interactive/playability pressure must recur so the project does not become a technology exercise detached from the intended experience.
 
 ## Evidence maturity
 
-Claims should carry an implicit or explicit maturity level:
+1. Hypothesis
+2. Bounded evidence
+3. Integrated evidence
+4. Reusable-substrate evidence
+5. Scale evidence
+6. Playability/product evidence
 
-1. **Hypothesis** — useful idea, no direct evidence.
-2. **Bounded evidence** — precise isolated probe passes.
-3. **Integrated evidence** — behavior composes with a real consumer and neighboring systems.
-4. **Reusable-substrate evidence** — multiple independent consumers use the same execution path.
-5. **Scale evidence** — representative size/load remains stable and performant.
-6. **Playability/product evidence** — Owner use shows the system creates the intended experience.
-
-A PASS at one level must never be silently promoted to the next.
+A PASS at one level never silently implies the next.
 
 ---
 
-# Recently closed work
+# Recently closed campaign
 
 ## M-CAP — standalone mechanics expansion: **FULL PASS / CLOSED**
 
-The stateful graph-contraction capstone closed the intended partition↔contraction symmetry: two distinct external motorized/limited hinges converged onto one inelastic merged successor while retaining separate owner lineage, full constraint frames, joint identities and active state; the relation that became internal/self-edge retired.
-
-The mechanics-only expansion is deliberately stopped here. Longer chains, loops, breakable links and mechanism catalogues are not the next research direction. They return only when an integrated/playable consumer creates a concrete information need.
+Bounded stateful partition↔contraction symmetry is sufficiently exercised. Longer chains, loops, breakables and mechanism catalogues are stopped until an integrated/playable consumer creates a concrete need.
 
 Evidence: `docs/evidence/stateful-graph-contraction-capstone.md`.
 
 ## I0A — in-place static/dynamic control: **FULL PASS / CONTROL CLOSED**
 
-One `ConstructBody` / RID survived dynamic → `FREEZE_MODE_STATIC` → frozen live edit → dynamic → second static freeze while preserving pose, arbitrary orientation, Matter/lineage authority and derived-state coherence in the bounded probe.
-
-Important host truth: velocity properties remained visible throughout freeze and immediately after unfreeze, but the first subsequent solver step zeroed linear/angular velocity. Therefore in-place freeze is a useful low-churn control, **not** an implicit pause/resume contract and not automatically the final provider strategy.
+Useful low-churn host control with explicit velocity-resume caveat. Not the only provider strategy.
 
 Evidence: `docs/evidence/i0a-freeze-unfreeze-semantics.md`.
 
-## I0B / I1 baseline — logical Space + real provider replacement: **FULL PASS / INTEGRATED BASELINE CLOSED**
+## I0B — logical Space + real provider replacement: **FULL PASS / INTEGRATED**
 
-One persistent logical `LocalMatterSpace` survived:
-
-`MatterRepresentation → ConstructBody → MatterRepresentation`
-
-while preserving one authoritative Matter + lineage pair, exactly one live provider, world-space continuity, dynamic motion/rotation, live edits, arbitrary-orientation freeze-to-static and post-freeze editing.
-
-The concrete provider IDs/classes changed; the logical Space ID did not. This is the first integrated evidence for **logical Space ≠ current engine provider**.
-
-Important timing refinement: a provider installed at `SceneTree.physics_frame` can participate in the upcoming PhysicsServer step even though its `RigidBody3D` node will not expose that solver transform until the next `PhysicsServer3D.sync()`. Same-step PhysicsServer truth and scene-node visibility are distinct observation layers.
+Persistent logical Space survives real `MatterRepresentation → ConstructBody → MatterRepresentation` provider replacement while retaining one Matter+lineage authority pair, pose continuity, motion and editing.
 
 Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`.
 
-**STOP applied:** do not add another same-shaped provider replacement probe merely because I0B passed.
+## LAB — second independent lifecycle consumer: **FULL PASS / NARROW REUSABLE-SUBSTRATE EVIDENCE**
+
+The actual interactive LAB scene consumes the same provider/mutation lifecycle rather than owning hidden replacement orchestration.
+
+Evidence: `docs/evidence/lifecycle-lab-consumer.md`.
+
+## I2 — actor continuity through provider replacement: **FULL PASS / INTEGRATED**
+
+Actor support can remain a logical Space relation while the concrete provider changes static↔dynamic↔static. Provider-preserving local coordinates need no test-local handoff; topology rebases still require explicit mapping.
+
+Evidence: `docs/evidence/i2-actor-provider-transition.md`.
+
+## I3 — topology mutation through shared runtime: **FULL PASS / INTEGRATED**
+
+A moving logical Space can retire through one shared connected-component transaction into fresh compact successor Spaces while retained Matter lineage, world placement, rigid velocity field and explicit actor succession remain coherent.
+
+The adversarial test no longer implements the split itself.
+
+Evidence: `docs/evidence/i3-shared-topology-split.md`.
+
+### Re-audit result after I3
+
+The I0B→LAB→I2→I3 line established enough lifecycle coherence that another same-scale lifecycle semantic probe now has lower expected information value than measuring the present reference representation under increasing load.
+
+The project therefore enters the **R — scalable representation frontier**, beginning with measurement rather than optimization.
 
 ---
 
-# Active campaign — independent interactive consumer
+# Active campaign — R0 representation / scale baseline
 
-Only this section is ordered. Everything below it is a decision frontier or later integrated campaign, not an automatic queue.
+## Question
 
-## LAB — make the shared lifecycle path visible and interactive
+Where does the current deliberately simple truth/reference representation actually stop being cheap enough, and which cost dominates first?
 
-**Re-rank decision:** LAB now has higher information value than immediately stacking actor-transition complexity on top of a runtime path that has only one automated integrated consumer.
+## Why now
 
-**Question:** can the exact same `LocalMatterSpace` lifecycle/mutation path be exercised by an interactive visual workbench and remain understandable to a human observer?
+The current implementation is intentionally easy to reason about:
 
-**Why now:**
+- full visual mesh rebuild,
+- full collision teardown/recreation,
+- one collision box/node per occupied cell,
+- full Matter scans for mass/COM,
+- full-volume connected-component scans and full-size component materialization before compaction.
 
-- I0B established the automated integrated baseline.
-- A second independent consumer can move the lifecycle path toward reusable-substrate evidence.
-- Interactive inspection can expose authority/timing/visibility mistakes that scripted assertions hide.
-- It gives early ergonomics/product pressure without prematurely chasing the full gameplay slice.
+Those choices are appropriate for semantic research but already suspect for scale. We now have enough integrated lifecycle evidence that their cost can be measured without simultaneously inventing lifecycle semantics.
 
-**Required behavior:**
+## R0 rules
 
-- start with one visible static local Space,
-- visible controls for static→dynamic activation and dynamic→static freeze/replacement,
-- visible controls for at least one Matter remove/create/material edit through `LocalMatterSpace.mutate_cell`,
-- dynamic provider actually moves/rotates after activation,
-- freeze preserves the current arbitrary pose,
-- edits work both while dynamic and after returning static,
-- debug presentation shows at minimum:
-  - persistent logical Space identity,
-  - current provider kind,
-  - current provider instance ID,
-  - occupied Matter count,
-  - a small lineage/mutation indicator,
-  - whether a provider transition is pending,
-- visual/debug state must read from the shared runtime path, not duplicate hidden test truth.
+**Measure before optimizing.**
 
-**Interaction goal:** low ceremony. Keyboard/buttons are sufficient; no polished UX, inventory, character controller or game rules are required.
+During R0 do not introduce:
 
-**Non-goals:**
+- greedy collision boxes,
+- chunk/region partitioning,
+- dirty-region rebuilds,
+- convex decomposition,
+- async/threaded rebuild scheduling,
+- ECS/world-manager abstraction,
+- native-Jolt replacement,
+- LOD/near-far modes.
 
-- the long-term walk/dig/build/ride gameplay slice,
-- polished world art/UI,
-- actor provider handoff,
-- scalable collision,
-- mechanisms,
-- canonical-world extraction,
-- save/load.
+Any of those may become a challenger only after baseline data shows which pressure it addresses.
 
-**PASS is not purely CI:** automated parse/smoke checks can protect the lab, but this campaign ultimately needs an Owner-visible run/screenshot/manual interaction verdict before it can claim reusable-substrate or usability evidence.
+## Required benchmark dimensions
 
-**STOP / decision:** once the LAB demonstrably uses the same runtime path, pause and re-rank. Do not automatically turn it into a game prototype.
+Use several controlled volume extents and several occupancy patterns that separate “occupied Matter count” from “scanned bounding volume”. At minimum:
 
----
+- dense solid,
+- shell/surface-dominant geometry,
+- sparse geometry,
+- disconnected geometry for split cost.
 
-# Next integrated campaigns — provisional order after LAB
+Record at least:
 
-These remain candidates until LAB evidence is reviewed.
+- extent / total cells scanned,
+- occupied cells,
+- collision shape count,
+- derived mesh vertex count,
+- initial static-provider rebuild/build cost,
+- initial dynamic-provider rebuild/build cost,
+- one-cell dynamic mutation/full rebuild cost,
+- connected-component extraction cost,
+- shared one→many split transaction cost,
+- successor count and total successor collision shapes.
 
-## I2 — actor continuity through provider transition
+Prefer repeated samples/median or another simple robust statistic where timing noise matters. Keep the benchmark small enough for CI but large enough to expose the first curve bend.
 
-**Question:** can actor support refer to a logical frame relation while the concrete support provider changes static↔dynamic↔static?
+## PASS condition
 
-**Required evidence:**
+R0 is **not** “performance is good”. It passes if:
 
-- no one-frame reacquisition slip,
-- explicit support mapping/authority transfer,
-- no teleport,
-- grounded state preserved where geometrically valid,
-- support velocity changes coherently as motion begins/ends,
-- solver-state vs synchronized-node-state timing is handled explicitly,
-- no return of uncontrolled kinematic actor→rigid-body impulse semantics.
+- measurements are reproducible enough to compare cases,
+- benchmark does not alter the implementation it measures,
+- at least one meaningful scaling pressure can be ranked from evidence,
+- we can choose the next R challenger because of observed cost rather than intuition.
 
-**Non-goal:** production volumetric controller.
+## STOP / re-rank
 
-## I3 — topology mutation through the shared integrated path
-
-**Question:** can a moving Space split through the same reusable lifecycle path instead of manually recreating successor logic inside a giant probe?
-
-**Required reuse:**
-
-- retained/destroyed/created Matter identity handling,
-- compact local-coordinate mapping,
-- physical-state/velocity-field inheritance,
-- defended lifecycle timing,
-- actor support succession if I2 has already earned reuse,
-- at most one deliberately chosen mechanical relation if it increases information value.
-
-**PASS condition:** the new test is primarily an adversarial client of shared runtime execution rather than the place where topology behavior is implemented.
-
-## Re-audit gate
-
-After the LAB and before/after substantial I2/I3 work, re-rank all frontiers. Do not assume the written sequence remains optimal if interactive evidence reveals a more fundamental risk.
+After R0, stop and rank candidate interventions by measured leverage. Do not automatically implement the most obvious optimization if the dominant cost is elsewhere.
 
 ---
 
-# Decision frontiers
+# Decision frontiers after R0
 
-These are **not ordered commitments**. Each has an entry trigger.
+These are not ordered commitments.
 
-## R — scalable representation
+## R1+ — representation challengers
 
-**Known pressure:** box-per-cell collision is already rejected as a scalable dynamic representation.
+Entry trigger: R0 identifies a dominant measurable cost.
 
-**Entry trigger:** integrated lifecycle is coherent enough that update granularity and real consumer pressure can be measured rather than guessed.
-
-Potential questions:
+Potential challengers include:
 
 - greedy merged boxes / primitive regions,
-- edit-local rebuild granularity,
-- convex clusters/decomposition and geometry error,
-- dirty-region physical rebuilds,
-- different near/far/frozen representations without turning them into gameplay modes,
-- separate visual-mesh and collision partitions unless evidence couples them.
+- dirty/edit-local collision rebuilds,
+- chunk/region representation boundaries,
+- separate visual and physical partitions,
+- convex clusters/decomposition when geometry warrants it,
+- representation simplification for inactive/far/frozen Spaces.
+
+Every challenger must preserve current logical Matter/lineage/lifecycle semantics unless evidence explicitly reopens them.
 
 ## A — volumetric actor + finite force exchange
 
-**Entry trigger:** support/provider semantics are integrated and a playable/interactive consumer needs walls/slopes/steps/ceilings or meaningful actor mass/reaction forces.
-
-Questions:
-
-- capsule/shape queries,
-- slopes/steps/ceilings,
-- finite actor→construct impulses,
-- tilted surfaces/arbitrary gravity only when a real consumer needs them.
+Entry trigger: support/provider semantics are integrated and an interactive/playable consumer needs walls/slopes/steps/ceilings or meaningful actor mass/reaction forces.
 
 ## W — canonical world extraction/reintegration
 
-**Entry trigger:** local-Space lifecycle is coherent and a real world consumer needs transfer to/from a canonical lattice.
+Entry trigger: a real world consumer needs transfer between canonical lattice and independent local Space.
 
 ### W0 — lossless lattice-compatible transfer
 
-`canonical world cells → independent Space → dynamic motion → lattice-compatible pose → reintegrate`
+`canonical cells → independent Space → dynamic motion → lattice-compatible pose → reintegrate`
 
-Must address ownership transfer, occupied destination policy, lineage continuity and dependencies crossing extraction boundaries.
+Must address ownership transfer, occupied destination policy, lineage and dependencies crossing extraction boundaries.
 
 ### W1 — incompatible pose / bake
 
-Not ordinary reintegration. Only enter if the product actually needs arbitrary bake-to-grid. Treat as conversion/resampling with measurable geometry/material/provenance error.
+Treat as conversion/resampling with explicit geometry/material/provenance error policy, not ordinary reintegration.
 
 ## P — persistence / durable logical identity
 
-**Entry trigger:** logical Space/Matter identity must survive process/save/load boundaries.
-
-Do not design production UUID semantics before this consumer exists.
+Entry trigger: logical Space/Matter identity must survive process/save/load boundaries.
 
 ## M — richer mechanics
 
-**Entry trigger:** an integrated/playable consumer needs a relation not covered by current bounded evidence.
-
-Possible future pressure: additional joint types, breakable links, shafts/transmission, closed loops/overconstraint. Do not explore them merely to enlarge the graph.
+Entry trigger: integrated/playable consumer needs a relation not covered by current bounded evidence.
 
 ## S — streaming / world scale
 
-**Entry trigger:** a concrete world consumer exceeds a single local active region.
-
-Questions include streaming authority, sleeping/frozen Spaces, origin/precision strategy, representation simplification and save boundaries.
+Entry trigger: concrete world consumer exceeds a single local active region.
 
 Large-world coordinates remain deferred until measurements require them.
 
 ## D — multiple simulation domains / migration
 
-**Entry trigger:** one solver domain can no longer conveniently/accurately host interactions or coordinate scales required by a real consumer.
+Entry trigger: one solver domain no longer conveniently or accurately hosts required interactions/coordinate scales.
 
-Space ≠ simulation domain remains a defended conceptual separation.
+Space ≠ simulation domain remains defended.
 
 ## N — nested/moving frames
 
-**Entry trigger:** a real gameplay/research consumer needs dependent Spaces rather than mere constraint-coupled peers.
+Entry trigger: a real consumer needs dependent Spaces rather than constraint-coupled peers.
 
-Do not infer nesting from scene-tree parenting.
+Never infer physics nesting from scene-tree parenting.
 
 ## L — spatial links / portals
 
-**Entry trigger:** integrated frame/query semantics are stable enough that cross-Space routing can be isolated rather than invented simultaneously with Space identity.
-
-Progressive research should begin static and query-only before moving endpoint/cross-frame physics.
+Entry trigger: integrated frame/query semantics are stable enough to isolate cross-Space routing. Begin static/query-only before moving endpoints or partial-crossing physics.
 
 ## C — curved / Planet Matter providers
 
-**Entry trigger:** planar/local Matter provider assumptions materially block a real planetary experiment.
-
-Current architecture should avoid unnecessary impossibility, but should not implement curved topology early.
+Entry trigger: planar/local Matter assumptions materially block a real planetary experiment. Avoid unnecessary impossibility now; do not build curved topology prematurely.
 
 ## V — JV-like vehicles / advanced mobile machinery
 
-**Entry trigger:** the world substrate can host rich moving editable mechanisms naturally enough that a vehicle system becomes a consumer/donor integration question rather than a separate minigame architecture.
+Entry trigger: the world substrate naturally hosts rich moving editable mechanisms strongly enough that vehicles become a consumer/donor question rather than a separate architecture.
 
 ---
 
 # Playability pressure frontier
 
-After sufficient integrated lifecycle + representation + actor evidence, schedule a deliberately small Owner-facing gameplay slice:
+After sufficient lifecycle + representation + actor evidence, schedule a deliberately small Owner-facing slice:
 
 > walk → dig/place → activate/freeze a local Space → ride/build on it → use one simple mechanism → inspect/debug consequences.
 
-Its purpose is **not** content production. It asks whether system composition produces the emergent freedom, feedback and comprehensibility that justify the long-term direction.
+Purpose: test emergent freedom, feedback and comprehensibility — not content production.
 
-The current LAB is deliberately earlier and narrower: a research workbench that keeps this north star visible without pretending the substrate is ready for the slice.
+LAB remains an earlier research workbench, not this gameplay slice.
 
 ---
 
 # CI / evidence governance
 
-Tests should gradually separate into:
+Tests should increasingly separate into:
 
-- **canonical invariants** — still-relevant truths protected continuously,
-- **current campaign** — active adversarial work,
-- **historical evidence probes** — preserved but allowed to leave every-push CI once superseded by stronger integrated tests.
+- **canonical invariants** — current truths protected continuously,
+- **current campaign** — active adversarial/measurement work,
+- **historical evidence probes** — preserved but allowed to leave every-push CI when superseded.
 
-Retiring a probe from live CI does not erase its evidence. Conversely, an old green test must not make an obsolete implementation detail architecturally permanent.
+Retiring an old probe from live CI does not erase evidence. An old green test also must not fossilize obsolete implementation details.
 
-A manifest/runner may replace the append-only workflow only when maintenance cost becomes material.
+A manifest/runner may replace the append-only workflow when maintenance cost becomes material.
 
 ---
 
 # Current stop / replan rules
 
-Replan immediately if any of the following occur:
+Replan immediately if:
 
-- logical Matter/lineage authority becomes ambiguous,
-- frame pose/velocity acquires two simultaneous authorities,
-- provider replacement cannot be made continuous without hidden compensation,
-- PhysicsServer truth and synchronized scene-node state are conflated in a way that breaks handoff/debug semantics,
-- integrated consumer requires repeated test-local orchestration that should have become shared runtime,
-- scalable representation needs contradict lifecycle assumptions,
+- Matter/lineage authority becomes ambiguous,
+- frame pose/velocity has two simultaneous authorities,
+- provider replacement needs hidden compensation to remain continuous,
+- transaction/solver/node observation layers are conflated in a way that breaks handoff/debug semantics,
+- integrated consumers repeatedly require orchestration that belongs in shared runtime,
+- R0/R1 scale evidence contradicts lifecycle assumptions,
 - Owner/playability pressure shows technically correct semantics are awkward or uninteresting,
-- host-engine limitations materially distort the intended invariants.
+- host-engine limitations materially distort intended invariants.
 
-The roadmap is doing its job when these events cause it to change.
+The roadmap is doing its job when such findings change the plan.
