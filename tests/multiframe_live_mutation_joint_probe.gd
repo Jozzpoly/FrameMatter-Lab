@@ -119,7 +119,7 @@ func _run() -> void:
 
 			var expected_mass := float(edited.volume.count_solid()) * MASS_PER_CELL
 			var expected_com := MatterTopology.center_of_mass_local(edited.volume)
-			var expected_shapes := edited.volume.count_solid()
+			var expected_shapes := CellCollisionBoxer.build_boxes(edited.volume, edited.collision_mode).size()
 			max_mass_error = max(max_mass_error, abs(edited.mass - expected_mass))
 			max_shape_error = max(max_shape_error, abs(edited.get_collision_shape_count() - expected_shapes))
 			max_com_shift = max(max_com_shift, edited.matter_center_of_mass_local.distance_to(initial_com))
@@ -143,7 +143,7 @@ func _run() -> void:
 	_check(mutation_count == mutation_cells.size() * 2, "campaign executes every planned remove/add mutation")
 	_check(max_com_shift > 0.05, "asymmetric edits materially move the edited frame COM")
 	_check(max_mass_error < 0.00001, "edited frame mass stays coherent with current Matter")
-	_check(max_shape_error == 0, "edited frame collision-shape count stays coherent with current Matter")
+	_check(max_shape_error == 0, "edited frame collision-shape count stays coherent with active collision compiler output")
 	_check(abs(edited.mass - initial_mass) < 0.00001, "restoring the removed Matter restores initial total mass")
 	_check(edited_storage_mismatch == 0, "remove/add cycle restores edited Matter exactly")
 	_check(sibling_storage_mismatch == 0, "editing one constrained frame never mutates sibling Matter")
