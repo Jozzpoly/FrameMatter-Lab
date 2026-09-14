@@ -20,7 +20,8 @@ func _init() -> void:
 	var representation := MatterRepresentation.new()
 	get_root().add_child(representation)
 	representation.set_volume(volume)
-	_check(representation.get_collision_shape_count() == 2, "collision representation derives from Matter")
+	var expected_collision_shapes := CellCollisionBoxer.build_boxes(volume, representation.collision_mode).size()
+	_check(representation.get_collision_shape_count() == expected_collision_shapes, "collision representation derives from Matter through the active collision compiler")
 	_check(representation.get_mesh_vertex_count() == 60, "mesh representation has 10 quads / 60 vertices")
 
 	var truth_snapshot := volume.duplicate_cells()
@@ -31,12 +32,14 @@ func _init() -> void:
 	var rebuilt := MatterRepresentation.new()
 	get_root().add_child(rebuilt)
 	rebuilt.set_volume(volume)
-	_check(rebuilt.get_collision_shape_count() == 2, "destroyed collision representation regenerates from Matter")
+	expected_collision_shapes = CellCollisionBoxer.build_boxes(volume, rebuilt.collision_mode).size()
+	_check(rebuilt.get_collision_shape_count() == expected_collision_shapes, "destroyed collision representation regenerates from Matter through the active collision compiler")
 	_check(rebuilt.get_mesh_vertex_count() == 60, "destroyed mesh representation regenerates from Matter")
 
 	volume.set_cell(Vector3i(2, 1, 1), CellVolume.EMPTY)
 	rebuilt.rebuild()
-	_check(rebuilt.get_collision_shape_count() == 1, "mutation invalidates/rebuilds collision representation")
+	expected_collision_shapes = CellCollisionBoxer.build_boxes(volume, rebuilt.collision_mode).size()
+	_check(rebuilt.get_collision_shape_count() == expected_collision_shapes, "mutation invalidates/rebuilds collision representation from Matter")
 	_check(rebuilt.get_mesh_vertex_count() == 36, "mutation invalidates/rebuilds mesh representation")
 	_check(CellMesher.count_exposed_faces(volume) == 6, "logical truth remains internally consistent after mutation")
 
