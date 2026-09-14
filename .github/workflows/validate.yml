@@ -247,3 +247,6 @@ jobs:
 
       - name: Run R1 merged lifecycle integration gate
         run: godot --headless --path . --script res://tests/r1_merged_lifecycle_integration_probe.gd
+
+      - name: Run R2P post-aggregation profile
+        run: godot --headless --path . --script res://tests/r2p_post_aggregation_profile.gd
