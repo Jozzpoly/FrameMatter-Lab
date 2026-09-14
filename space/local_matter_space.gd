@@ -17,6 +17,7 @@ var volume: CellVolume
 var lineage: MatterLineageMap
 
 var mass_per_cell := 1.0
+var collision_mode := CellCollisionBoxer.Mode.PER_CELL
 var dynamic_gravity_scale := 0.0
 var dynamic_linear_damp := 0.0
 var dynamic_angular_damp := 0.0
@@ -197,8 +198,6 @@ func _commit_pending_transition() -> void:
 		previous_linear = previous_provider.linear_velocity
 		previous_angular = previous_provider.angular_velocity
 
-	# Retire the old physics/render provider before installing the successor.
-	# Logical Matter + lineage remain owned here and are never duplicated.
 	previous_provider.free()
 	_active_provider = null
 	_provider_kind = ProviderKind.NONE
@@ -244,9 +243,6 @@ func _commit_connected_component_split() -> void:
 	var components: Array[CellVolume] = MatterTopology.extract_connected_components(volume)
 	assert(components.size() > 1)
 
-	# Snapshot the synchronized source frame/velocity field before retiring its
-	# concrete provider. Successors are derived entirely from this transaction
-	# boundary, never from later solver observations.
 	var source_provider_id := source_body.get_instance_id()
 	var source_transform := source_body.global_transform
 	var source_linear := source_body.linear_velocity
@@ -288,7 +284,6 @@ func _commit_connected_component_split() -> void:
 	result.source_angular_velocity = source_angular
 	result.source_com_world = source_com_world
 
-	# No live source provider remains while successor providers are installed.
 	source_body.free()
 	_active_provider = null
 	_provider_kind = ProviderKind.NONE
@@ -313,8 +308,6 @@ func _commit_connected_component_split() -> void:
 		result.source_origins.append(spec["source_origin"])
 		result.source_components.append(spec["component"])
 
-	# The retired source keeps no live Matter authority. The transaction result
-	# and successor Spaces carry the mappings/evidence needed by dependents.
 	volume = null
 	lineage = null
 	_last_split_result = result
@@ -337,6 +330,7 @@ func _compact_lineage(component: CellVolume, source_origin: Vector3i, compact_si
 
 func _copy_runtime_configuration_to(successor: LocalMatterSpace) -> void:
 	successor.mass_per_cell = mass_per_cell
+	successor.collision_mode = collision_mode
 	successor.dynamic_gravity_scale = dynamic_gravity_scale
 	successor.dynamic_linear_damp = dynamic_linear_damp
 	successor.dynamic_angular_damp = dynamic_angular_damp
@@ -355,6 +349,7 @@ func _velocity_at_point(
 func _create_static_provider(world_transform: Transform3D) -> MatterRepresentation:
 	var provider := MatterRepresentation.new()
 	provider.name = "StaticMatterProvider"
+	provider.collision_mode = collision_mode
 	add_child(provider)
 	provider.global_transform = world_transform
 	provider.set_volume(volume)
@@ -375,6 +370,7 @@ func _create_dynamic_provider(
 	provider.angular_damp = dynamic_angular_damp
 	provider.can_sleep = dynamic_can_sleep
 	provider.mass_per_cell = mass_per_cell
+	provider.collision_mode = collision_mode
 	add_child(provider)
 	provider.global_transform = world_transform
 	provider.set_volume(volume)
