@@ -9,11 +9,12 @@ This is not a roadmap and not a historical log. See `ROADMAP.md` for decision or
 - **DEFENDED (bounded)** — strong evidence inside an explicitly limited probe.
 - **DEFENDED (integrated)** — behavior has survived composition through shared runtime and neighboring systems.
 - **DEFENDED (reusable-substrate, narrow)** — materially different consumers exercise the same shared path successfully.
+- **DEFENDED (scale-pressure)** — controlled measurements identify or materially remove a scale bottleneck in the tested range without implying production scale.
 - **PROVISIONAL** — useful current mechanism/hypothesis; implementation shape is not established strongly enough to freeze.
 - **FALSIFIED / REJECTED** — shortcut or claim contradicted by evidence in the tested scope.
 - **OPEN** — material unanswered question/debt.
 
-No result at one maturity level silently implies the next. In particular, integrated lifecycle evidence is not scale evidence and neither is playability/product evidence.
+No result at one maturity level silently implies the next. In particular, integrated lifecycle evidence is not production-scale evidence and neither is playability/product evidence.
 
 ---
 
@@ -129,9 +130,31 @@ Evidence: `docs/evidence/i0a-freeze-unfreeze-semantics.md`.
 ## Dynamic construct / mass properties — bounded
 
 - Logical Matter can back a dynamic `RigidBody3D` representation.
-- Moving constructs survive live mesh/collision/mass/COM/inertia rebuilds in tested small sizes.
+- Moving constructs survive live mesh/collision/mass/COM/inertia rebuilds in tested sizes.
 - Equal-density unit-cell mass/COM/full inertia calculations independently match solver observations tightly in tested shapes.
 - Synchronous logical/topology code uses Matter-derived COM; solver-observed COM remains telemetry rather than fresh-transaction authority.
+
+## Exact merged-cuboid collision — scale-pressure + integrated
+
+R0 established that per-occupied-cell collision node/shape materialization dominated the first tested scale curve. R1 then replaced that reference representation with an exact derived cuboid compiler while keeping `PER_CELL` available as a control.
+
+R1 establishes in the tested scope:
+
+- exact occupied collision coverage with zero coverage errors across dense, shell and sparse-skeleton cases,
+- collision cuboids remain disposable derived state and do not define Matter identity,
+- Matter-derived mass/COM/inertia semantics do not depend on collider count,
+- dense `14³` compiles from `2744` reference shapes to `1` merged shape,
+- shell `14³` compiles from `1016` reference shapes to `6`,
+- dense `14³` full mutation/rebuild improved from about `2349 ms` to `27 ms` (~`87×`),
+- shell `14³` full mutation/rebuild improved from about `328 ms` to `16 ms` (~`20×`),
+- sparse skeleton cases improve only slightly, supporting the R0 diagnosis that shape materialization—not a universal unrelated speedup—was the dominant dense/shell pressure,
+- provider replacement, live occupancy editing, solver mass properties, actor support and topology succession remain coherent with merged collision active.
+
+`MERGED_CUBOIDS` is therefore the current provider default. `PER_CELL` remains a reference representation, not a scalability candidate.
+
+The full post-promotion ratchet passed at commit `286758a9cdf895e569f8cbb1b300602005ae94e2`, GitHub Actions run `#182` / `34899262822`.
+
+Evidence: `docs/evidence/r0-representation-scale-baseline.md`, `docs/evidence/r1-exact-collision-aggregation.md`.
 
 ## Actor/controller semantics — bounded
 
@@ -167,7 +190,7 @@ The standalone mechanics expansion is deliberately stopped. More joint catalogue
 
 ## `LocalMatterSpace` implementation shape
 
-The current class now owns more real execution than during I0B:
+The current class owns real shared execution for:
 
 - Matter + lineage authority,
 - one active provider,
@@ -179,7 +202,13 @@ The current class now owns more real execution than during I0B:
 
 The semantics have materially stronger evidence than the class structure itself. Name, API, signal layout, direct parent/child ownership, scheduling mechanism and split-result representation remain provisional.
 
-Do not expand this into a general world/Space manager merely because the current campaign passed.
+Do not expand this into a general world/Space manager merely because current campaigns passed.
+
+## Merged-cuboid compiler implementation
+
+The semantic result of R1 is stronger than the current greedy algorithm.
+
+The current deterministic x→y→z partition is adequate as a derived exact representation in tested cases, but R1 does not establish that it is globally minimal, optimal for edit locality, appropriate for every material model or the final physical partition strategy.
 
 ## Static/dynamic host strategy
 
@@ -196,7 +225,7 @@ Current sidecar ownership is coherent under one mutation controller, but it is n
 
 ## Physical material model
 
-Current mass properties assume equal mass per occupied cell. `material_id` is not yet a complete density/friction/material system.
+Current mass properties assume equal mass per occupied cell. `material_id` is not yet a complete density/friction/material system. R1 cuboids may therefore merge currently occupied cells across visual/material IDs without claiming future physical-material equivalence.
 
 ---
 
@@ -211,6 +240,7 @@ Current mass properties assume equal mass per occupied cell. `material_id` is no
 - One independent PhysicsSystem/domain per construct as a default architecture.
 - Artificially enormous construct mass as a fix for stock kinematic actor→rigid interaction.
 - Box-per-cell collision as a **scalable final** representation.
+- Collision-shape count as a semantic proxy for occupied Matter-cell count.
 - Solver-observed COM as synchronous authority inside fresh topology transactions.
 - Post-step body replacement as acceptable repeated topology commit timing.
 - Automatic nearest-cell resurrection of destroyed mechanical anchors.
@@ -221,49 +251,54 @@ Current mass properties assume equal mass per occupied cell. `material_id` is no
 
 ---
 
-# OPEN — re-audited priorities
+# OPEN — current re-audited priorities
 
-## Active: R0 — representation / scale baseline
+## Active: post-R1 representation/update re-profile
 
-The lifecycle path is coherent enough to stop guessing about representation cost.
+R1 removed the dominant R0 per-cell collision-shape bottleneck strongly enough that the old ranking is no longer valid.
 
-Current reference implementation deliberately does expensive/simple work:
+The current implementation still performs whole-volume / whole-provider work for edits:
 
-- `MatterRepresentation` and `ConstructBody` rebuild the entire visual mesh,
-- all previous collision shapes are destroyed,
-- one `BoxShape3D`/`CollisionShape3D` is created per occupied cell,
-- mass properties are recomputed over Matter,
-- connected-component topology scans the full volume and materializes full-size component volumes before compaction.
+- `CellMesher.build_mesh` rebuilds the complete visual mesh,
+- `CellCollisionBoxer.build_boxes` recompiles the complete collision partition,
+- providers destroy and recreate their complete derived collision-node set,
+- dynamic providers refresh mass/COM/solver mass properties,
+- `LocalMatterSpace.mutate_cell` currently routes edits through a full derived rebuild,
+- connected-component topology work still scans whole current storage and split commits construct successor providers.
 
-R0 must measure these costs across controlled sizes and occupancy patterns **before** choosing an optimization.
+Do **not** call dirty regions, chunking or another representation mechanism the next architecture yet.
 
-Required baseline dimensions include at least:
+The next measurement should decompose remaining post-R1 cost across at least:
 
-- occupied cell count,
-- volume extent / scanned cell count,
-- collision shape count,
-- mesh vertex count,
-- initial static provider build cost,
-- initial dynamic provider build cost,
-- dynamic one-cell mutation/full rebuild cost,
-- connectivity/component extraction cost,
-- shared split transaction cost for a deliberately disconnected case.
+- logical Matter scans / occupied count,
+- visual mesh generation,
+- merged-cuboid compilation,
+- engine collision-shape materialization,
+- dynamic mass/COM refresh where measurable,
+- total static/dynamic provider rebuild,
+- live occupancy-edit transaction,
+- topology extraction and split transaction under the promoted representation.
 
-R0 is instrumentation/measurement. No greedy collision, dirty regions, chunk system or asynchronous scheduler should be introduced until the baseline identifies the dominant pressure.
+It should also distinguish occupancy-changing edits from retained-Matter/material edits; the latter must not be allowed to masquerade as evidence that physical collision necessarily needs rebuilding if current physical semantics do not change.
 
-## Important after R0 / consumer-triggered
+Decision after measurement:
 
-- scalable dynamic collision representation,
-- edit-local/dirty physical rebuild strategy,
+- if full rebuild remains materially expensive and cost is localizable, challenge edit-local/dirty rebuild;
+- if global greedy partitioning makes locality awkward, compare bounded region/chunk partitioning rather than forcing an incremental global compiler;
+- if current representative local-Space sizes are already cheap enough, prefer higher-information consumer/playability pressure over optimization by inertia;
+- if another subsystem becomes dominant, re-rank accordingly.
+
+## Important consumer-triggered frontiers
+
 - volumetric actor controller for walls/slopes/steps/ceilings,
 - finite physically meaningful actor→construct force exchange,
 - persistence identity across save/load,
-- canonical-world extraction/reintegration for lattice-compatible transforms.
+- canonical-world extraction/reintegration for lattice-compatible transforms,
+- scalable world/streaming boundaries once a concrete consumer exceeds one local active region.
 
 ## Deferred until real pressure
 
 - richer/breakable/looped mechanics,
-- streaming/world scale,
 - multiple simulation domains/migration,
 - nested frames,
 - spatial links/portals/query routing,
@@ -305,6 +340,13 @@ Debugging and handoff logic must not collapse these into one instantaneous “cu
 - constraint couples distinct frames,
 - rigid bind/reframe replaces several rigid frames with one successor under explicit policy.
 
+## Logical Matter vs derived collision
+
+- occupied Matter is logical truth,
+- collider count/topology is a replaceable compilation detail,
+- exact collision coverage can be preserved while collider identity/count changes radically,
+- tests must target the semantic relationship between truth and representation, not assume one shape per cell.
+
 ---
 
 # Product pressure kept in view
@@ -313,4 +355,4 @@ Long-term validation still needs a deliberately small Owner-facing slice:
 
 > walk → dig/place → activate/freeze a local Space → ride/build on it → use one simple mechanism → inspect/debug consequences.
 
-That is not R0. R0 exists so the substrate can reach representative size without optimizing blindly or allowing the current reference representation to become accidental architecture.
+The project should not rush into that slice before the substrate can support it meaningfully, but it must recur as a decision pressure so representation research does not become an end in itself.
