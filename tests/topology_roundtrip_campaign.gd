@@ -25,73 +25,58 @@ func _run() -> void:
 	var initial_linear := Vector3(2.3, -0.7, 1.4)
 	var initial_angular := Vector3(0.43, -0.31, 0.57)
 
-	# Continuous solver control: physics-body identity is never replaced.
 	var control := _make_body(world, "UnreplacedControl", initial_volume, initial_transform)
 	control.linear_velocity = initial_linear
 	control.angular_velocity = initial_angular
 
-	# Replacement-only control: recreated every cycle with the same complete Matter,
-	# pose and velocity, but without any split/compact/merge work. This isolates
-	# host solver/body-lifecycle phase effects from topology-specific error.
-	var replacement_control := _make_body(world, "ReplacementControl_0", _clone_volume(initial_volume), initial_transform)
+	var replacement_control := _make_body(
+		world,
+		"ReplacementControl_0",
+		_clone_volume(initial_volume),
+		initial_transform
+	)
 	replacement_control.linear_velocity = initial_linear
 	replacement_control.angular_velocity = initial_angular
 
-	var subject := _make_body(world, "RoundTripSubject_0", _clone_volume(initial_volume), initial_transform)
+	var subject := _make_body(
+		world,
+		"RoundTripSubject_0",
+		_clone_volume(initial_volume),
+		initial_transform
+	)
 	subject.linear_velocity = initial_linear
 	subject.angular_velocity = initial_angular
 
-	var max_storage_mismatches := 0
-	var max_split_world_error := 0.0
-	var max_split_velocity_error := 0.0
-	var max_merge_com_error := 0.0
-	var max_merge_linear_error := 0.0
-	var max_merge_angular_error := 0.0
-
-	# Absolute drift of both replacement paths against the never-replaced body.
-	var max_subject_control_origin_gap := 0.0
-	var max_subject_control_angle_gap := 0.0
-	var max_subject_control_linear_gap := 0.0
-	var max_subject_control_angular_gap := 0.0
-	var max_subject_control_world_cell_gap := 0.0
-	var max_plain_control_origin_gap := 0.0
-	var max_plain_control_angle_gap := 0.0
-	var max_plain_control_linear_gap := 0.0
-	var max_plain_control_angular_gap := 0.0
-	var max_plain_control_world_cell_gap := 0.0
-
-	# Topology-specific excess: subject compared directly with a body that only
-	# undergoes the same replacement lifecycle.
-	var max_topology_excess_origin_gap := 0.0
-	var max_topology_excess_angle_gap := 0.0
-	var max_topology_excess_linear_gap := 0.0
-	var max_topology_excess_angular_gap := 0.0
-	var max_topology_excess_world_cell_gap := 0.0
+	var metrics := {
+		"storage_mismatches": 0,
+		"split_world_error": 0.0,
+		"split_velocity_error": 0.0,
+		"merge_com_error": 0.0,
+		"merge_linear_error": 0.0,
+		"merge_angular_error": 0.0,
+		"subject_control_origin": 0.0,
+		"subject_control_angle": 0.0,
+		"subject_control_linear": 0.0,
+		"subject_control_angular": 0.0,
+		"subject_control_world_cell": 0.0,
+		"plain_control_origin": 0.0,
+		"plain_control_angle": 0.0,
+		"plain_control_linear": 0.0,
+		"plain_control_angular": 0.0,
+		"plain_control_world_cell": 0.0,
+		"topology_excess_origin": 0.0,
+		"topology_excess_angle": 0.0,
+		"topology_excess_linear": 0.0,
+		"topology_excess_angular": 0.0,
+		"topology_excess_world_cell": 0.0,
+	}
 
 	for cycle in range(CYCLES):
+		# SceneTree.physics_frame is emitted before node _physics_process callbacks
+		# and before the PhysicsServer step. Commit body replacement here so every
+		# successor participates in the same upcoming tick as the continuous body.
 		await physics_frame
-		await process_frame
-
-		var subject_control_gap: Dictionary = _body_gap(control, subject)
-		max_subject_control_origin_gap = max(max_subject_control_origin_gap, float(subject_control_gap["origin_gap"]))
-		max_subject_control_angle_gap = max(max_subject_control_angle_gap, float(subject_control_gap["angle_gap"]))
-		max_subject_control_linear_gap = max(max_subject_control_linear_gap, float(subject_control_gap["linear_gap"]))
-		max_subject_control_angular_gap = max(max_subject_control_angular_gap, float(subject_control_gap["angular_gap"]))
-		max_subject_control_world_cell_gap = max(max_subject_control_world_cell_gap, _world_cell_gap(control, subject))
-
-		var plain_control_gap: Dictionary = _body_gap(control, replacement_control)
-		max_plain_control_origin_gap = max(max_plain_control_origin_gap, float(plain_control_gap["origin_gap"]))
-		max_plain_control_angle_gap = max(max_plain_control_angle_gap, float(plain_control_gap["angle_gap"]))
-		max_plain_control_linear_gap = max(max_plain_control_linear_gap, float(plain_control_gap["linear_gap"]))
-		max_plain_control_angular_gap = max(max_plain_control_angular_gap, float(plain_control_gap["angular_gap"]))
-		max_plain_control_world_cell_gap = max(max_plain_control_world_cell_gap, _world_cell_gap(control, replacement_control))
-
-		var topology_excess: Dictionary = _body_gap(replacement_control, subject)
-		max_topology_excess_origin_gap = max(max_topology_excess_origin_gap, float(topology_excess["origin_gap"]))
-		max_topology_excess_angle_gap = max(max_topology_excess_angle_gap, float(topology_excess["angle_gap"]))
-		max_topology_excess_linear_gap = max(max_topology_excess_linear_gap, float(topology_excess["linear_gap"]))
-		max_topology_excess_angular_gap = max(max_topology_excess_angular_gap, float(topology_excess["angular_gap"]))
-		max_topology_excess_world_cell_gap = max(max_topology_excess_world_cell_gap, _world_cell_gap(replacement_control, subject))
+		_accumulate_body_gaps(control, replacement_control, subject, metrics)
 
 		var parent_transform: Transform3D = subject.global_transform
 		var parent_linear: Vector3 = subject.linear_velocity
@@ -115,16 +100,25 @@ func _run() -> void:
 			_copy_volume(compact, origin, rebuilt)
 
 			var child_transform: Transform3D = parent_transform * Transform3D(Basis.IDENTITY, Vector3(origin))
-			var child := _make_body(world, "Cycle_%d_Child_%d" % [cycle, component_index], compact, child_transform)
 			var child_props: Dictionary = MatterMassProperties.calculate(compact, MASS_PER_CELL)
-			var child_com_world: Vector3 = child.to_global(child.matter_center_of_mass_local)
-			var inherited_linear: Vector3 = _velocity_at_point(parent_linear, parent_angular, parent_com_world, child_com_world)
-			child.linear_velocity = inherited_linear
-			child.angular_velocity = parent_angular
-
+			var child_com_world: Vector3 = child_transform * Vector3(child_props["center_of_mass_local"])
+			var child_linear: Vector3 = _velocity_at_point(
+				parent_linear,
+				parent_angular,
+				parent_com_world,
+				child_com_world
+			)
+			var child_inertia_world: Basis = MatterMassProperties.world_inertia(
+				child_props["inertia_tensor_local"],
+				child_transform.basis
+			)
 			child_specs.append({
-				"body": child,
 				"props": child_props,
+				"transform": child_transform,
+				"com_world": child_com_world,
+				"linear": child_linear,
+				"angular": parent_angular,
+				"inertia_world": child_inertia_world,
 			})
 
 			for z in range(source_component.size.z):
@@ -134,48 +128,87 @@ func _run() -> void:
 						if source_component.get_cell(source_cell) == CellVolume.EMPTY:
 							continue
 						var compact_cell: Vector3i = source_cell - origin
-						var parent_point_world: Vector3 = parent_transform * (Vector3(source_cell) + Vector3(0.5, 0.5, 0.5))
-						var child_point_world: Vector3 = child_transform * (Vector3(compact_cell) + Vector3(0.5, 0.5, 0.5))
-						max_split_world_error = max(max_split_world_error, parent_point_world.distance_to(child_point_world))
-						var parent_point_velocity: Vector3 = _velocity_at_point(parent_linear, parent_angular, parent_com_world, parent_point_world)
-						var child_point_velocity: Vector3 = _velocity_at_point(inherited_linear, parent_angular, child_com_world, child_point_world)
-						max_split_velocity_error = max(max_split_velocity_error, parent_point_velocity.distance_to(child_point_velocity))
+						var parent_point_world: Vector3 = parent_transform * (
+							Vector3(source_cell) + Vector3(0.5, 0.5, 0.5)
+						)
+						var child_point_world: Vector3 = child_transform * (
+							Vector3(compact_cell) + Vector3(0.5, 0.5, 0.5)
+						)
+						metrics["split_world_error"] = max(
+							float(metrics["split_world_error"]),
+							parent_point_world.distance_to(child_point_world)
+						)
+						var parent_point_velocity: Vector3 = _velocity_at_point(
+							parent_linear,
+							parent_angular,
+							parent_com_world,
+							parent_point_world
+						)
+						var child_point_velocity: Vector3 = _velocity_at_point(
+							child_linear,
+							parent_angular,
+							child_com_world,
+							child_point_world
+						)
+						metrics["split_velocity_error"] = max(
+							float(metrics["split_velocity_error"]),
+							parent_point_velocity.distance_to(child_point_velocity)
+						)
 
-		var storage_mismatches := _storage_mismatch_count(reference_cells, rebuilt.duplicate_cells())
-		max_storage_mismatches = max(max_storage_mismatches, storage_mismatches)
+		var storage_mismatches := _storage_mismatch_count(
+			reference_cells,
+			rebuilt.duplicate_cells()
+		)
+		metrics["storage_mismatches"] = max(
+			int(metrics["storage_mismatches"]),
+			storage_mismatches
+		)
 		_check(storage_mismatches == 0, "cycle %d reconstructs exact Matter storage and material ids" % cycle)
 
 		var merged_props: Dictionary = MatterMassProperties.calculate(rebuilt, MASS_PER_CELL)
 		var merged_com_world: Vector3 = parent_transform * Vector3(merged_props["center_of_mass_local"])
-		var merged_inertia_world: Basis = MatterMassProperties.world_inertia(merged_props["inertia_tensor_local"], parent_transform.basis)
+		var merged_inertia_world: Basis = MatterMassProperties.world_inertia(
+			merged_props["inertia_tensor_local"],
+			parent_transform.basis
+		)
 		var total_p := Vector3.ZERO
 		var total_l_about_merged := Vector3.ZERO
 		for spec in child_specs:
-			var child_body: ConstructBody = spec["body"]
 			var child_props: Dictionary = spec["props"]
 			var child_mass: float = float(child_props["mass"])
-			var child_com_world: Vector3 = child_body.to_global(child_body.matter_center_of_mass_local)
-			var child_p: Vector3 = child_body.linear_velocity * child_mass
-			var child_inertia_world: Basis = MatterMassProperties.world_inertia(child_props["inertia_tensor_local"], child_body.global_transform.basis)
+			var child_com_world: Vector3 = spec["com_world"]
+			var child_linear: Vector3 = spec["linear"]
+			var child_angular: Vector3 = spec["angular"]
+			var child_inertia_world: Basis = spec["inertia_world"]
+			var child_p: Vector3 = child_linear * child_mass
 			total_p += child_p
-			total_l_about_merged += child_inertia_world * child_body.angular_velocity
+			total_l_about_merged += child_inertia_world * child_angular
 			total_l_about_merged += (child_com_world - merged_com_world).cross(child_p)
 
 		var merged_linear: Vector3 = total_p / float(merged_props["mass"])
 		var merged_angular: Vector3 = merged_inertia_world.inverse() * total_l_about_merged
-		max_merge_linear_error = max(max_merge_linear_error, merged_linear.distance_to(parent_linear))
-		max_merge_angular_error = max(max_merge_angular_error, merged_angular.distance_to(parent_angular))
+		metrics["merge_linear_error"] = max(
+			float(metrics["merge_linear_error"]),
+			merged_linear.distance_to(parent_linear)
+		)
+		metrics["merge_angular_error"] = max(
+			float(metrics["merge_angular_error"]),
+			merged_angular.distance_to(parent_angular)
+		)
 
-		var successor := _make_body(world, "RoundTripSubject_%d" % (cycle + 1), rebuilt, parent_transform)
+		var successor := _make_body(
+			world,
+			"RoundTripSubject_%d" % (cycle + 1),
+			rebuilt,
+			parent_transform
+		)
 		successor.linear_velocity = merged_linear
 		successor.angular_velocity = merged_angular
-		max_merge_com_error = max(
-			max_merge_com_error,
+		metrics["merge_com_error"] = max(
+			float(metrics["merge_com_error"]),
 			successor.matter_center_of_mass_local.distance_to(subject.matter_center_of_mass_local)
 		)
 
-		# Recreate the plain control in the same process phase, preserving its own
-		# current pose/velocity but doing no topology transformation whatsoever.
 		var replacement_transform: Transform3D = replacement_control.global_transform
 		var replacement_linear: Vector3 = replacement_control.linear_velocity
 		var replacement_angular: Vector3 = replacement_control.angular_velocity
@@ -190,88 +223,107 @@ func _run() -> void:
 
 		subject.free()
 		replacement_control.free()
-		for spec in child_specs:
-			var child_body: ConstructBody = spec["body"]
-			child_body.free()
 		subject = successor
 		replacement_control = plain_successor
 
-	await physics_frame
-	await process_frame
+		# The bodies above are now present before the upcoming PhysicsServer step.
+		# process_frame is reached only after that step, so compare post-step states.
+		await process_frame
+		_accumulate_body_gaps(control, replacement_control, subject, metrics)
 
 	var final_subject_control: Dictionary = _body_gap(control, subject)
 	var final_plain_control: Dictionary = _body_gap(control, replacement_control)
 	var final_topology_excess: Dictionary = _body_gap(replacement_control, subject)
 
-	max_subject_control_origin_gap = max(max_subject_control_origin_gap, float(final_subject_control["origin_gap"]))
-	max_subject_control_angle_gap = max(max_subject_control_angle_gap, float(final_subject_control["angle_gap"]))
-	max_subject_control_linear_gap = max(max_subject_control_linear_gap, float(final_subject_control["linear_gap"]))
-	max_subject_control_angular_gap = max(max_subject_control_angular_gap, float(final_subject_control["angular_gap"]))
-	max_subject_control_world_cell_gap = max(max_subject_control_world_cell_gap, _world_cell_gap(control, subject))
+	_check(int(metrics["storage_mismatches"]) == 0, "round-trip campaign never changes logical Matter storage")
+	_check(float(metrics["split_world_error"]) < 0.00002, "compact split keeps retained Matter world positions continuous")
+	_check(float(metrics["split_velocity_error"]) < 0.00002, "compact split keeps retained Matter velocity field continuous")
+	_check(float(metrics["merge_com_error"]) < 0.000001, "compatible merge reconstructs Matter COM")
+	_check(float(metrics["merge_linear_error"]) < 0.0002, "compatible merge reconstructs parent COM linear velocity")
+	_check(float(metrics["merge_angular_error"]) < 0.0002, "compatible merge reconstructs parent angular velocity")
 
-	max_plain_control_origin_gap = max(max_plain_control_origin_gap, float(final_plain_control["origin_gap"]))
-	max_plain_control_angle_gap = max(max_plain_control_angle_gap, float(final_plain_control["angle_gap"]))
-	max_plain_control_linear_gap = max(max_plain_control_linear_gap, float(final_plain_control["linear_gap"]))
-	max_plain_control_angular_gap = max(max_plain_control_angular_gap, float(final_plain_control["angular_gap"]))
-	max_plain_control_world_cell_gap = max(max_plain_control_world_cell_gap, _world_cell_gap(control, replacement_control))
+	# Unlike the earlier post-step campaign, pre-step topology replacement must
+	# now remain absolutely phase-aligned with the never-replaced dynamic body.
+	_check(float(metrics["subject_control_origin"]) < 0.01, "pre-step topology replacement keeps absolute world origin bounded")
+	_check(float(metrics["subject_control_angle"]) < 0.002, "pre-step topology replacement keeps absolute orientation bounded")
+	_check(float(metrics["subject_control_linear"]) < 0.001, "pre-step topology replacement keeps absolute linear velocity bounded")
+	_check(float(metrics["subject_control_angular"]) < 0.001, "pre-step topology replacement keeps absolute angular velocity bounded")
+	_check(float(metrics["subject_control_world_cell"]) < 0.02, "pre-step topology replacement keeps absolute Matter world positions bounded")
 
-	max_topology_excess_origin_gap = max(max_topology_excess_origin_gap, float(final_topology_excess["origin_gap"]))
-	max_topology_excess_angle_gap = max(max_topology_excess_angle_gap, float(final_topology_excess["angle_gap"]))
-	max_topology_excess_linear_gap = max(max_topology_excess_linear_gap, float(final_topology_excess["linear_gap"]))
-	max_topology_excess_angular_gap = max(max_topology_excess_angular_gap, float(final_topology_excess["angular_gap"]))
-	max_topology_excess_world_cell_gap = max(max_topology_excess_world_cell_gap, _world_cell_gap(replacement_control, subject))
+	_check(float(metrics["plain_control_origin"]) < 0.01, "pre-step plain replacement control keeps absolute world origin bounded")
+	_check(float(metrics["plain_control_angle"]) < 0.002, "pre-step plain replacement control keeps absolute orientation bounded")
+	_check(float(metrics["plain_control_linear"]) < 0.001, "pre-step plain replacement control keeps absolute linear velocity bounded")
+	_check(float(metrics["plain_control_angular"]) < 0.001, "pre-step plain replacement control keeps absolute angular velocity bounded")
+	_check(float(metrics["plain_control_world_cell"]) < 0.02, "pre-step plain replacement control keeps absolute Matter world positions bounded")
 
-	_check(max_storage_mismatches == 0, "round-trip campaign never changes logical Matter storage")
-	_check(max_split_world_error < 0.00002, "compact split keeps retained Matter world positions continuous")
-	_check(max_split_velocity_error < 0.00002, "compact split keeps retained Matter velocity field continuous")
-	_check(max_merge_com_error < 0.000001, "compatible merge reconstructs Matter COM")
-	_check(max_merge_linear_error < 0.0002, "compatible merge reconstructs parent COM linear velocity")
-	_check(max_merge_angular_error < 0.0002, "compatible merge reconstructs parent angular velocity")
-
-	# The host may phase-shift a repeatedly recreated rigid body relative to one
-	# whose solver identity persists. Topology is judged against the control with
-	# the same replacement lifecycle, not by silently attributing that host effect
-	# to split/merge math.
-	_check(max_topology_excess_origin_gap < 0.01, "topology replacements add no material origin drift beyond plain body replacement")
-	_check(max_topology_excess_angle_gap < 0.002, "topology replacements add no material orientation drift beyond plain body replacement")
-	_check(max_topology_excess_linear_gap < 0.001, "topology replacements add no material linear-velocity drift beyond plain body replacement")
-	_check(max_topology_excess_angular_gap < 0.001, "topology replacements add no material angular-velocity drift beyond plain body replacement")
-	_check(max_topology_excess_world_cell_gap < 0.02, "topology replacements add no material Matter world-position drift beyond plain body replacement")
+	_check(float(metrics["topology_excess_origin"]) < 0.01, "topology math adds no material origin drift beyond plain pre-step replacement")
+	_check(float(metrics["topology_excess_angle"]) < 0.002, "topology math adds no material orientation drift beyond plain pre-step replacement")
+	_check(float(metrics["topology_excess_linear"]) < 0.001, "topology math adds no material linear-velocity drift beyond plain pre-step replacement")
+	_check(float(metrics["topology_excess_angular"]) < 0.001, "topology math adds no material angular-velocity drift beyond plain pre-step replacement")
+	_check(float(metrics["topology_excess_world_cell"]) < 0.02, "topology math adds no material Matter world-position drift beyond plain pre-step replacement")
 
 	print(
-		"TOPOLOGY_ROUNDTRIP_METRIC cycles=%d max_storage_mismatches=%d split_world_error=%.10f split_velocity_error=%.10f merge_com_error=%.10f merge_linear_error=%.10f merge_angular_error=%.10f subject_control_origin_gap=%.10f subject_control_angle_gap=%.10f subject_control_linear_gap=%.10f subject_control_angular_gap=%.10f subject_control_world_cell_gap=%.10f plain_control_origin_gap=%.10f plain_control_angle_gap=%.10f plain_control_linear_gap=%.10f plain_control_angular_gap=%.10f plain_control_world_cell_gap=%.10f topology_excess_origin_gap=%.10f topology_excess_angle_gap=%.10f topology_excess_linear_gap=%.10f topology_excess_angular_gap=%.10f topology_excess_world_cell_gap=%.10f final_subject_origin_gap=%.10f final_plain_origin_gap=%.10f final_topology_origin_gap=%.10f final_subject_angle_gap=%.10f final_plain_angle_gap=%.10f final_topology_angle_gap=%.10f"
+		"TOPOLOGY_ROUNDTRIP_PRESTEP_METRIC cycles=%d max_storage_mismatches=%d split_world_error=%.10f split_velocity_error=%.10f merge_com_error=%.10f merge_linear_error=%.10f merge_angular_error=%.10f subject_control_origin_gap=%.10f subject_control_angle_gap=%.10f subject_control_linear_gap=%.10f subject_control_angular_gap=%.10f subject_control_world_cell_gap=%.10f plain_control_origin_gap=%.10f plain_control_angle_gap=%.10f plain_control_linear_gap=%.10f plain_control_angular_gap=%.10f plain_control_world_cell_gap=%.10f topology_excess_origin_gap=%.10f topology_excess_angle_gap=%.10f topology_excess_linear_gap=%.10f topology_excess_angular_gap=%.10f topology_excess_world_cell_gap=%.10f final_subject_origin_gap=%.10f final_subject_angle_gap=%.10f final_plain_origin_gap=%.10f final_plain_angle_gap=%.10f final_topology_origin_gap=%.10f final_topology_angle_gap=%.10f"
 		% [
 			CYCLES,
-			max_storage_mismatches,
-			max_split_world_error,
-			max_split_velocity_error,
-			max_merge_com_error,
-			max_merge_linear_error,
-			max_merge_angular_error,
-			max_subject_control_origin_gap,
-			max_subject_control_angle_gap,
-			max_subject_control_linear_gap,
-			max_subject_control_angular_gap,
-			max_subject_control_world_cell_gap,
-			max_plain_control_origin_gap,
-			max_plain_control_angle_gap,
-			max_plain_control_linear_gap,
-			max_plain_control_angular_gap,
-			max_plain_control_world_cell_gap,
-			max_topology_excess_origin_gap,
-			max_topology_excess_angle_gap,
-			max_topology_excess_linear_gap,
-			max_topology_excess_angular_gap,
-			max_topology_excess_world_cell_gap,
+			int(metrics["storage_mismatches"]),
+			float(metrics["split_world_error"]),
+			float(metrics["split_velocity_error"]),
+			float(metrics["merge_com_error"]),
+			float(metrics["merge_linear_error"]),
+			float(metrics["merge_angular_error"]),
+			float(metrics["subject_control_origin"]),
+			float(metrics["subject_control_angle"]),
+			float(metrics["subject_control_linear"]),
+			float(metrics["subject_control_angular"]),
+			float(metrics["subject_control_world_cell"]),
+			float(metrics["plain_control_origin"]),
+			float(metrics["plain_control_angle"]),
+			float(metrics["plain_control_linear"]),
+			float(metrics["plain_control_angular"]),
+			float(metrics["plain_control_world_cell"]),
+			float(metrics["topology_excess_origin"]),
+			float(metrics["topology_excess_angle"]),
+			float(metrics["topology_excess_linear"]),
+			float(metrics["topology_excess_angular"]),
+			float(metrics["topology_excess_world_cell"]),
 			float(final_subject_control["origin_gap"]),
-			float(final_plain_control["origin_gap"]),
-			float(final_topology_excess["origin_gap"]),
 			float(final_subject_control["angle_gap"]),
+			float(final_plain_control["origin_gap"]),
 			float(final_plain_control["angle_gap"]),
+			float(final_topology_excess["origin_gap"]),
 			float(final_topology_excess["angle_gap"]),
 		]
 	)
 	_finish()
+
+
+func _accumulate_body_gaps(
+	control: ConstructBody,
+	replacement_control: ConstructBody,
+	subject: ConstructBody,
+	metrics: Dictionary
+) -> void:
+	var subject_gap: Dictionary = _body_gap(control, subject)
+	metrics["subject_control_origin"] = max(float(metrics["subject_control_origin"]), float(subject_gap["origin_gap"]))
+	metrics["subject_control_angle"] = max(float(metrics["subject_control_angle"]), float(subject_gap["angle_gap"]))
+	metrics["subject_control_linear"] = max(float(metrics["subject_control_linear"]), float(subject_gap["linear_gap"]))
+	metrics["subject_control_angular"] = max(float(metrics["subject_control_angular"]), float(subject_gap["angular_gap"]))
+	metrics["subject_control_world_cell"] = max(float(metrics["subject_control_world_cell"]), _world_cell_gap(control, subject))
+
+	var plain_gap: Dictionary = _body_gap(control, replacement_control)
+	metrics["plain_control_origin"] = max(float(metrics["plain_control_origin"]), float(plain_gap["origin_gap"]))
+	metrics["plain_control_angle"] = max(float(metrics["plain_control_angle"]), float(plain_gap["angle_gap"]))
+	metrics["plain_control_linear"] = max(float(metrics["plain_control_linear"]), float(plain_gap["linear_gap"]))
+	metrics["plain_control_angular"] = max(float(metrics["plain_control_angular"]), float(plain_gap["angular_gap"]))
+	metrics["plain_control_world_cell"] = max(float(metrics["plain_control_world_cell"]), _world_cell_gap(control, replacement_control))
+
+	var topology_gap: Dictionary = _body_gap(replacement_control, subject)
+	metrics["topology_excess_origin"] = max(float(metrics["topology_excess_origin"]), float(topology_gap["origin_gap"]))
+	metrics["topology_excess_angle"] = max(float(metrics["topology_excess_angle"]), float(topology_gap["angle_gap"]))
+	metrics["topology_excess_linear"] = max(float(metrics["topology_excess_linear"]), float(topology_gap["linear_gap"]))
+	metrics["topology_excess_angular"] = max(float(metrics["topology_excess_angular"]), float(topology_gap["angular_gap"]))
+	metrics["topology_excess_world_cell"] = max(float(metrics["topology_excess_world_cell"]), _world_cell_gap(replacement_control, subject))
 
 
 func _make_volume() -> CellVolume:
@@ -288,7 +340,12 @@ func _make_volume() -> CellVolume:
 	return volume
 
 
-func _make_body(world: Node3D, body_name: String, volume: CellVolume, transform: Transform3D) -> ConstructBody:
+func _make_body(
+	world: Node3D,
+	body_name: String,
+	volume: CellVolume,
+	transform: Transform3D
+) -> ConstructBody:
 	var body := ConstructBody.new()
 	body.name = body_name
 	body.gravity_scale = 0.0
@@ -322,7 +379,10 @@ func _copy_volume(source: CellVolume, target_origin: Vector3i, target: CellVolum
 					target.set_cell(cell + target_origin, material_id)
 
 
-func _storage_mismatch_count(reference_cells: PackedInt32Array, candidate_cells: PackedInt32Array) -> int:
+func _storage_mismatch_count(
+	reference_cells: PackedInt32Array,
+	candidate_cells: PackedInt32Array
+) -> int:
 	if reference_cells.size() != candidate_cells.size():
 		return max(reference_cells.size(), candidate_cells.size())
 	var mismatches := 0
@@ -352,21 +412,29 @@ func _world_cell_gap(reference_body: ConstructBody, candidate_body: ConstructBod
 				if reference_body.volume.get_cell(cell) == CellVolume.EMPTY:
 					continue
 				var local_point := Vector3(cell) + Vector3(0.5, 0.5, 0.5)
-				max_gap = max(max_gap, reference_body.to_global(local_point).distance_to(candidate_body.to_global(local_point)))
+				max_gap = max(
+					max_gap,
+					reference_body.to_global(local_point).distance_to(candidate_body.to_global(local_point))
+				)
 	return max_gap
 
 
-func _velocity_at_point(linear: Vector3, angular: Vector3, com_world: Vector3, point_world: Vector3) -> Vector3:
+func _velocity_at_point(
+	linear: Vector3,
+	angular: Vector3,
+	com_world: Vector3,
+	point_world: Vector3
+) -> Vector3:
 	return linear + angular.cross(point_world - com_world)
 
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("TOPOLOGY_ROUNDTRIP_CAMPAIGN_PASS: repeated split/compact/compatible-merge preserved exact Matter storage and added no material drift beyond the host's plain rigid-body replacement lifecycle.")
+		print("TOPOLOGY_ROUNDTRIP_PRESTEP_CAMPAIGN_PASS: repeated pre-PhysicsServer split/compact/compatible-merge replacement preserved exact Matter storage and remained absolutely phase-aligned with an unreplaced dynamic control.")
 		quit(0)
 		return
 	for failure in _failures:
-		push_error("TOPOLOGY_ROUNDTRIP_CAMPAIGN_FAIL: " + failure)
+		push_error("TOPOLOGY_ROUNDTRIP_PRESTEP_CAMPAIGN_FAIL: " + failure)
 	quit(1)
 
 
