@@ -62,10 +62,10 @@ func _measure_case(world: Node3D, extent: int, pattern: String) -> void:
 	var per_mutation := _median(per_mutation_samples)
 	var merged_mutation := _median(merged_mutation_samples)
 
-	var compression := float(reference_boxes.size()) / float(max(merged_boxes.size(), 1))
-	var static_speedup := per_static / max(merged_static, 1.0)
-	var dynamic_speedup := per_dynamic / max(merged_dynamic, 1.0)
-	var mutation_speedup := per_mutation / max(merged_mutation, 1.0)
+	var compression: float = float(reference_boxes.size()) / float(max(merged_boxes.size(), 1))
+	var static_speedup: float = per_static / max(merged_static, 1.0)
+	var dynamic_speedup: float = per_dynamic / max(merged_dynamic, 1.0)
+	var mutation_speedup: float = per_mutation / max(merged_mutation, 1.0)
 
 	if extent == 14 and pattern == "dense":
 		_check(static_speedup > 3.0, "R1 dense14 static aggregation materially improves dominant R0 cost")
