@@ -64,6 +64,9 @@ jobs:
       - name: Run mixed mechanical anchor split probe
         run: godot --headless --path . --script res://tests/multiframe_mixed_anchor_split_probe.gd
 
+      - name: Run merge graph contraction probe
+        run: godot --headless --path . --script res://tests/multiframe_merge_graph_contraction_probe.gd
+
   research-validation:
     runs-on: ubuntu-latest
     steps:
@@ -178,3 +181,6 @@ jobs:
 
       - name: Run mixed mechanical anchor split probe
         run: godot --headless --path . --script res://tests/multiframe_mixed_anchor_split_probe.gd
+
+      - name: Run merge graph contraction probe
+        run: godot --headless --path . --script res://tests/multiframe_merge_graph_contraction_probe.gd
