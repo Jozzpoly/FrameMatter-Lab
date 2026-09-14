@@ -30,7 +30,8 @@ func _run() -> void:
 	world.add_child(construct)
 	construct.set_volume(volume)
 
-	_check(construct.get_collision_shape_count() == 4, "dynamic construct derives four collision shapes from the same CellVolume")
+	var expected_collision_shapes := CellCollisionBoxer.build_boxes(volume, construct.collision_mode).size()
+	_check(construct.get_collision_shape_count() == expected_collision_shapes, "dynamic construct collision derives from the same CellVolume through the active collision compiler")
 	_check(construct.get_mesh_vertex_count() == CellMesher.count_exposed_faces(volume) * 6, "dynamic construct mesh derives from Matter")
 
 	await physics_frame
