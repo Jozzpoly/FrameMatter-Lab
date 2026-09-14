@@ -54,3 +54,6 @@ jobs:
 
       - name: Run G3 frame-aware campaign
         run: godot --headless --path . --script res://tests/g3_frame_campaign.gd
+
+      - name: Run topology split probe
+        run: godot --headless --path . --script res://tests/topology_split_probe.gd
