@@ -94,6 +94,31 @@ The strengthened CI run measured:
 
 The first FAIL and the challenger PASS support a concrete current-host execution rule: **when topology replacement changes a constraint endpoint, the logical constraint anchor and the host `Joint3D` frame must be rebased before endpoint reconfiguration.**
 
+## Multiple anchors partition with their Matter owners
+
+A stronger challenger attached two persistent external bodies to opposite ends of one moving parent using two independent pin joints. Each mechanical anchor had a different owner Matter cell and lineage token. One topology cut then split the parent so the two owner lineages landed in different compact successors.
+
+The transaction independently selected and remapped both endpoints, rebased both persistent Joint3D scene frames, and retired the old parent before the upcoming solver step.
+
+CI evidence:
+
+- left owner lineage: `70029 -> 70029`,
+- right owner lineage: `70038 -> 70038`,
+- owner lineages landed in different successor indices (`0` and `1`),
+- retained lineage mismatches: `0`,
+- retained Matter world-position error: `0.0000026974 m`,
+- retained velocity-field error: `0.0000011151 m/s`,
+- stale left/right Joint3D scene-frame distances: `3.8449842930 m / 0.9459311962 m`,
+- both explicit joint-frame rebase errors: `0`,
+- maximum left/right inherited anchor gaps: `0.0004723693 m / 0.0004756952 m`,
+- final left/right anchor gaps: `0.0004670941 m / 0.0004648947 m`,
+- the two successor mechanical islands changed their mutual separation by `4.654578 m`,
+- left successor mechanical response: `Δv = 0.505029 m/s`, `Δω = 0.131351 rad/s`,
+- right successor mechanical response: `Δv = 0.631687 m/s`, `Δω = 0.113661 rad/s`,
+- both persistent logical joint identities survived.
+
+Bounded result: **one topology replacement can partition a constraint graph deterministically by retained Matter ownership.** Mechanical links do not need to belong to a monolithic construct object; distinct anchors can follow distinct successor frames through one split transaction.
+
 ## Current invariant candidate
 
 Topology replacement is becoming a multi-domain transaction rather than merely a body spawn/despawn operation. When continuity matters, one transaction may need explicit mappings for:
@@ -110,7 +135,6 @@ These are related but must not be conflated. A retained Matter lineage may survi
 
 ## Still unproven
 
-- multiple mechanical anchors partitioning across different successors in one topology event,
 - multi-joint chains, loops, motors, limits, gears, springs, or breakable links,
 - graph-level conservation semantics during simultaneous topology + constraint changes,
 - anchor destruction semantics when the owner Matter itself is removed,
