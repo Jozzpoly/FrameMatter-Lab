@@ -36,7 +36,7 @@ The defended semantic separation is:
 
 **logical Space ≠ current engine provider**.
 
-I0B established the first integrated lifecycle path; the actual interactive LAB then became a materially different consumer of the same provider/mutation execution path.
+I0B established the first integrated lifecycle path; the actual LAB then became a materially different consumer of the same provider/mutation execution path.
 
 Within that scope:
 
@@ -49,7 +49,7 @@ Within that scope:
 - post-freeze static Matter remains editable through the same mutation authority,
 - LAB uses this shared runtime path rather than owning a parallel replacement implementation.
 
-This is the first narrow reusable-substrate evidence in FrameMatter. It does **not** make the current class/API/layout canonical.
+This is narrow reusable-substrate evidence. It does **not** make the current class/API/layout canonical.
 
 Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`, `docs/evidence/lifecycle-lab-consumer.md`.
 
@@ -74,6 +74,36 @@ In the tested static→dynamic→static lifecycle:
 Topology rebasing remains a different case: if local coordinates change, explicit source→successor mapping is still required.
 
 Evidence: `docs/evidence/i2-actor-provider-transition.md`.
+
+## P0 embodied actor/edit/lifecycle composition — integrated automated evidence
+
+P0 turns the real LAB into an embodied consumer instead of only lifecycle instrumentation.
+
+Within the current **world-up translation+yaw** scope, one real scene composes:
+
+- ordinary actor support acquisition,
+- relative walking on the supported Space,
+- direct selected-cell Matter removal/placement,
+- fresh lineage on recreated Matter,
+- static→dynamic provider replacement under one logical Space,
+- stationary riding and relative walking while the Space translates/yaws,
+- occupancy editing while the Space is moving,
+- dynamic→static provider replacement while actor support remains coherent.
+
+Final automated P0 gate on commit `09eb18e8…` / run `#202` measured:
+
+- `ride_floor_loss = 0`,
+- `walk_floor_loss = 0`,
+- `post_edit_floor_loss = 0`,
+- stationary local drift `0.00000812`,
+- local walk displacement `0.95959115`,
+- distinct fresh lineage after both static and moving remove/recreate cycles.
+
+The same commit passed current-campaign validation, fast invariants and the full historical research ratchet through R2A.
+
+This is **not playability/product evidence**. Mouse-selection clarity, camera/movement feel, perceived latency and overall usefulness still require direct Owner interaction.
+
+Evidence: `docs/evidence/p0-interactive-consumer.md`.
 
 ## One→many topology split through shared runtime — integrated
 
@@ -185,12 +215,17 @@ Therefore the locality concept is defended enough to revisit under real edit pre
 
 Evidence: `docs/evidence/r2a-derived-region-locality.md`.
 
-## Actor/controller semantics — bounded
+## Actor/controller semantics — bounded and now more sharply scoped
 
 - Stock `CharacterBody3D` interaction with freely simulated constructs is unsuitable in the tested setup; severe largely mass-insensitive rigid-body acceleration was observed.
 - Explicit support-frame transport above the rigid solver avoids scene-tree parenting and does not grant the actor unlimited force authority.
 - Ordinary query/contact reacquisition alone is not lossless for topology replacement; explicit successor mapping is required when local coordinates rebase.
+- Translation+yaw support is now exercised by the embodied P0 consumer as well as narrower actor probes.
+- Arbitrary pitch/roll support is **not defended** by the current actor. A P0 challenger with pitch+roll retained grounded support but accumulated about `0.501` local drift because support validation/snapping uses a world-down single ray against a tilted support plane.
+- Fixing that finding requires an explicit semantic decision about world gravity vs frame-local gravity/adhesion and likely the role of volumetric actor collision; it must not be hidden in LAB glue.
 - The current actor evidence is not a production volumetric controller claim.
+
+Evidence: `docs/evidence/p0-interactive-consumer.md`.
 
 ## Topology / binding / mechanics — bounded
 
@@ -292,39 +327,54 @@ Current mass properties assume equal mass per occupied cell. `material_id` is no
 - Immediately-read node transform after a server step as proof that a fresh RID did or did not participate in that same step.
 - Arbitrarily assigning retired source Space identity to one topology fragment without an explicit policy.
 - Naive fixed derived-region collision partition as an automatically superior replacement for global merged collision merely because dirty derivation is faster.
+- Treating arbitrary pitch/roll actor support as already solved by the current world-down single-ray support probe.
 
 ---
 
 # OPEN — current re-audited priorities
 
-## Active: P0 interactive consumer pressure
+## Active: P0 Owner interaction
 
-The current lifecycle LAB proves that a second consumer can exercise shared static↔dynamic transitions and mutation, but it is still primarily a keyboard-driven instrumentation scene rather than an embodied Owner experiment.
+The embodied P0 implementation and automated integrated composition gate are now green in the bounded translation+yaw scope.
 
-The highest-information next question is now whether the defended pieces compose into a small direct loop:
+The highest-information remaining P0 question is no longer “can these systems compose at all?” but:
 
-> walk on/around Matter → select a local cell → remove/place Matter → activate the same logical Space → remain supported/ride it → edit while moving → freeze it → inspect/debug the consequences.
+> does the direct loop actually feel coherent, legible and useful when the Owner uses it?
 
-P0 should reuse the shared runtime rather than creating parallel LAB semantics:
+Current interactive loop:
+
+> walk on/around Matter → point at a local cell → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect/debug the consequences.
+
+The LAB uses the shared runtime rather than creating parallel semantics:
 
 - `FrameProbeCharacter` for current support-frame behavior,
 - `LocalMatterSpace` for logical ownership and mutation,
 - shared static↔dynamic provider replacement,
 - `MERGED_CUBOIDS` as current collision default,
-- minimal camera/selection/input/debug feedback only.
+- minimal follow camera, pointer selection and telemetry.
 
-P0 is not evidence that the current actor is a final game controller. Its purpose is to reveal what actually fails or feels limiting when Owner interaction becomes the consumer.
+What remains specifically unresolved by automation:
 
-Decision pressure from P0:
+- movement/camera feel,
+- pointer targeting clarity,
+- remove/place interaction clarity,
+- perceived edit latency under natural repeated use,
+- visual legibility of provider/motion/edit consequences,
+- whether the loop exposes a compelling next pressure.
+
+P0 is not evidence that the current actor is a final game controller.
+
+Decision pressure from the Owner test:
 
 - if edit latency is material, reopen representation with R2A locality evidence but do not equate dirty regions with collider chunks;
-- if walls/steps/ceilings or finite reaction forces become the blocker, move to the volumetric/finite-force actor frontier;
-- if provider transition/support continuity fails under direct interaction, reopen that lifecycle invariant rather than patching around it in LAB;
-- if the substrate works but the interaction is awkward or uninteresting, treat Owner experience as evidence before building more infrastructure.
+- if arbitrary orientation, walls/steps/ceilings or reaction forces become the blocker, move deliberately to the oriented/volumetric/finite-force actor frontier;
+- if provider transition/support continuity fails under direct interaction, reproduce and reopen that lifecycle invariant rather than patching around it in LAB;
+- if the substrate works but interaction is awkward or uninteresting, treat Owner experience as evidence before building more infrastructure;
+- if the loop is coherent, choose the next pressure from what the Owner actually wants to do next rather than automatically extending P0.
 
 ## Important consumer-triggered frontiers
 
-- volumetric actor controller for walls/slopes/steps/ceilings,
+- oriented/volumetric actor semantics for pitch/roll, walls/slopes/steps/ceilings and local-vs-world gravity decisions,
 - finite physically meaningful actor→construct force exchange,
 - persistence identity across save/load,
 - canonical-world extraction/reintegration for lattice-compatible transforms,
@@ -390,12 +440,18 @@ Debugging and handoff logic must not collapse these into one instantaneous “cu
 
 R2A directly demonstrates why keeping these concepts separable matters.
 
+## Support-frame transport vs gravity/orientation semantics
+
+- preserving an actor's local coordinate on a support frame is one concern,
+- deciding what direction is “down”, what surface is walkable and whether the actor adheres to a tilted frame is another,
+- P0 shows these cannot be silently collapsed: frame transport can remain coherent while a world-down ground probe produces local drift on pitch/roll support.
+
 ---
 
 # Product pressure now in view
 
-The deliberately small Owner-facing loop is no longer only a distant reminder; it is the active source of the next evidence:
+The deliberately small Owner-facing loop is implemented and mechanically gated in its current bounded scope:
 
 > walk → dig/place → activate/freeze a local Space → ride/build on it → inspect/debug consequences.
 
-A simple mechanism remains a later extension of that slice, not a prerequisite for proving actor/edit/lifecycle composition. The next major architectural decision should be pulled by what this interaction exposes, not pushed by another speculative subsystem.
+The next evidence must come from actual Owner use. A simple mechanism remains a possible later extension, not a prerequisite for proving actor/edit/lifecycle composition. The next major architectural decision should be pulled by what that interaction exposes, not pushed by another speculative subsystem.
