@@ -43,6 +43,9 @@ jobs:
       - name: Run I2 actor provider-transition challenger
         run: godot --headless --path . --script res://tests/lifecycle_actor_provider_transition_probe.gd
 
+      - name: Run I3 shared topology split challenger
+        run: godot --headless --path . --script res://tests/lifecycle_shared_topology_split_probe.gd
+
       - name: Run G3 frame-aware query controller challenger
         run: godot --headless --path . --script res://tests/g3_frame_challenger.gd
 
@@ -139,6 +142,9 @@ jobs:
 
       - name: Run I2 actor provider-transition challenger
         run: godot --headless --path . --script res://tests/lifecycle_actor_provider_transition_probe.gd
+
+      - name: Run I3 shared topology split challenger
+        run: godot --headless --path . --script res://tests/lifecycle_shared_topology_split_probe.gd
 
       - name: Run G3 stock CharacterBody3D controlled-platform probe
         run: godot --headless --path . --script res://tests/g3_baseline_probe.gd
