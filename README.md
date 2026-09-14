@@ -168,3 +168,59 @@ G3 does **not** establish a production character controller. `FrameProbeCharacte
 - performance and stability under multiple simultaneous constructs and actors.
 
 The first campaign therefore does **not** define a final architecture. It establishes a small set of defended invariants and rejects several tempting shortcuts. The next campaign should be chosen from the open debts by information value, rather than by automatically adding game features.
+
+## Exploratory topology evidence — after G3
+
+Topology work has started as a separate exploratory line. These probes are **not yet a topology gate PASS**; they establish narrower semantics that can now be challenged by merge, incompatible motion, repeated fragmentation and larger-scale cases.
+
+### Moving split continuity
+
+A moving 66-cell Matter construct was cut into two 6-connected components containing 28 and 37 retained cells. The two new free `ConstructBody` instances inherited the parent's instantaneous rigid velocity field at their own centers of mass.
+
+Measured in CI:
+
+- all 65 retained cells survived the split,
+- maximum retained-cell velocity-field error was ~`5.46e-7 m/s`,
+- maximum child COM error was ~`1.03e-6 m`,
+- child angular-velocity error was zero at test precision,
+- summed child linear momentum matched retained-Matter linear momentum to float precision.
+
+This establishes a bounded split rule: when material removal partitions a rigid Matter frame, each successor can preserve the parent's instantaneous velocity field without preserving the parent's physics-body identity.
+
+### Actor support across frame replacement
+
+Query-only contact reacquisition was deliberately tested first when the actor's support parent was destroyed and replaced by two successor frames. It reacquired the correct child in one frame, but produced ~`7.21 cm` of one-tick local slip. That failure rejected ordinary contact reacquisition as a lossless topology-transition mechanism.
+
+An explicit **topology frame handoff** was then introduced. The topology transaction supplies the actor with the successor frame and mapped support-local point before the old frame disappears. In the same split case this reduced the handoff world discontinuity to ~`2.38e-7 m`, horizontal local-coordinate error to zero, later ride drift to ~`5.74e-6 m`, and preserved support without perturbing either successor rigid body's commanded motion.
+
+Current invariant candidate: **ordinary contact transitions may be query-driven, but topology replacement needs an atomic frame-successor mapping when continuity matters.**
+
+### Compact frame rebasing
+
+The next probe removed an accidental assumption from the first split implementation: successors no longer keep the parent's full sparse Matter address range. Each connected component is cropped into a compact `CellVolume` with an explicit source-origin offset, and its frame transform is shifted so retained Matter stays in the same world-space locations.
+
+For the actor-side successor, the source origin was `(5, 0, 0)` and its compact size became `(5, 3, 3)`. The actor's support coordinate therefore changed non-trivially from approximately `(7.552, 3.902, 1.514)` in the parent to `(2.552, 3.902, 1.514)` in the compact child.
+
+Measured in CI:
+
+- retained-cell world-position error ~`2.70e-6 m`,
+- retained-cell velocity-field error ~`2.02e-6 m/s`,
+- actor handoff world discontinuity ~`1.91e-6 m`,
+- mapped horizontal local-coordinate error `0`,
+- post-handoff ride drift ~`7.46e-6 m`,
+- zero support loss,
+- zero measured child linear/angular velocity perturbation,
+- jump/re-contact completed after 34 physics frames.
+
+An earlier version of this probe used a tilted parent with three-axis angular velocity and failed before the topology transaction because the bounded G3 ray-based actor does not establish tilted-frame/arbitrary-gravity locomotion. The probe was corrected rather than broadening the controller implicitly. Tilted walk surfaces remain explicitly unproven.
+
+The rebased result is important because it separates **Matter storage coordinates from spatial continuity**: a successor frame may choose a new compact local origin while world-space Matter, velocity field and actor support remain continuous through an explicit mapping.
+
+### Topology questions still open
+
+- merging multiple construct frames into one,
+- incompatible pre-merge velocity fields and the resulting momentum/energy policy,
+- repeated fragmentation/reassembly and identity/provenance semantics,
+- actor and other dependent-frame handoff during merge or multi-successor events,
+- topology cost and representation cost at larger cell counts,
+- arbitrary frame orientation/gravity and nested frame succession.
