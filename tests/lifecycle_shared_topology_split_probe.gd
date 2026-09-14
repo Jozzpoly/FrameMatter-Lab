@@ -243,7 +243,11 @@ func _run() -> void:
 	var support_node_sync_gap := support_server_transform.origin.distance_to(support_body.global_position)
 	_check(support_node_sync_gap < 0.00001, "support successor Node catches PhysicsServer state on the next sync")
 
-	var ride_local_start := support_body.to_local(actor.global_position)
+	# At this point the successor Node has received its first solver result but the
+	# actor has not yet executed this tick. The explicit topology mapping remains
+	# the authoritative local support coordinate; sampling actor global_position
+	# here would intentionally observe one phase behind the support Node.
+	var ride_local_start := mapped_actor_local
 	var max_post_split_drift := 0.0
 	var floor_loss := 0
 	var wrong_support_frames := 0
