@@ -60,10 +60,11 @@ func _run_asymmetric_motion_case(world: Node3D) -> void:
 		if step == 120:
 			construct.apply_torque_impulse(Vector3(0.7, -0.4, 0.55))
 
+	var expected_collision_count := CellCollisionBoxer.build_boxes(volume, construct.collision_mode).size()
 	_check(construct.position.length() < 100.0, "asymmetric construct remains spatially bounded")
 	_check(construct.linear_velocity.length() < 100.0, "asymmetric construct velocity remains bounded")
 	_check(construct.angular_velocity.length() < 100.0, "asymmetric construct angular velocity remains bounded")
-	_check(construct.get_collision_shape_count() == volume.count_solid(), "asymmetric construct keeps its derived shape count")
+	_check(construct.get_collision_shape_count() == expected_collision_count, "asymmetric construct keeps its active compiled shape count")
 	_check(volume.duplicate_cells() == truth_snapshot, "rotation, impact, settling and torque preserve asymmetric Matter truth")
 
 	print(
@@ -84,7 +85,8 @@ func _run_large_compound_case(world: Node3D) -> void:
 	world.add_child(construct)
 	construct.set_volume(volume)
 
-	_check(construct.get_collision_shape_count() == 512, "8^3 dynamic construct creates the expected naive shape count")
+	var expected_collision_count := CellCollisionBoxer.build_boxes(volume, construct.collision_mode).size()
+	_check(construct.get_collision_shape_count() == expected_collision_count, "8^3 dynamic construct uses the active compiled collision representation")
 	var initial_y: float = construct.position.y
 	var peak_physics_ms: float = 0.0
 	var accumulated_physics_ms: float = 0.0
