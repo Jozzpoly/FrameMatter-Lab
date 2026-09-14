@@ -2,6 +2,7 @@ class_name MatterRepresentation
 extends Node3D
 
 var volume: CellVolume
+var collision_mode := CellCollisionBoxer.Mode.PER_CELL
 var last_rebuild_usec := 0
 
 var _mesh_instance: MeshInstance3D
@@ -26,18 +27,16 @@ func rebuild() -> void:
 		_body.remove_child(child)
 		child.free()
 
-	for z in range(volume.size.z):
-		for y in range(volume.size.y):
-			for x in range(volume.size.x):
-				var cell := Vector3i(x, y, z)
-				if volume.get_cell(cell) == CellVolume.EMPTY:
-					continue
-				var box := BoxShape3D.new()
-				box.size = Vector3.ONE
-				var collision_shape := CollisionShape3D.new()
-				collision_shape.shape = box
-				collision_shape.position = Vector3(x, y, z) + Vector3(0.5, 0.5, 0.5)
-				_body.add_child(collision_shape)
+	var collision_boxes := CellCollisionBoxer.build_boxes(volume, collision_mode)
+	for box_info in collision_boxes:
+		var box_origin: Vector3i = box_info["origin"]
+		var box_size: Vector3i = box_info["size"]
+		var box := BoxShape3D.new()
+		box.size = Vector3(float(box_size.x), float(box_size.y), float(box_size.z))
+		var collision_shape := CollisionShape3D.new()
+		collision_shape.shape = box
+		collision_shape.position = Vector3(float(box_origin.x), float(box_origin.y), float(box_origin.z)) + box.size * 0.5
+		_body.add_child(collision_shape)
 
 	last_rebuild_usec = Time.get_ticks_usec() - started_usec
 
