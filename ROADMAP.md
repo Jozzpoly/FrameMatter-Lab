@@ -36,164 +36,125 @@ A PASS at one level never silently implies the next.
 
 ---
 
-# Recently closed campaign
+# Recently closed campaigns
+
+## I0B → LAB → I2 → I3 lifecycle line: **CLOSED FOR CURRENT SCOPE**
+
+The line now has integrated provider replacement, a second independent consumer, actor provider-transition continuity and shared one→many topology execution. These semantics are strong enough to serve as invariants while representation scale is challenged.
+
+Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`, `lifecycle-lab-consumer.md`, `i2-actor-provider-transition.md`, `i3-shared-topology-split.md`.
 
 ## M-CAP — standalone mechanics expansion: **FULL PASS / CLOSED**
 
-Bounded stateful partition↔contraction symmetry is sufficiently exercised. Longer chains, loops, breakables and mechanism catalogues are stopped until an integrated/playable consumer creates a concrete need.
+Bounded stateful partition↔contraction symmetry is sufficiently exercised. More mechanics complexity waits for real consumer pressure.
 
-Evidence: `docs/evidence/stateful-graph-contraction-capstone.md`.
+## R0 — representation / scale baseline: **PASS / CLOSED**
 
-## I0A — in-place static/dynamic control: **FULL PASS / CONTROL CLOSED**
+R0 measured the unoptimized reference representation across dense, shell, sparse and disconnected cases.
 
-Useful low-churn host control with explicit velocity-resume caveat. Not the only provider strategy.
+Key result at `14³`:
 
-Evidence: `docs/evidence/i0a-freeze-unfreeze-semantics.md`.
+- dense static init: `1.497 s`, dynamic init: `1.132 s`, one-cell full rebuild: `1.748 s`, topology extract: `22.5 ms`,
+- shell has **more visual mesh vertices** than dense but is ~7× faster because it has far fewer collision shapes,
+- sparse skeleton shares the same extent but rebuilds in only `7.3 ms`,
+- disconnected split preflight is `21 ms` while commit is `558 ms`.
 
-## I0B — logical Space + real provider replacement: **FULL PASS / INTEGRATED**
+The dominant first scale pressure is therefore the one-node/one-shape-per-occupied-cell collision representation, not connectivity scanning or visual mesh complexity.
 
-Persistent logical Space survives real `MatterRepresentation → ConstructBody → MatterRepresentation` provider replacement while retaining one Matter+lineage authority pair, pose continuity, motion and editing.
-
-Evidence: `docs/evidence/i0b-provider-replacement-lifecycle.md`.
-
-## LAB — second independent lifecycle consumer: **FULL PASS / NARROW REUSABLE-SUBSTRATE EVIDENCE**
-
-The actual interactive LAB scene consumes the same provider/mutation lifecycle rather than owning hidden replacement orchestration.
-
-Evidence: `docs/evidence/lifecycle-lab-consumer.md`.
-
-## I2 — actor continuity through provider replacement: **FULL PASS / INTEGRATED**
-
-Actor support can remain a logical Space relation while the concrete provider changes static↔dynamic↔static. Provider-preserving local coordinates need no test-local handoff; topology rebases still require explicit mapping.
-
-Evidence: `docs/evidence/i2-actor-provider-transition.md`.
-
-## I3 — topology mutation through shared runtime: **FULL PASS / INTEGRATED**
-
-A moving logical Space can retire through one shared connected-component transaction into fresh compact successor Spaces while retained Matter lineage, world placement, rigid velocity field and explicit actor succession remain coherent.
-
-The adversarial test no longer implements the split itself.
-
-Evidence: `docs/evidence/i3-shared-topology-split.md`.
-
-### Re-audit result after I3
-
-The I0B→LAB→I2→I3 line established enough lifecycle coherence that another same-scale lifecycle semantic probe now has lower expected information value than measuring the present reference representation under increasing load.
-
-The project therefore enters the **R — scalable representation frontier**, beginning with measurement rather than optimization.
+Evidence: `docs/evidence/r0-representation-scale-baseline.md`.
 
 ---
 
-# Active campaign — R0 representation / scale baseline
+# Active campaign — R1 exact collision aggregation
 
 ## Question
 
-Where does the current deliberately simple truth/reference representation actually stop being cheap enough, and which cost dominates first?
+Can the physical collision representation be compressed from one box/node per occupied Matter cell to a much smaller exact set of axis-aligned cuboids **without changing logical Matter, lineage, mass properties, lifecycle semantics or occupied collision volume**?
 
-## Why now
+## Why this challenger first
 
-The current implementation is intentionally easy to reason about:
+R0 ranked this pressure directly. Dense provider build/rebuild cost becomes strongly superlinear in occupied-cell count in the tested range. Shell-vs-dense results specifically separate collision-shape materialization from visual mesh complexity.
 
-- full visual mesh rebuild,
-- full collision teardown/recreation,
-- one collision box/node per occupied cell,
-- full Matter scans for mass/COM,
-- full-volume connected-component scans and full-size component materialization before compaction.
+## R1 mechanism hypothesis
 
-Those choices are appropriate for semantic research but already suspect for scale. We now have enough integrated lifecycle evidence that their cost can be measured without simultaneously inventing lifecycle semantics.
+Introduce a deterministic derived collision compiler that partitions occupied unit cells into non-overlapping axis-aligned integer cuboids.
 
-## R0 rules
+Important semantics:
 
-**Measure before optimizing.**
+- `CellVolume` remains truth.
+- Cuboids are disposable derived representation, never gameplay identity.
+- Cuboids must exactly cover occupied unit-cell volume with no holes and no overlap.
+- Matter-derived mass/COM/inertia remain authoritative; collider aggregation must not redefine mass semantics.
+- Current material IDs are not yet a per-cell physics-material model, so R1 may merge occupied cells across visual/material IDs. Record this scope explicitly.
+- Static and dynamic providers should consume the same collision-box derivation path.
 
-During R0 do not introduce:
+## A/B requirements
 
-- greedy collision boxes,
-- chunk/region partitioning,
-- dirty-region rebuilds,
-- convex decomposition,
-- async/threaded rebuild scheduling,
-- ECS/world-manager abstraction,
-- native-Jolt replacement,
-- LOD/near-far modes.
+Keep the current per-cell representation available as a reference during the challenger.
 
-Any of those may become a challenger only after baseline data shows which pressure it addresses.
+Measure at least dense/shell/skeleton cases for:
 
-## Required benchmark dimensions
-
-Use several controlled volume extents and several occupancy patterns that separate “occupied Matter count” from “scanned bounding volume”. At minimum:
-
-- dense solid,
-- shell/surface-dominant geometry,
-- sparse geometry,
-- disconnected geometry for split cost.
-
-Record at least:
-
-- extent / total cells scanned,
 - occupied cells,
-- collision shape count,
-- derived mesh vertex count,
-- initial static-provider rebuild/build cost,
-- initial dynamic-provider rebuild/build cost,
-- one-cell dynamic mutation/full rebuild cost,
-- connected-component extraction cost,
-- shared one→many split transaction cost,
-- successor count and total successor collision shapes.
+- reference shape count,
+- aggregated cuboid count,
+- compression ratio,
+- static provider build,
+- dynamic provider build,
+- one-cell full rebuild,
+- exact collision coverage verification.
 
-Prefer repeated samples/median or another simple robust statistic where timing noise matters. Keep the benchmark small enough for CI but large enough to expose the first curve bend.
+Then integrate the aggregated path into lifecycle tests that exercise:
 
-## PASS condition
+- dynamic motion,
+- live mutation,
+- provider replacement,
+- actor support,
+- shared topology split.
 
-R0 is **not** “performance is good”. It passes if:
+## R1 PASS condition
 
-- measurements are reproducible enough to compare cases,
-- benchmark does not alter the implementation it measures,
-- at least one meaningful scaling pressure can be ranked from evidence,
-- we can choose the next R challenger because of observed cost rather than intuition.
+R1 passes only if both are true:
+
+1. **semantic/correctness:** exact occupied collision volume and current mass/lifecycle invariants remain coherent;
+2. **scale:** shape count and measured provider/rebuild cost improve materially on the R0 pressure cases.
+
+A faster but approximate collider is not a PASS. A geometrically exact compiler that does not improve the dominant cost is also not sufficient.
+
+## R1 non-goals
+
+- dirty-region rebuild scheduling,
+- chunk/world partitioning,
+- convex decomposition,
+- asynchronous rebuilds,
+- native-Jolt custom compounds,
+- LOD or distance-based representation modes,
+- production physical material boundaries.
 
 ## STOP / re-rank
 
-After R0, stop and rank candidate interventions by measured leverage. Do not automatically implement the most obvious optimization if the dominant cost is elsewhere.
+After R1 A/B + integrated ratchets, stop and measure again. If full rebuild cost remains material, dirty/edit-local rebuild becomes a strong R2 candidate. If provider construction becomes cheap enough and topology scanning becomes visible, re-rank instead of assuming the next optimization.
 
 ---
 
-# Decision frontiers after R0
+# Decision frontiers after R1
 
-These are not ordered commitments.
+## R2+ — remaining representation/update pressure
 
-## R1+ — representation challengers
+Possible triggers after new measurements:
 
-Entry trigger: R0 identifies a dominant measurable cost.
-
-Potential challengers include:
-
-- greedy merged boxes / primitive regions,
-- dirty/edit-local collision rebuilds,
+- dirty/edit-local collision/mesh rebuild,
 - chunk/region representation boundaries,
-- separate visual and physical partitions,
-- convex clusters/decomposition when geometry warrants it,
-- representation simplification for inactive/far/frozen Spaces.
-
-Every challenger must preserve current logical Matter/lineage/lifecycle semantics unless evidence explicitly reopens them.
+- separate visual/physical partitions,
+- convex clusters/decomposition,
+- inactive/far/frozen simplification.
 
 ## A — volumetric actor + finite force exchange
 
-Entry trigger: support/provider semantics are integrated and an interactive/playable consumer needs walls/slopes/steps/ceilings or meaningful actor mass/reaction forces.
+Entry trigger: an interactive/playable consumer needs walls/slopes/steps/ceilings or meaningful actor mass/reaction forces.
 
 ## W — canonical world extraction/reintegration
 
 Entry trigger: a real world consumer needs transfer between canonical lattice and independent local Space.
-
-### W0 — lossless lattice-compatible transfer
-
-`canonical cells → independent Space → dynamic motion → lattice-compatible pose → reintegrate`
-
-Must address ownership transfer, occupied destination policy, lineage and dependencies crossing extraction boundaries.
-
-### W1 — incompatible pose / bake
-
-Treat as conversion/resampling with explicit geometry/material/provenance error policy, not ordinary reintegration.
 
 ## P — persistence / durable logical identity
 
@@ -205,21 +166,15 @@ Entry trigger: integrated/playable consumer needs a relation not covered by curr
 
 ## S — streaming / world scale
 
-Entry trigger: concrete world consumer exceeds a single local active region.
-
-Large-world coordinates remain deferred until measurements require them.
+Entry trigger: a concrete world consumer exceeds a single local active region.
 
 ## D — multiple simulation domains / migration
 
 Entry trigger: one solver domain no longer conveniently or accurately hosts required interactions/coordinate scales.
 
-Space ≠ simulation domain remains defended.
-
 ## N — nested/moving frames
 
 Entry trigger: a real consumer needs dependent Spaces rather than constraint-coupled peers.
-
-Never infer physics nesting from scene-tree parenting.
 
 ## L — spatial links / portals
 
@@ -227,7 +182,7 @@ Entry trigger: integrated frame/query semantics are stable enough to isolate cro
 
 ## C — curved / Planet Matter providers
 
-Entry trigger: planar/local Matter assumptions materially block a real planetary experiment. Avoid unnecessary impossibility now; do not build curved topology prematurely.
+Entry trigger: planar/local Matter assumptions materially block a real planetary experiment.
 
 ## V — JV-like vehicles / advanced mobile machinery
 
@@ -243,21 +198,17 @@ After sufficient lifecycle + representation + actor evidence, schedule a deliber
 
 Purpose: test emergent freedom, feedback and comprehensibility — not content production.
 
-LAB remains an earlier research workbench, not this gameplay slice.
-
 ---
 
 # CI / evidence governance
 
-Tests should increasingly separate into:
+Separate tests conceptually into:
 
-- **canonical invariants** — current truths protected continuously,
-- **current campaign** — active adversarial/measurement work,
-- **historical evidence probes** — preserved but allowed to leave every-push CI when superseded.
+- canonical invariants,
+- current campaign,
+- historical evidence probes.
 
-Retiring an old probe from live CI does not erase evidence. An old green test also must not fossilize obsolete implementation details.
-
-A manifest/runner may replace the append-only workflow when maintenance cost becomes material.
+Retiring an old probe from every-push CI does not erase evidence. Old green probes must not fossilize obsolete implementation details.
 
 ---
 
@@ -266,12 +217,12 @@ A manifest/runner may replace the append-only workflow when maintenance cost bec
 Replan immediately if:
 
 - Matter/lineage authority becomes ambiguous,
-- frame pose/velocity has two simultaneous authorities,
-- provider replacement needs hidden compensation to remain continuous,
-- transaction/solver/node observation layers are conflated in a way that breaks handoff/debug semantics,
-- integrated consumers repeatedly require orchestration that belongs in shared runtime,
-- R0/R1 scale evidence contradicts lifecycle assumptions,
-- Owner/playability pressure shows technically correct semantics are awkward or uninteresting,
+- representation optimization begins defining gameplay identity,
+- aggregated collision cannot preserve exact occupied geometry in the bounded voxel provider,
+- mass/COM/inertia accidentally become collider-derived instead of Matter-derived,
+- lifecycle timing or actor support changes merely to accommodate an optimization,
+- measured R1 results show collision aggregation was not actually the dominant leverage point,
+- Owner/playability pressure shows the technically correct substrate is awkward or uninteresting,
 - host-engine limitations materially distort intended invariants.
 
 The roadmap is doing its job when such findings change the plan.
