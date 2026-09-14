@@ -91,6 +91,7 @@ func _run() -> void:
 	var parent_angular: Vector3 = parent.angular_velocity
 	var parent_com_world: Vector3 = parent.to_global(parent.matter_center_of_mass_local)
 	var joint_anchor_world_before: Vector3 = parent.to_global(anchor_parent_local)
+	var joint_node_staleness: float = joint.global_position.distance_to(joint_anchor_world_before)
 
 	_check(parent.volume.set_cell(CUT_CELL, CellVolume.EMPTY), "split transaction removes the intended bridge cell")
 	parent_lineage.clear_lineage(CUT_CELL)
@@ -161,16 +162,27 @@ func _run() -> void:
 	_check(retained_lineage_mismatches == 0, "jointed split preserves every retained Matter lineage mapping")
 	_check(anchor_child.to_global(mapped_anchor_local).distance_to(joint_anchor_world_before) < 0.00001, "mechanical anchor maps continuously into compact successor coordinates")
 
-	# Preserve the logical mechanical-link identity while atomically replacing
-	# only the body endpoint that owned its anchor Matter.
+	# PinJoint3D configures body-local pivots from the Joint3D node's current
+	# global origin whenever an endpoint changes. The joint node itself does not
+	# ride the constrained bodies, so its original scene transform is stale by
+	# the time a moving topology replacement occurs. Rebase the joint frame onto
+	# the current logical anchor before swapping the endpoint.
+	_check(joint_node_staleness > 0.1, "moving assembly makes the persistent Joint3D scene anchor materially stale before succession")
+	joint.global_position = joint_anchor_world_before
+	joint.force_update_transform()
+	var joint_rebase_error: float = joint.global_position.distance_to(joint_anchor_world_before)
+	_check(joint_rebase_error < 0.000001, "joint scene anchor rebases onto current logical anchor before endpoint replacement")
+
+	# Preserve logical mechanical-link identity while atomically replacing only
+	# the body endpoint that owned its anchor Matter.
 	joint.node_a = joint.get_path_to(anchor_child)
 	_check(joint.get_instance_id() == joint_id, "mechanical-link identity survives endpoint frame replacement")
 	_check(sibling.get_instance_id() == sibling_id, "unaffected mechanical endpoint keeps its physics identity")
 	_check(anchor_child.get_instance_id() != parent_id, "topology successor has new physics-body identity")
 	parent.free()
 
-	# Let the newly created successors participate in the already-upcoming step,
-	# then cross the next physics-frame boundary so scene transforms are synced.
+	# Let the freshly created successors participate in the already-upcoming
+	# solver step, then cross a physics-frame boundary for node synchronization.
 	await process_frame
 	await physics_frame
 	await process_frame
@@ -208,7 +220,7 @@ func _run() -> void:
 	_check(joint.node_b == joint.get_path_to(sibling), "unaffected joint endpoint remains on persistent sibling")
 
 	print(
-		"MULTIFRAME_JOINT_SPLIT_SUCCESSION_METRIC components=%d anchor_child_index=%d anchor_origin=%s anchor_owner_token=%d inherited_anchor_token=%d split_world_error=%.10f split_velocity_error=%.10f lineage_mismatches=%d pre_anchor_gap=%.10f post_anchor_gap=%.10f final_anchor_gap=%.10f free_child_separation=%.6f anchor_child_linear_change=%.6f anchor_child_angular_change=%.6f parent_id=%d anchor_child_id=%d free_child_id=%d sibling_id=%d joint_id=%d"
+		"MULTIFRAME_JOINT_SPLIT_SUCCESSION_METRIC components=%d anchor_child_index=%d anchor_origin=%s anchor_owner_token=%d inherited_anchor_token=%d split_world_error=%.10f split_velocity_error=%.10f lineage_mismatches=%d pre_anchor_gap=%.10f joint_node_staleness=%.10f joint_rebase_error=%.10f post_anchor_gap=%.10f final_anchor_gap=%.10f free_child_separation=%.6f anchor_child_linear_change=%.6f anchor_child_angular_change=%.6f parent_id=%d anchor_child_id=%d free_child_id=%d sibling_id=%d joint_id=%d"
 		% [
 			components.size(),
 			anchor_child_index,
@@ -219,6 +231,8 @@ func _run() -> void:
 			max_split_velocity_error,
 			retained_lineage_mismatches,
 			max_pre_split_anchor_gap,
+			joint_node_staleness,
+			joint_rebase_error,
 			max_post_split_anchor_gap,
 			final_anchor_gap,
 			max_free_child_separation,
