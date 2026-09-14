@@ -172,8 +172,8 @@ func _update_actor_intent() -> void:
 	if _actor == null:
 		return
 
-	var side := float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
-	var forward_amount := float(Input.is_physical_key_pressed(KEY_W)) - float(Input.is_physical_key_pressed(KEY_S))
+	var side: float = float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
+	var forward_amount: float = float(Input.is_physical_key_pressed(KEY_W)) - float(Input.is_physical_key_pressed(KEY_S))
 	var input_axis := Vector2(side, forward_amount)
 	if input_axis.length_squared() > 1.0:
 		input_axis = input_axis.normalized()
@@ -182,14 +182,14 @@ func _update_actor_intent() -> void:
 		_actor.desired_local_velocity = Vector3.ZERO
 		return
 
-	var camera_to_actor := _actor.global_position - $Camera3D.global_position
+	var camera_to_actor: Vector3 = _actor.global_position - $Camera3D.global_position
 	camera_to_actor.y = 0.0
-	var camera_forward := camera_to_actor.normalized() if camera_to_actor.length_squared() > 0.000001 else Vector3.FORWARD
-	var camera_right := camera_forward.cross(Vector3.UP).normalized()
-	var desired_world := (camera_right * input_axis.x + camera_forward * input_axis.y) * ACTOR_SPEED
+	var camera_forward: Vector3 = camera_to_actor.normalized() if camera_to_actor.length_squared() > 0.000001 else Vector3.FORWARD
+	var camera_right: Vector3 = camera_forward.cross(Vector3.UP).normalized()
+	var desired_world: Vector3 = (camera_right * input_axis.x + camera_forward * input_axis.y) * ACTOR_SPEED
 
 	if _actor.grounded and _actor.support_body != null and is_instance_valid(_actor.support_body):
-		var support_basis := _actor.support_body.global_transform.basis.orthonormalized()
+		var support_basis: Basis = _actor.support_body.global_transform.basis.orthonormalized()
 		_actor.desired_local_velocity = support_basis.inverse() * desired_world
 	else:
 		# FrameProbeCharacter intentionally has no air-control model. Keep the
@@ -201,7 +201,7 @@ func _update_actor_intent() -> void:
 func _update_camera(force_snap: bool = false) -> void:
 	if _actor == null:
 		return
-	var desired_position := _actor.global_position + CAMERA_OFFSET
+	var desired_position: Vector3 = _actor.global_position + CAMERA_OFFSET
 	if force_snap:
 		$Camera3D.global_position = desired_position
 	else:
@@ -217,27 +217,27 @@ func _refresh_pointer_selection() -> void:
 	if _space == null or _space.get_active_provider() == null:
 		return
 
-	var mouse_position := get_viewport().get_mouse_position()
-	var ray_from := $Camera3D.project_ray_origin(mouse_position)
-	var ray_to := ray_from + $Camera3D.project_ray_normal(mouse_position) * EDIT_RAY_DISTANCE
-	var query := PhysicsRayQueryParameters3D.create(ray_from, ray_to)
+	var mouse_position: Vector2 = get_viewport().get_mouse_position()
+	var ray_from: Vector3 = $Camera3D.project_ray_origin(mouse_position)
+	var ray_to: Vector3 = ray_from + $Camera3D.project_ray_normal(mouse_position) * EDIT_RAY_DISTANCE
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(ray_from, ray_to)
 	query.collide_with_bodies = true
 	query.collide_with_areas = false
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
 		return
 
-	var collider := hit["collider"] as Node3D
-	var provider := _resolve_active_provider_from_collider(collider)
+	var collider: Node3D = hit["collider"] as Node3D
+	var provider: Node3D = _resolve_active_provider_from_collider(collider)
 	if provider == null:
 		return
 
-	var hit_position := Vector3(hit["position"])
-	var hit_normal := Vector3(hit["normal"]).normalized()
-	var inward_local := provider.to_local(hit_position - hit_normal * 0.02)
-	var outward_local := provider.to_local(hit_position + hit_normal * 0.02)
-	var remove_cell := _floor_to_cell(inward_local)
-	var place_cell := _floor_to_cell(outward_local)
+	var hit_position: Vector3 = Vector3(hit["position"])
+	var hit_normal: Vector3 = Vector3(hit["normal"]).normalized()
+	var inward_local: Vector3 = provider.to_local(hit_position - hit_normal * 0.02)
+	var outward_local: Vector3 = provider.to_local(hit_position + hit_normal * 0.02)
+	var remove_cell: Vector3i = _floor_to_cell(inward_local)
+	var place_cell: Vector3i = _floor_to_cell(outward_local)
 
 	if _volume.in_bounds(remove_cell) and _volume.get_cell(remove_cell) != CellVolume.EMPTY:
 		_selected_remove_cell = remove_cell
@@ -291,7 +291,7 @@ func _place_cell(cell: Vector3i, source: String = "edit") -> bool:
 func _resolve_active_provider_from_collider(collider: Node3D) -> Node3D:
 	if collider == null or _space == null:
 		return null
-	var active_provider := _space.get_active_provider()
+	var active_provider: Node3D = _space.get_active_provider()
 	var current: Node = collider
 	while current != null:
 		if current == active_provider:
