@@ -48,3 +48,6 @@ jobs:
 
       - name: Run G3 free-dynamic contact probe
         run: godot --headless --path . --script res://tests/g3_dynamic_contact_probe.gd
+
+      - name: Run G3 frame-aware query controller challenger
+        run: godot --headless --path . --script res://tests/g3_frame_challenger.gd
