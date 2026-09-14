@@ -95,13 +95,45 @@ Evidence: `docs/evidence/r2a-derived-region-locality.md`.
 
 # Active campaign — P0 interactive consumer pressure
 
-Representation research now has enough leverage to stop before becoming an architecture exercise.
+Representation research has enough leverage to stop before becoming architecture by inertia, and P0 has now produced its first integrated consumer result.
 
-The current `lab/main.tscn` is useful lifecycle instrumentation, but it is still primarily a keyboard-driven representation/lifecycle console. It does not yet expose the north-star loop as an embodied experiment.
+## Current status
+
+**Automated composition gate: PASS in bounded translation+yaw scope.**
+
+The real `lab/main.tscn` is now embodied rather than only a lifecycle console. It contains the existing `FrameProbeCharacter`, follow camera, direct provider-local Matter selection, remove/place editing and the shared static↔dynamic lifecycle path.
+
+On commit `09eb18e8e691f0f6b2ae085a931d96cf85447bc5`, GitHub Actions run `#202` passed:
+
+- current-campaign validation,
+- fast invariant validation,
+- full historical research validation through R0/R1/R2P/R2A.
+
+The P0 automated smoke itself measured:
+
+- zero floor-loss frames during stationary ride,
+- zero floor-loss frames while walking on the moving Space,
+- zero floor-loss frames after occupancy editing while moving,
+- stationary local drift `0.00000812`,
+- local walk displacement `0.95959115`,
+- fresh lineage after static and moving Matter recreation,
+- coherent static→dynamic→static provider succession under one logical Space.
+
+This is **integrated automated evidence, not playability/product PASS**. P0 remains active until the Owner has directly used the scene and supplied interaction/feel/latency feedback.
+
+Evidence: `docs/evidence/p0-interactive-consumer.md`.
+
+## First consumer finding
+
+The initial P0 challenger intentionally included pitch/roll as well as yaw. It kept support (`floor_loss=0`) but produced about `0.501` local drift for a stationary rider.
+
+That exposed a real boundary in the current `FrameProbeCharacter`: support transport is frame-aware, while support validation/snap is still a single world-down ground ray. Earlier actor evidence was yaw-only, so this is not a regression inside an already defended scope.
+
+P0 deliberately does **not** hide the finding by choosing local gravity, adhesion or frame-relative 'down' semantics in the LAB. The Owner-facing slice is therefore currently translation+yaw bounded; arbitrary pitch/roll support moves to the actor frontier.
 
 ## Question
 
-Can the currently defended substrate support a small coherent interactive loop in which a real actor **stands on, moves across, edits and transitions one logical local Space** without test-local orchestration or hidden semantic shortcuts?
+Can the currently defended substrate support a small coherent interactive loop in which a real actor **stands on, moves across, edits and transitions one logical local Space** without test-local orchestration or hidden semantic shortcuts — and does that loop feel coherent when the Owner actually uses it?
 
 ## P0 target experience
 
@@ -109,7 +141,7 @@ The minimum pressure loop is:
 
 > walk on/around Matter → inspect/select a local cell → remove/place Matter → activate the same logical Space → remain supported/ride it → edit while moving → freeze it → inspect what happened.
 
-A simple mechanism is deliberately optional for P0. Mechanics already has strong bounded evidence; forcing a joint into the first slice would add scope before the actor/edit/lifecycle composition itself is proven usable.
+A simple mechanism is deliberately optional for P0. Mechanics already has strong bounded evidence; forcing a joint into the first slice would add scope before Owner interaction has evaluated actor/edit/lifecycle composition.
 
 ## P0 implementation discipline
 
@@ -126,7 +158,16 @@ Do **not** build a general player framework, inventory, block catalogue, chunk m
 
 ## P0 evidence requirements
 
-The slice is useful when an Owner can exercise it directly and the runtime can report at least:
+Automated composition requirements are now met for the bounded translation+yaw slice. The remaining material evidence is direct Owner interaction:
+
+- movement/camera feel,
+- pointer selection clarity,
+- remove/place clarity,
+- perceived edit latency,
+- transition continuity as seen rather than merely measured,
+- whether the loop is useful/interesting enough to reveal the next real pressure.
+
+The runtime already reports:
 
 - actor support Space/provider and grounded state,
 - target cell / operation result,
@@ -134,9 +175,9 @@ The slice is useful when an Owner can exercise it directly and the runtime can r
 - provider kind and provider transition count,
 - edit rebuild timing,
 - collision-shape count,
-- obvious discontinuities or support loss through activate/edit/freeze.
+- transition/debug state.
 
-Automated smoke evidence should cover the new shared interactive path where practical, but P0 is the first campaign where **Owner interaction quality is itself material evidence**.
+P0 is the first campaign where **Owner interaction quality is itself material evidence**.
 
 ## P0 decision outcomes
 
@@ -150,7 +191,7 @@ Return to representation research with R2A as measured evidence. Challenge an up
 
 ### If actor limitations dominate
 
-Enter the volumetric/finite-force actor frontier rather than hiding the problem with movement hacks.
+Enter the volumetric/orientation/finite-force actor frontier deliberately rather than hiding the problem with movement hacks.
 
 ### If lifecycle/provider transitions dominate
 
@@ -164,6 +205,7 @@ Treat that as evidence. Revisit interaction semantics and product pressure befor
 
 - final game controls,
 - production first-person controller,
+- arbitrary pitch/roll locomotion semantics,
 - content pipeline,
 - inventory/crafting,
 - world streaming,
@@ -178,9 +220,11 @@ Treat that as evidence. Revisit interaction semantics and product pressure befor
 
 # Decision frontiers after / during P0
 
-## A — volumetric actor + finite force exchange
+## A — volumetric / oriented actor + finite force exchange
 
-Entry trigger: the interactive consumer needs walls/slopes/steps/ceilings or meaningful actor mass/reaction forces.
+Entry trigger: Owner interaction needs walls/slopes/steps/ceilings, arbitrary tilted support, explicit local-vs-world gravity semantics, or meaningful actor mass/reaction forces.
+
+The pitch/roll P0 challenger already supplies one concrete reason this frontier may become important, but it is not automatically the next campaign until Owner interaction ranks it against other pressures.
 
 ## W — canonical world extraction/reintegration
 
@@ -234,11 +278,15 @@ Separate tests conceptually into:
 - current campaign,
 - historical evidence probes.
 
+The workflow now has a lightweight `current-campaign-validation` lane for the real LAB + P0 smoke, while fast invariants and the complete historical research ratchet remain separate protections.
+
 Retiring an old probe from every-push CI does not erase evidence. Old green probes must not fossilize obsolete implementation details.
 
 The R1 promotion produced concrete examples: historical `shape count == occupied cells` assertions were test debt after the representation changed. The correct invariant is truth/representation coherence, not preservation of a superseded collider topology.
 
-R2A also showed why current-campaign challengers should remain separable from promoted runtime invariants: a large local timing win can still expose a serious representation tradeoff and therefore remain evidence without becoming architecture.
+R2A showed why current-campaign challengers should remain separable from promoted runtime invariants: a large local timing win can still expose a serious representation tradeoff and therefore remain evidence without becoming architecture.
+
+P0 adds the complementary lesson: an integrated consumer can expose a semantic limit (pitch/roll actor support) that narrower green probes did not test, without invalidating the bounded evidence those probes actually established.
 
 ---
 
