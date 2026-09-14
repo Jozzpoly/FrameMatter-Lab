@@ -84,3 +84,6 @@ jobs:
 
       - name: Run rigid replacement timing probe
         run: godot --headless --path . --script res://tests/rigid_replacement_timing_probe.gd
+
+      - name: Run topology lineage challenger
+        run: godot --headless --path . --script res://tests/topology_lineage_probe.gd
