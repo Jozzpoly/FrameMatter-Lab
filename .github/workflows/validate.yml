@@ -238,3 +238,6 @@ jobs:
 
       - name: Run stateful hinge graph contraction capstone
         run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_contraction_probe.gd
+
+      - name: Run R0 representation/scale baseline
+        run: godot --headless --path . --script res://tests/r0_representation_scale_baseline.gd
