@@ -2,6 +2,7 @@ extends SceneTree
 
 const ACQUIRE_FRAMES := 18
 const SETTLE_FRAMES := 2
+const FEEDBACK_EXPIRE_FRAMES := 96
 const CENTER_ACTOR_LOCAL := Vector3(8.5, 2.15, 8.5)
 const EXPAND_ACTOR_LOCAL := Vector3(6.5, 1.95, 8.5)
 const EXPAND_REMOVE := Vector3i(8, 5, 8)
@@ -35,6 +36,7 @@ var _player: SpaceQueryCharacter
 var _camera_rig: P1CameraRig
 var _interactor: P1MatterInteractor
 var _target_presentation: P1MatterTargetPresentation
+var _feedback: P1InteractionFeedback
 
 
 func _init() -> void:
@@ -63,11 +65,13 @@ func _run() -> void:
 	_camera_rig = _p1.call("get_camera_rig") as P1CameraRig
 	_interactor = _p1.call("get_interactor") as P1MatterInteractor
 	_target_presentation = _p1.get_node_or_null("P1MatterTargetPresentation") as P1MatterTargetPresentation
+	_feedback = _p1.get_node_or_null("HUD/P1InteractionFeedback") as P1InteractionFeedback
 	_check(
 		_space != null and _player != null and _camera_rig != null and _interactor != null,
 		"G5 production capture resolves composed interaction roles"
 	)
 	_check(_target_presentation != null, "G5 production scene owns one target presentation consumer")
+	_check(_feedback != null, "G5 production scene owns transient interaction feedback consumer")
 	_check(
 		_interactor != null and _interactor.targeting_mode == P1MatterInteractor.TargetingMode.POINTER,
 		"G5 production interaction uses pointer acquisition"
@@ -75,7 +79,16 @@ func _run() -> void:
 	_check(_p1.get_node_or_null("HUD/Reticle") == null, "G5 production HUD has no false center reticle")
 	if _target_presentation != null and _interactor != null:
 		_check(_target_presentation.interactor == _interactor, "G5 production presenter binds existing interactor authority")
-	if _space == null or _player == null or _camera_rig == null or _interactor == null or _target_presentation == null:
+	if _feedback != null and _interactor != null:
+		_check(_feedback.interactor == _interactor, "G5 transient feedback binds existing interactor authority")
+	if (
+		_space == null
+		or _player == null
+		or _camera_rig == null
+		or _interactor == null
+		or _target_presentation == null
+		or _feedback == null
+	):
 		_p1.free()
 		_finish()
 		return
@@ -99,24 +112,44 @@ func _run() -> void:
 	_check(not remove_state.is_empty(), "G5 production resolves an off-center visible REMOVE target")
 	if not remove_state.is_empty():
 		await _capture_pointer_target("00_remove_target", "REMOVE", remove_state, true)
+		var removed_cell := _interactor.remove_cell
+		var remove_screen: Vector2 = remove_state["screen"]
+		_check(_interactor.apply_current_edit(), "G5 real REMOVE mutation succeeds from promoted pointer target")
+		_check(_feedback.is_feedback_visible(), "G5 successful edit produces transient feedback")
+		_check(_feedback.get_feedback_text() == "REMOVED", "G5 successful REMOVE feedback is semantically explicit")
+		_interactor.update_target_from_pointer_position(remove_screen)
+		_target_presentation.refresh_now()
+		await _capture_pixels("01_remove_success_feedback")
+
+		_check(
+			not _interactor.apply_edit_to_cell(_space, removed_cell, P1MatterInteractor.EditMode.REMOVE),
+			"G5 repeated REMOVE is actually rejected"
+		)
+		_check(_feedback.is_feedback_visible(), "G5 rejected edit produces transient feedback")
+		_check(_feedback.get_feedback_text() == "BLOCKED", "G5 rejection feedback is semantically explicit")
+		await _capture_pixels("02_remove_rejection_feedback")
+		await _advance_frames(FEEDBACK_EXPIRE_FRAMES)
+		_check(not _feedback.is_feedback_visible(), "G5 transient feedback expires instead of becoming persistent telemetry")
+		print("P1_INTERACTION_FEEDBACK_EXPIRE_PASS frames=%d" % FEEDBACK_EXPIRE_FRAMES)
 
 	var place_state := await _find_pointer_target(P1MatterInteractor.EditMode.PLACE, CENTER_ACTOR_LOCAL)
 	_check(not place_state.is_empty(), "G5 production resolves an off-center visible PLACE target")
 	if not place_state.is_empty():
-		await _capture_pointer_target("01_place_target", "PLACE", place_state, true)
+		await _capture_pointer_target("03_place_target", "PLACE", place_state, true)
 
 	for y in range(1, 6):
 		var cell := Vector3i(8, y, 8)
-		_check(
-			_interactor.apply_edit_to_cell(_space, cell, P1MatterInteractor.EditMode.PLACE),
-			"G5 production builds storage-height pillar cell %s" % str(cell)
-		)
+		if _space.volume.get_cell(cell) == CellVolume.EMPTY:
+			_check(
+				_interactor.apply_edit_to_cell(_space, cell, P1MatterInteractor.EditMode.PLACE),
+				"G5 production builds storage-height pillar cell %s" % str(cell)
+			)
 	await _advance_frames(2)
 
 	var expand_state := await _find_exact_expand_target()
 	_check(not expand_state.is_empty(), "G5 production resolves visible out-of-storage EXPAND target")
 	if not expand_state.is_empty():
-		await _capture_pointer_target("02_expand_target", "EXPAND", expand_state, false)
+		await _capture_pointer_target("04_expand_target", "EXPAND", expand_state, false)
 		_check(_interactor.remove_cell == EXPAND_REMOVE, "G5 EXPAND resolves exact source top cell")
 		_check(_interactor.place_cell == EXPAND_PLACE, "G5 EXPAND resolves exact out-of-storage destination")
 		_check(_interactor.place_cell - _interactor.remove_cell == Vector3i.UP, "G5 EXPAND preserves exact +Y hit face")
@@ -266,7 +299,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_INTERACTION_CAPTURE_PASS: promoted production pointer acquisition, UI exclusion and face-led REMOVE/PLACE/EXPAND presentation rendered on D3D12.")
+		print("P1_INTERACTION_CAPTURE_PASS: promoted pointer acquisition, UI exclusion, face-led prediction and transient success/rejection feedback rendered on D3D12.")
 		quit(0)
 		return
 	for failure in _failures:
