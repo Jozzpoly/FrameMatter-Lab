@@ -82,13 +82,32 @@ func _run() -> void:
 	await _advance_frames(SETTLE_FRAMES)
 	await _capture("03_close_obstacle_compression")
 
-	# Adversarial fall outside and below the reference world. The useful contract
-	# is relational: actor, world boundary and relevant Space remain recoverable
-	# from pixels without pretending the camera can see through opaque geometry.
+	# Adversarial pre-recovery fall state. This is a camera-composition stress,
+	# not a gravity timing test. Freeze the actor physics process so a slow
+	# software renderer cannot advance enough hidden physics ticks to trigger the
+	# production y<-12 automatic recovery before the evidence frame is captured.
+	# B5 below re-enables actor physics and exercises explicit recovery normally.
 	_camera_rig.reset_view()
+	_player.set_physics_process(false)
 	_move_player_world(FAR_AIRBORNE_WORLD)
 	await _advance_frames(8)
+	_check(
+		_player.global_position.distance_to(FAR_AIRBORNE_WORLD) <= 0.001,
+		"B4 preserves exact pre-recovery actor world position"
+	)
+	_check(not _player.grounded, "B4 remains airborne before capture")
+	_check(_player.support_body == null and _player.support_space == null, "B4 has no support before capture")
+	print(
+		"P1_CAMERA_B4_STATE actor_world=(%.3f,%.3f,%.3f) grounded=%s support_space=%s" % [
+			_player.global_position.x,
+			_player.global_position.y,
+			_player.global_position.z,
+			str(_player.grounded),
+			str(_player.support_space != null),
+		]
+	)
 	await _capture("04_far_airborne_context")
+	_player.set_physics_process(true)
 
 	_p1.call("recover_player_for_test")
 	await _advance_frames(SETTLE_FRAMES)
