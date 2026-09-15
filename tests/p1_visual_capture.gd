@@ -112,42 +112,24 @@ func _capture_lighting_turntable(camera_rig: P1CameraRig) -> void:
 
 
 func _apply_visual_variant(p1: Node) -> void:
-	if _visual_variant == "canonical":
+	if _visual_variant == "canonical" or _visual_variant == "balanced_fill":
+		# G2-B balanced fill is now canonical. `balanced_fill` intentionally
+		# remains as a no-op equivalence control for one promotion-validation run.
 		return
 
 	var world_environment := p1.get_node_or_null("WorldEnvironment") as WorldEnvironment
-	var key := p1.get_node_or_null("DirectionalLight3D") as DirectionalLight3D
 	_check(world_environment != null and world_environment.environment != null, "visual challenger resolves P1 Environment")
-	_check(key != null, "visual challenger resolves P1 key light")
-	if world_environment == null or world_environment.environment == null or key == null:
+	if world_environment == null or world_environment.environment == null:
 		return
 
-	if _visual_variant == "balanced_fill" or _visual_variant == "balanced_fill_ssao":
-		# Bounded G2-B challenger: reduce flat ambient/key energy and add a weak
-		# opposite no-shadow/no-specular fill. This follows Godot's documented
-		# fake-GI pattern without changing canonical runtime until rendered A/B
-		# evidence justifies promotion.
+	if _visual_variant == "balanced_fill_ssao":
+		# Post-promotion G2-C challenger: add only moderate SSAO on top of the
+		# promoted canonical key/fill balance so its contribution remains causal.
 		var environment := world_environment.environment
-		environment.ambient_light_energy = 0.42
-		key.light_energy = 0.88
-
-		var fill := DirectionalLight3D.new()
-		fill.name = "G2TestFillLight"
-		fill.rotation_degrees = key.rotation_degrees + Vector3(0.0, 180.0, 0.0)
-		fill.light_color = Color(0.72, 0.80, 0.92, 1.0)
-		fill.light_energy = 0.24
-		fill.light_specular = 0.0
-		fill.shadow_enabled = false
-		p1.add_child(fill)
-
-		if _visual_variant == "balanced_fill_ssao":
-			# Bounded G2-C challenger: add moderate contact/cavity depth on top of
-			# the exact same key/fill balance. Kept separate from promotion so its
-			# contribution can be judged directly against balanced_fill.
-			environment.ssao_enabled = true
-			environment.ssao_radius = 1.15
-			environment.ssao_intensity = 1.25
-			environment.ssao_power = 1.35
+		environment.ssao_enabled = true
+		environment.ssao_radius = 1.15
+		environment.ssao_intensity = 1.25
+		environment.ssao_power = 1.35
 		return
 
 	_failures.append("unsupported P1_VISUAL_VARIANT: %s" % _visual_variant)
