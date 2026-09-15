@@ -37,6 +37,7 @@ const SCRIPT_PATHS: PackedStringArray = [
 	"res://tests/p1_storage_actor_context_challenger.gd",
 	"res://tests/p1_finite_space_control_probe.gd",
 	"res://tests/p1_integrated_causal_loop_probe.gd",
+	"res://tests/p1_canonical_startup_smoke.gd",
 ]
 
 var _failures: Array[String] = []
