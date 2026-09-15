@@ -17,9 +17,10 @@ var _hint: Label
 
 func bind_host(host: Node) -> void:
 	_host = host
-	_bind_controls()
-	_apply_layout()
-	_refresh()
+	if _host != null and _host.is_node_ready():
+		_bind_and_refresh()
+	else:
+		call_deferred("_bind_and_refresh")
 
 
 func _ready() -> void:
@@ -29,10 +30,14 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	if _host == null or not is_instance_valid(_host) or not _host.is_node_ready():
+		return
 	_refresh()
 
 
 func _bind_and_refresh() -> void:
+	if _host == null or not is_instance_valid(_host) or not _host.is_node_ready():
+		return
 	_bind_controls()
 	_apply_layout()
 	_refresh()
