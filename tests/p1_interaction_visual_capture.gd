@@ -3,7 +3,7 @@ extends SceneTree
 const ACQUIRE_FRAMES := 18
 const SETTLE_FRAMES := 1
 const CENTER_ACTOR_LOCAL := Vector3(8.5, 2.15, 8.5)
-const EXPAND_ACTOR_LOCAL := Vector3(-2.5, 1.60, 8.5)
+const EXPAND_ACTOR_LOCAL := Vector3(1.5, 1.95, 8.5)
 const SCAN_YAWS := [
 	0.72,
 	0.0,
@@ -18,8 +18,8 @@ const SCAN_YAWS := [
 const SCAN_PITCHES := [0.48, 0.34, 0.62, 0.78]
 const SCAN_DISTANCES := [5.2, 7.2, 4.0]
 const EXPAND_SCAN_YAWS := [-PI * 0.5, -PI * 0.45, -PI * 0.55, -PI * 0.35, -PI * 0.65]
-const EXPAND_SCAN_PITCHES := [0.62, 0.78, 0.48, 0.90]
-const EXPAND_SCAN_DISTANCES := [5.2, 7.2]
+const EXPAND_SCAN_PITCHES := [0.12, 0.18, 0.24, 0.32, 0.48]
+const EXPAND_SCAN_DISTANCES := [5.2, 7.2, 4.0]
 
 var _failures: Array[String] = []
 var _output_dir := ""
@@ -79,18 +79,21 @@ func _run() -> void:
 	if place_found:
 		await _capture_target("01_place_target", "PLACE", false)
 
-	# Build a real connected Matter bridge to the dense-storage X=0 boundary.
-	# The next raycast must then hit the outward face of that real boundary cell,
-	# making PLACE mean "expand storage, then place" without inventing a test-only
-	# interaction mode.
-	_check(
-		_interactor.apply_edit_to_cell(_space, Vector3i(1, 0, 8), P1MatterInteractor.EditMode.PLACE),
-		"G5 baseline builds connected boundary approach cell x=1"
-	)
-	_check(
-		_interactor.apply_edit_to_cell(_space, Vector3i(0, 0, 8), P1MatterInteractor.EditMode.PLACE),
-		"G5 baseline builds connected storage-boundary cell x=0"
-	)
+	# Build a real connected Matter column at the dense-storage X=0 boundary.
+	# The actor stays inside the Space. A shallow legal camera pitch from the
+	# outside should hit the column side at y=2, so PLACE resolves to x=-1 and
+	# exercises the real out-of-storage EXPAND semantics without bypassing the
+	# canonical camera, collision or reticle raycast.
+	for cell in [
+		Vector3i(1, 0, 8),
+		Vector3i(0, 0, 8),
+		Vector3i(0, 1, 8),
+		Vector3i(0, 2, 8),
+	]:
+		_check(
+			_interactor.apply_edit_to_cell(_space, cell, P1MatterInteractor.EditMode.PLACE),
+			"G5 baseline builds connected storage-boundary column cell %s" % str(cell)
+		)
 	await _advance_frames(2)
 	var expand_found := await _find_target(P1MatterInteractor.EditMode.PLACE, true, EXPAND_ACTOR_LOCAL)
 	_check(expand_found, "G5 baseline resolves a real out-of-storage EXPAND placement target")
