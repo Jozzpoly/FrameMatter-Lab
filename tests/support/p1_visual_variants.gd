@@ -7,6 +7,9 @@ const SURFACE_GRID_OFFSET := 0.006
 const SURFACE_GRID_ALPHA := 0.16
 const MODULATION_LOW := 0.93
 const MODULATION_HIGH := 1.0
+const META_BASE_COLOR := &"g3_original_base_color"
+const META_ROUGHNESS := &"g3_original_roughness"
+const META_METALLIC := &"g3_original_metallic"
 
 
 static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
@@ -55,7 +58,7 @@ static func _refresh_surface_cell_overlays(p1: Node, failures: Array[String]) ->
 
 		var existing := provider.get_node_or_null("G3SurfaceCellOverlay")
 		if existing != null:
-			existing.queue_free()
+			existing.free()
 
 		var overlay := MeshInstance3D.new()
 		overlay.name = "G3SurfaceCellOverlay"
@@ -89,14 +92,22 @@ static func _refresh_surface_modulation(p1: Node, failures: Array[String]) -> vo
 			failures.append("surface_modulation cannot resolve DerivedMesh")
 			continue
 
-		var base_color := Color(0.72, 0.77, 0.84, 1.0)
-		var roughness := 0.82
-		var metallic := 0.0
-		if derived_mesh.material_override is StandardMaterial3D:
-			var current := derived_mesh.material_override as StandardMaterial3D
-			base_color = current.albedo_color
-			roughness = current.roughness
-			metallic = current.metallic
+		if not derived_mesh.has_meta(META_BASE_COLOR):
+			var initial_color := Color(0.72, 0.77, 0.84, 1.0)
+			var initial_roughness := 0.82
+			var initial_metallic := 0.0
+			if derived_mesh.material_override is StandardMaterial3D:
+				var initial_material := derived_mesh.material_override as StandardMaterial3D
+				initial_color = initial_material.albedo_color
+				initial_roughness = initial_material.roughness
+				initial_metallic = initial_material.metallic
+			derived_mesh.set_meta(META_BASE_COLOR, initial_color)
+			derived_mesh.set_meta(META_ROUGHNESS, initial_roughness)
+			derived_mesh.set_meta(META_METALLIC, initial_metallic)
+
+		var base_color: Color = derived_mesh.get_meta(META_BASE_COLOR)
+		var roughness: float = float(derived_mesh.get_meta(META_ROUGHNESS))
+		var metallic: float = float(derived_mesh.get_meta(META_METALLIC))
 
 		derived_mesh.mesh = _build_modulated_surface(space.volume, base_color)
 		var material := StandardMaterial3D.new()
