@@ -14,7 +14,7 @@
   "approved_runtime_commit": "",
   "owner_attention_event": {
     "allowed": false,
-    "reason": "Exact runtime candidate is frozen and revalidated, but G8 adversarial rehearsal, independent assurance and final readiness audit remain open."
+    "reason": "Exact runtime candidate is frozen and has passed candidate-wide revalidation plus G8 adversarial rehearsal, but independent assurance and final readiness audit remain open."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -129,10 +129,12 @@
       ]
     },
     "adversarial_rehearsal": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "recorded_adversarial_rehearsal",
-      "verified_runtime_commit": "",
-      "evidence": []
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": [
+        "docs/evidence/p1-g8-adversarial-rehearsal.md"
+      ]
     },
     "independent_assurance_review": {
       "status": "PENDING",
@@ -200,7 +202,6 @@
     }
   },
   "open_blockers": [
-    "G8 adversarial rehearsal not yet passed",
     "Independent assurance review not yet passed",
     "Final readiness audit not yet passed"
   ]
