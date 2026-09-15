@@ -40,9 +40,9 @@ func _run() -> void:
 	_check(source.get_active_provider() is ConstructBody, "source owns dynamic provider before destructive edit")
 	_check(player.grounded and player.support_space == source, "actor remains on source before cut")
 
-	var source_space_id := source.get_instance_id()
-	var source_provider_id := source.get_active_provider().get_instance_id()
-	var actor_world_before_cut := player.global_position
+	var source_space_id: int = source.get_instance_id()
+	var source_provider_id: int = source.get_active_provider().get_instance_id()
+	var actor_world_before_cut: Vector3 = player.global_position
 	var removed := 0
 	# The authored deck spans x=[2,13], z=[2,13]. Removing x=6 across the
 	# complete z span leaves no decoration bridge and separates left/right Matter.
@@ -57,7 +57,29 @@ func _run() -> void:
 
 	_check(removed == 12, "full causal cut removes all twelve separating cells")
 	_check(source.is_topology_split_pending(), "final destructive edit queues connected-component split")
+
+	# Capture the source-local support point at the exact transaction boundary.
+	# Local coordinates should map through LocalMatterSplitResult without using
+	# later dynamic motion as a proxy for handoff continuity.
+	var actor_source_local_at_split: Vector3 = player.support_local_center
+	var transfers_before: int = player.observed_support_transfers
 	await source.topology_split_committed
+	var result: LocalMatterSplitResult = source.get_last_split_result()
+	_check(result != null, "retired source retains explicit split mapping result")
+
+	var expected_handoff_world := Vector3.ZERO
+	if result != null:
+		expected_handoff_world = result.source_transform * actor_source_local_at_split
+	var handoff_world_error: float = player.global_position.distance_to(expected_handoff_world)
+	_check(handoff_world_error < 0.0001, "source→successor actor handoff preserves the exact world support point")
+	_check(player.observed_support_transfers == transfers_before + 1, "topology succession records one explicit actor support transfer")
+	_check(player.grounded, "actor remains grounded at topology handoff")
+	_check(player.support_space != null and player.support_space != source, "actor immediately references a successor rather than retired source")
+	if player.support_space != null:
+		_check(player.support_body == player.support_space.get_active_provider(), "actor support body immediately matches successor provider")
+		_check(camera_rig.context_target == player.support_space.get_active_provider(), "camera context immediately follows actor-owned successor")
+
+	var actor_world_at_handoff: Vector3 = player.global_position
 	await _advance_frames(POST_SPLIT_FRAMES)
 
 	var active_spaces := p1.call("get_active_spaces") as Array[LocalMatterSpace]
@@ -77,22 +99,25 @@ func _run() -> void:
 			provider_ids[provider.get_instance_id()] = true
 	_check(provider_ids.size() == 2, "detached Matter no longer shares one rigid provider")
 
-	_check(player.grounded, "actor remains grounded through consumer topology succession")
-	_check(player.support_space != null and active_spaces.has(player.support_space), "actor support maps onto one live successor")
+	_check(player.grounded, "actor remains grounded through post-split successor motion")
+	_check(player.support_space != null and active_spaces.has(player.support_space), "actor support remains on one live successor")
 	_check(player.support_space != source, "actor no longer references retired source")
 	if player.support_space != null:
 		_check(player.support_body == player.support_space.get_active_provider(), "actor support body matches successor provider")
 		_check(camera_rig.context_target == player.support_space.get_active_provider(), "camera context follows actor-owned successor")
 
-	var actor_world_jump := player.global_position.distance_to(actor_world_before_cut)
-	_check(actor_world_jump < 1.0, "topology consumer does not teleport actor materially during cut/succession window")
+	var post_handoff_motion: float = player.global_position.distance_to(actor_world_at_handoff)
+	var whole_window_delta: float = player.global_position.distance_to(actor_world_before_cut)
+	_check(post_handoff_motion < 1.0, "bounded successor motion remains finite during ten-frame observation window")
 	print(
-		"P1_LIVE_TOPOLOGY_METRIC source_space_id=%d source_provider_id=%d removed=%d successors=%d actor_world_delta=%.6f" % [
+		"P1_LIVE_TOPOLOGY_METRIC source_space_id=%d source_provider_id=%d removed=%d successors=%d handoff_world_error=%.8f post_handoff_motion=%.6f whole_window_delta=%.6f" % [
 			source_space_id,
 			source_provider_id,
 			removed,
 			active_spaces.size(),
-			actor_world_jump,
+			handoff_world_error,
+			post_handoff_motion,
+			whole_window_delta,
 		]
 	)
 
@@ -113,7 +138,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_LIVE_TOPOLOGY_PASS: interactive destructive edits produce real successor Spaces and actor/camera context survives source retirement.")
+		print("P1_LIVE_TOPOLOGY_PASS: destructive edits create real successor Spaces with exact actor handoff continuity; later dynamic motion is measured separately.")
 		quit(0)
 		return
 	for failure in _failures:
