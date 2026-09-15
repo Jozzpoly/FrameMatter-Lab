@@ -60,7 +60,10 @@ func _run() -> void:
 	var expansion: Dictionary = space.get_last_storage_rebase_report()
 	_check(not expansion.is_empty(), "storage boundary publishes explicit rebase mapping")
 	if expansion.is_empty():
-		host.free()
+		# This coroutine resumes synchronously inside storage_rebase_committed.emit().
+		# Never destroy the signal emitter before that emission has unwound.
+		host.queue_free()
+		await process_frame
 		_finish()
 		return
 
@@ -127,7 +130,11 @@ func _run() -> void:
 		]
 	)
 
-	host.free()
+	# We are still executing as the synchronous continuation of
+	# storage_rebase_committed.emit(). queue_free + one frame yield lets the
+	# emitter finish its signal call before the probe tears the host tree down.
+	host.queue_free()
+	await process_frame
 	_finish()
 
 
