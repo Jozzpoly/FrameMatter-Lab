@@ -121,6 +121,13 @@ func _run() -> void:
 		_target_presentation.refresh_now()
 		await _capture_pixels("01_remove_success_feedback")
 
+		# A real user rejection occurs under the live pointer. Keep the OS/window
+		# pointer aligned with the explicit evidence ray so the production fallback
+		# anchor is tested rather than an artificial centered test cursor.
+		Input.warp_mouse(remove_screen)
+		await process_frame
+		var live_pointer := _camera_rig.get_camera().get_viewport().get_mouse_position()
+		_check(live_pointer.distance_to(remove_screen) <= 2.0, "G5 evidence cursor matches rejected interaction point")
 		_check(
 			not _interactor.apply_edit_to_cell(_space, removed_cell, P1MatterInteractor.EditMode.REMOVE),
 			"G5 repeated REMOVE is actually rejected"
