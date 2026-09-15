@@ -10,10 +10,7 @@ on:
       - "actor/**"
       - "space/**"
       - "tests/p1_interaction_visual_capture.gd"
-      - "tests/p1_interaction_expand_diagnostic.gd"
-      - "tests/p1_pointer_targeting_challenger.gd"
       - "ci/run_godot_interaction_capture.ps1"
-      - "ci/run_godot_interaction_diagnostic.ps1"
       - "project.godot"
       - ".github/workflows/p1-interaction-evidence.yml"
   workflow_dispatch:
@@ -55,15 +52,7 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_import.ps1
 
-      - name: Diagnose canonical EXPAND targetability
-        shell: pwsh
-        run: ./ci/run_godot_interaction_diagnostic.ps1
-
-      - name: Challenge pointer surface targeting
-        shell: pwsh
-        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_pointer_targeting_challenger.gd -PassMarker P1_POINTER_TARGETING_PASS
-
-      - name: Capture canonical G5 interaction baseline
+      - name: Capture G5 interaction acquisition evidence
         shell: pwsh
         run: ./ci/run_godot_interaction_capture.ps1 -OutputDir $env:P1_INTERACTION_EVIDENCE_DIR
 
@@ -83,7 +72,7 @@ jobs:
           renderer=Godot 4.7.2 Forward+ / D3D12
           source_scene=res://p1/main.tscn
           capture_script=res://tests/p1_interaction_visual_capture.gd
-          interaction_policy=canonical
+          evidence_scope=canonical-center baseline plus explicit-screen acquisition A/B
           "@ | Set-Content -Path (Join-Path $env:P1_INTERACTION_EVIDENCE_DIR "INTERACTION-EVIDENCE-INFO.txt")
 
       - name: Upload G5 interaction evidence
