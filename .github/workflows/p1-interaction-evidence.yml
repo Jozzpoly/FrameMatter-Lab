@@ -11,6 +11,7 @@ on:
       - "space/**"
       - "tests/p1_interaction_visual_capture.gd"
       - "tests/p1_interaction_expand_diagnostic.gd"
+      - "tests/p1_pointer_targeting_challenger.gd"
       - "ci/run_godot_interaction_capture.ps1"
       - "ci/run_godot_interaction_diagnostic.ps1"
       - "project.godot"
@@ -58,13 +59,19 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_interaction_diagnostic.ps1
 
+      - name: Challenge pointer surface targeting
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_pointer_targeting_challenger.gd -PassMarker P1_POINTER_TARGETING_PASS
+
       - name: Capture canonical G5 interaction baseline
         shell: pwsh
         run: ./ci/run_godot_interaction_capture.ps1 -OutputDir $env:P1_INTERACTION_EVIDENCE_DIR
 
       - name: Record G5 evidence provenance
+        if: always()
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force -Path $env:P1_INTERACTION_EVIDENCE_DIR | Out-Null
           $checkedOut = (git rev-parse HEAD).Trim()
           @"
           FrameMatter P1 G5 interaction evidence
@@ -80,8 +87,10 @@ jobs:
           "@ | Set-Content -Path (Join-Path $env:P1_INTERACTION_EVIDENCE_DIR "INTERACTION-EVIDENCE-INFO.txt")
 
       - name: Upload G5 interaction evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: FrameMatter-P1-G5-Interaction-Evidence-Windows-Canonical
           path: artifacts/p1-interaction-evidence/canonical
           retention-days: 30
+          if-no-files-found: warn
