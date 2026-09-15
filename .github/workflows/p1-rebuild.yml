@@ -36,3 +36,6 @@ jobs:
 
       - name: Run P1 composed scene foundation smoke
         run: godot --headless --path . --script res://tests/p1_scene_foundation_smoke.gd
+
+      - name: Run P1 multi-Space registry probe
+        run: godot --headless --path . --script res://tests/p1_space_registry_probe.gd
