@@ -12,6 +12,7 @@ on:
       - "tests/p1_interaction_visual_capture.gd"
       - "tests/p1_interaction_expand_diagnostic.gd"
       - "ci/run_godot_interaction_capture.ps1"
+      - "ci/run_godot_interaction_diagnostic.ps1"
       - "project.godot"
       - ".github/workflows/p1-interaction-evidence.yml"
   workflow_dispatch:
@@ -55,12 +56,7 @@ jobs:
 
       - name: Diagnose canonical EXPAND targetability
         shell: pwsh
-        run: |
-          $output = & godot --path . --audio-driver Dummy --rendering-method forward_plus --rendering-driver d3d12 --script res://tests/p1_interaction_expand_diagnostic.gd 2>&1
-          $exitCode = $LASTEXITCODE
-          $output | ForEach-Object { Write-Host $_ }
-          if ($exitCode -ne 0) { throw "G5 EXPAND diagnostic exited with status $exitCode" }
-          if (($output -join "`n") -notmatch "P1_INTERACTION_EXPAND_DIAGNOSTIC_PASS") { throw "G5 EXPAND diagnostic PASS marker missing" }
+        run: ./ci/run_godot_interaction_diagnostic.ps1
 
       - name: Capture canonical G5 interaction baseline
         shell: pwsh
