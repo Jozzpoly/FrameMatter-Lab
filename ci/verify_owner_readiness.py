@@ -2,32 +2,33 @@
 """Validate or enforce an Owner-candidate readiness manifest.
 
 The campaign contract defines what must be true. The readiness manifest records
-current evidence against that contract. Ordinary CI validates consistency while
-allowing a deliberately BLOCKED campaign. Delivery requires every contract gate
-to PASS and to have been re-verified on the exact commit being packaged.
+current evidence against that contract. Governance/evidence commits may be newer
+than the runtime candidate being reviewed. Delivery is authorized only when all
+required evidence is bound to one exact approved runtime commit.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
-import os
 import pathlib
+import re
 import sys
 from typing import Any
 
 
 VALID_STATUSES = {"PASS", "FAIL", "PENDING", "SUPERSEDED"}
+FULL_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 def fail(errors: list[str]) -> None:
     for error in errors:
         print(f"OWNER_READINESS_ERROR: {error}", file=sys.stderr)
-    sys.exit(1)
+    raise SystemExit(1)
 
 
 def load_json(path: pathlib.Path, label: str) -> tuple[dict[str, Any] | None, list[str]]:
-    errors: list[str] = []
     if not path.is_file():
         return None, [f"{label} missing: {path}"]
     try:
@@ -35,25 +36,33 @@ def load_json(path: pathlib.Path, label: str) -> tuple[dict[str, Any] | None, li
     except (OSError, json.JSONDecodeError) as exc:
         return None, [f"cannot parse {label}: {exc}"]
     if not isinstance(value, dict):
-        errors.append(f"{label} root must be an object")
-        return None, errors
-    return value, errors
+        return None, [f"{label} root must be an object"]
+    return value, []
 
 
 def is_nonempty_string(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
+def is_full_sha(value: Any) -> bool:
+    return isinstance(value, str) and bool(FULL_SHA_RE.fullmatch(value.strip()))
+
+
 def validate_repo_relative_file(repo_root: pathlib.Path, path_value: Any, label: str) -> list[str]:
-    errors: list[str] = []
     if not is_nonempty_string(path_value):
         return [f"{label} must be a non-empty repository-relative path"]
     value = str(path_value)
     if value.startswith(("http://", "https://", "/")):
         return [f"{label} must be repository-relative: {value}"]
     if not (repo_root / value).is_file():
-        errors.append(f"{label} references missing file: {value}")
-    return errors
+        return [f"{label} references missing file: {value}"]
+    return []
+
+
+def git_blob_sha1(path: pathlib.Path) -> str:
+    payload = path.read_bytes()
+    header = f"blob {len(payload)}\0".encode("ascii")
+    return hashlib.sha1(header + payload).hexdigest()
 
 
 def parse_contract_gates(contract: dict[str, Any]) -> tuple[dict[str, str], list[str]]:
@@ -83,12 +92,14 @@ def parse_contract_gates(contract: dict[str, Any]) -> tuple[dict[str, str], list
     return gates, errors
 
 
-def validate_contract(contract: dict[str, Any], repo_root: pathlib.Path) -> list[str]:
+def validate_contract(
+    contract: dict[str, Any], repo_root: pathlib.Path, contract_path: pathlib.Path | None = None
+) -> list[str]:
     errors: list[str] = []
-    if contract.get("schema_version") != 1:
-        errors.append("campaign contract schema_version must be 1")
-    if not isinstance(contract.get("contract_version"), int) or contract.get("contract_version", 0) < 1:
-        errors.append("campaign contract contract_version must be an integer >= 1")
+    if contract.get("schema_version") != 2:
+        errors.append("active campaign contract schema_version must be 2")
+    if not isinstance(contract.get("contract_version"), int) or contract.get("contract_version", 0) < 2:
+        errors.append("active campaign contract contract_version must be an integer >= 2")
 
     for key in ("campaign_id", "owner_goal", "owner_visible_surface"):
         if not is_nonempty_string(contract.get(key)):
@@ -113,12 +124,47 @@ def validate_contract(contract: dict[str, Any], repo_root: pathlib.Path) -> list
     _, gate_errors = parse_contract_gates(contract)
     errors.extend(gate_errors)
 
+    previous_path_value = contract.get("previous_contract")
+    previous_hash = contract.get("previous_contract_git_blob_sha1")
+    change_record = contract.get("change_record")
+    errors.extend(validate_repo_relative_file(repo_root, previous_path_value, "previous_contract"))
+    errors.extend(validate_repo_relative_file(repo_root, change_record, "change_record"))
+    if not is_full_sha(previous_hash):
+        errors.append("previous_contract_git_blob_sha1 must be a full 40-character Git blob SHA-1")
+    elif is_nonempty_string(previous_path_value) and not str(previous_path_value).startswith(("http://", "https://", "/")):
+        previous_path = repo_root / str(previous_path_value)
+        if previous_path.is_file():
+            actual_hash = git_blob_sha1(previous_path)
+            if actual_hash.lower() != str(previous_hash).lower():
+                errors.append(
+                    f"previous contract integrity mismatch: expected {previous_hash}, actual {actual_hash}"
+                )
+            previous_contract, previous_errors = load_json(previous_path, "previous campaign contract")
+            errors.extend(previous_errors)
+            if previous_contract is not None:
+                expected_previous_version = int(contract.get("contract_version", 0)) - 1
+                if previous_contract.get("contract_version") != expected_previous_version:
+                    errors.append(
+                        "previous campaign contract version does not immediately precede active contract"
+                    )
+                if previous_contract.get("campaign_id") != contract.get("campaign_id"):
+                    errors.append("previous campaign contract belongs to a different campaign")
+
+    if contract_path is not None:
+        version = contract.get("contract_version")
+        expected_suffix = f".v{version}.json"
+        if not contract_path.name.endswith(expected_suffix):
+            errors.append(
+                f"active contract filename must end with {expected_suffix}, got {contract_path.name}"
+            )
+
     change_policy = contract.get("change_policy")
     required_change_flags = (
         "acceptance_relaxation_requires_explicit_decision_record",
         "test_difficulty_is_not_valid_relaxation_reason",
         "owner_goal_change_requires_owner_feedback",
         "contract_changes_must_be_versioned",
+        "versioned_contract_snapshots_are_append_only",
     )
     if not isinstance(change_policy, dict):
         errors.append("campaign contract change_policy must be an object")
@@ -127,13 +173,31 @@ def validate_contract(contract: dict[str, Any], repo_root: pathlib.Path) -> list
             if change_policy.get(flag) is not True:
                 errors.append(f"campaign contract change_policy.{flag} must be true")
 
+    assurance_policy = contract.get("assurance_policy")
+    required_assurance_flags = (
+        "independent_read_only_review_required",
+        "reviewer_must_not_author_candidate_changes_during_review",
+        "review_must_attempt_falsification",
+        "review_must_evaluate_owner_goal_and_claim_evidence_fit",
+        "review_must_cover_nominal_and_off_nominal_scenarios",
+        "material_findings_block_promotion",
+    )
+    if not isinstance(assurance_policy, dict):
+        errors.append("campaign contract assurance_policy must be an object")
+    else:
+        for flag in required_assurance_flags:
+            if assurance_policy.get(flag) is not True:
+                errors.append(f"campaign contract assurance_policy.{flag} must be true")
+
     promotion_policy = contract.get("promotion_policy")
     required_promotion_flags = (
         "all_required_gates_must_pass",
-        "all_required_gates_must_be_verified_on_exact_candidate_commit",
+        "all_required_gates_must_be_verified_on_approved_runtime_commit",
         "open_blockers_must_be_empty",
         "owner_attention_event_must_be_authorized",
-        "artifact_delivery_requires_exact_approved_commit",
+        "artifact_delivery_requires_approved_runtime_commit",
+        "governance_commit_may_differ_from_runtime_commit",
+        "independent_assurance_required",
     )
     if not isinstance(promotion_policy, dict):
         errors.append("campaign contract promotion_policy must be an object")
@@ -150,8 +214,8 @@ def validate_manifest(
 ) -> tuple[list[str], dict[str, str]]:
     errors: list[str] = []
 
-    if data.get("schema_version") != 3:
-        errors.append("readiness schema_version must be 3")
+    if data.get("schema_version") != 4:
+        errors.append("readiness schema_version must be 4")
 
     for key in ("campaign_id", "candidate_label", "source_branch", "owner_goal", "owner_visible_surface"):
         if not is_nonempty_string(data.get(key)):
@@ -170,8 +234,12 @@ def validate_manifest(
         errors.append("readiness status must be BLOCKED or READY_FOR_OWNER")
     if not isinstance(data.get("promotion_authorized"), bool):
         errors.append("promotion_authorized must be boolean")
-    if not isinstance(data.get("approved_commit"), str):
-        errors.append("approved_commit must be a string")
+
+    approved_runtime_commit = data.get("approved_runtime_commit")
+    if not isinstance(approved_runtime_commit, str):
+        errors.append("approved_runtime_commit must be a string")
+    elif approved_runtime_commit and not is_full_sha(approved_runtime_commit):
+        errors.append("approved_runtime_commit must be empty or a full 40-character commit SHA")
 
     attention = data.get("owner_attention_event")
     if not isinstance(attention, dict):
@@ -216,9 +284,13 @@ def validate_manifest(
                 f"gate {gate_name} evidence_type {evidence_type!r} does not match contract {contract_evidence_type!r}"
             )
 
-        verified_commit = gate.get("verified_commit")
-        if not isinstance(verified_commit, str):
-            errors.append(f"gate {gate_name} verified_commit must be a string")
+        verified_runtime_commit = gate.get("verified_runtime_commit")
+        if not isinstance(verified_runtime_commit, str):
+            errors.append(f"gate {gate_name} verified_runtime_commit must be a string")
+        elif verified_runtime_commit and not is_full_sha(verified_runtime_commit):
+            errors.append(
+                f"gate {gate_name} verified_runtime_commit must be empty or a full 40-character commit SHA"
+            )
 
         evidence = gate.get("evidence")
         if not isinstance(evidence, list) or not all(is_nonempty_string(item) for item in evidence):
@@ -232,9 +304,8 @@ def validate_manifest(
     return errors, contract_gates
 
 
-def enforce_delivery(data: dict[str, Any], contract_gates: dict[str, str], commit: str) -> list[str]:
+def enforce_delivery(data: dict[str, Any], contract_gates: dict[str, str]) -> list[str]:
     errors: list[str] = []
-    commit = commit.strip().lower()
 
     if data.get("status") != "READY_FOR_OWNER":
         errors.append("campaign status is not READY_FOR_OWNER")
@@ -249,13 +320,11 @@ def enforce_delivery(data: dict[str, Any], contract_gates: dict[str, str], commi
     if blockers:
         errors.append(f"{len(blockers)} open blocker(s) remain")
 
-    approved_commit = str(data.get("approved_commit", "")).strip().lower()
-    if not approved_commit:
-        errors.append("approved_commit is empty")
-    elif not commit:
-        errors.append("current commit could not be resolved")
-    elif approved_commit != commit:
-        errors.append(f"approved_commit {approved_commit} does not match exact delivery commit {commit}")
+    approved_runtime_commit = str(data.get("approved_runtime_commit", "")).strip().lower()
+    if not approved_runtime_commit:
+        errors.append("approved_runtime_commit is empty")
+    elif not is_full_sha(approved_runtime_commit):
+        errors.append("approved_runtime_commit is not a full 40-character commit SHA")
 
     readiness_gates = data.get("required_gates", {})
     for gate_name in contract_gates:
@@ -265,79 +334,103 @@ def enforce_delivery(data: dict[str, Any], contract_gates: dict[str, str], commi
         if not gate.get("evidence"):
             errors.append(f"required gate {gate_name} has no evidence")
 
-        verified_commit = str(gate.get("verified_commit", "")).strip().lower()
-        if not verified_commit:
-            errors.append(f"required gate {gate_name} has no verified_commit")
-        elif not commit:
-            errors.append(f"required gate {gate_name} cannot be matched because current commit is empty")
-        elif verified_commit != commit:
+        verified_runtime_commit = str(gate.get("verified_runtime_commit", "")).strip().lower()
+        if not verified_runtime_commit:
+            errors.append(f"required gate {gate_name} has no verified_runtime_commit")
+        elif not is_full_sha(verified_runtime_commit):
+            errors.append(f"required gate {gate_name} verified_runtime_commit is not a full commit SHA")
+        elif approved_runtime_commit and verified_runtime_commit != approved_runtime_commit:
             errors.append(
-                f"required gate {gate_name} was verified on {verified_commit}, not exact delivery commit {commit}"
+                f"required gate {gate_name} was verified on runtime {verified_runtime_commit}, "
+                f"not approved runtime {approved_runtime_commit}"
             )
 
+    if "independent_assurance_review" not in contract_gates:
+        errors.append("campaign contract does not require independent_assurance_review")
+
     return errors
+
+
+def load_state(repo_root: pathlib.Path, manifest_name: str) -> tuple[
+    dict[str, Any] | None,
+    dict[str, Any] | None,
+    dict[str, str],
+    list[str],
+]:
+    manifest_path = (repo_root / manifest_name).resolve()
+    data, errors = load_json(manifest_path, "readiness manifest")
+    if errors or data is None:
+        return data, None, {}, errors
+
+    contract_path_value = data.get("campaign_contract")
+    errors.extend(validate_repo_relative_file(repo_root, contract_path_value, "campaign_contract"))
+    if errors:
+        return data, None, {}, errors
+
+    contract_path = (repo_root / str(contract_path_value)).resolve()
+    contract, contract_load_errors = load_json(contract_path, "campaign contract")
+    errors.extend(contract_load_errors)
+    if contract is None:
+        return data, None, {}, errors
+
+    errors.extend(validate_contract(contract, repo_root, contract_path))
+    manifest_errors, contract_gates = validate_manifest(data, contract, repo_root)
+    errors.extend(manifest_errors)
+    return data, contract, contract_gates, errors
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", default="quality/p1-owner-readiness.json")
-    parser.add_argument("--mode", choices=("validate", "delivery"), default="validate")
-    parser.add_argument("--commit", default=os.environ.get("GITHUB_SHA", ""))
+    parser.add_argument("--mode", choices=("validate", "delivery", "approved-runtime"), default="validate")
     args = parser.parse_args()
 
     repo_root = pathlib.Path.cwd().resolve()
-    manifest_path = (repo_root / args.manifest).resolve()
-    data, errors = load_json(manifest_path, "readiness manifest")
-    if errors or data is None:
-        fail(errors)
-
-    contract_path_value = data.get("campaign_contract")
-    contract_path_errors = validate_repo_relative_file(repo_root, contract_path_value, "campaign_contract")
-    if contract_path_errors:
-        fail(contract_path_errors)
-    contract_path = (repo_root / str(contract_path_value)).resolve()
-    contract, contract_load_errors = load_json(contract_path, "campaign contract")
-    if contract_load_errors or contract is None:
-        fail(contract_load_errors)
-
-    errors = validate_contract(contract, repo_root)
-    manifest_errors, contract_gates = validate_manifest(data, contract, repo_root)
-    errors.extend(manifest_errors)
-
-    if args.mode == "delivery" and not errors:
-        errors.extend(enforce_delivery(data, contract_gates, args.commit))
-
-    if errors:
+    data, contract, contract_gates, errors = load_state(repo_root, args.manifest)
+    if errors or data is None or contract is None:
         fail(errors)
 
     if args.mode == "delivery":
+        errors = enforce_delivery(data, contract_gates)
+        if errors:
+            fail(errors)
+        runtime_commit = str(data["approved_runtime_commit"]).lower()
         print(
-            "OWNER_READINESS_DELIVERY_PASS: campaign contract is satisfied; every required gate is PASS, "
-            "evidence exists, no blockers remain, Owner attention is authorized, and every gate was "
-            "verified on the exact delivery commit."
+            "OWNER_READINESS_DELIVERY_PASS: campaign contract is satisfied; every required quality plane is PASS, "
+            "all evidence is bound to one approved runtime commit, independent assurance is contracted, "
+            "no blockers remain, and Owner attention is authorized."
         )
-    else:
-        pending = [
-            name
-            for name in contract_gates
-            if data["required_gates"].get(name, {}).get("status") != "PASS"
-        ]
-        unbound = [
-            name
-            for name in contract_gates
-            if not str(data["required_gates"].get(name, {}).get("verified_commit", "")).strip()
-        ]
-        print(
-            "OWNER_READINESS_MANIFEST_VALID: contract_version=%s status=%s promotion_authorized=%s "
-            "pending_or_failed=%d unbound_gates=%d"
-            % (
-                contract["contract_version"],
-                data["status"],
-                data["promotion_authorized"],
-                len(pending),
-                len(unbound),
-            )
+        print(f"APPROVED_RUNTIME_COMMIT={runtime_commit}")
+        return
+
+    if args.mode == "approved-runtime":
+        runtime_commit = str(data.get("approved_runtime_commit", "")).strip().lower()
+        if not runtime_commit or not is_full_sha(runtime_commit):
+            fail(["approved_runtime_commit is not available as a full 40-character SHA"])
+        print(runtime_commit)
+        return
+
+    pending = [
+        name
+        for name in contract_gates
+        if data["required_gates"].get(name, {}).get("status") != "PASS"
+    ]
+    unbound = [
+        name
+        for name in contract_gates
+        if not str(data["required_gates"].get(name, {}).get("verified_runtime_commit", "")).strip()
+    ]
+    print(
+        "OWNER_READINESS_MANIFEST_VALID: contract_version=%s status=%s promotion_authorized=%s "
+        "pending_or_failed=%d unbound_runtime_gates=%d"
+        % (
+            contract["contract_version"],
+            data["status"],
+            data["promotion_authorized"],
+            len(pending),
+            len(unbound),
         )
+    )
 
 
 if __name__ == "__main__":
