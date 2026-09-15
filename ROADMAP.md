@@ -10,7 +10,7 @@ Recurring product pressure:
 
 > walk → dig/build → activate/release a local Space → ride it → edit it while moving → use a simple mechanism → understand/debug the consequences.
 
-For Owner-facing work, the rendered screen is part of the research instrument. Hidden mechanical correctness does not compensate for pixels that make the system unreadable.
+For Owner-facing work, the rendered/interactive surface is part of the research instrument. Hidden mechanical correctness does not compensate for pixels or controls that make the system unreadable.
 
 ## Decision rules
 
@@ -24,6 +24,23 @@ For Owner-facing work, the rendered screen is part of the research instrument. H
 - Interactive pressure must recur so the project does not become a detached technology catalogue.
 - **Owner-visible presentation is first-class evidence whenever the Owner is asked to judge the system.**
 - An acceptance property may not silently become a nonclaim merely because it lacks an automated test.
+- Owner attention is a scarce validation resource, not the first-line QA surface.
+- Promotion requires direct evidence for the original acceptance contract on the exact candidate commit.
+
+## Quality truth planes
+
+Owner-facing campaigns now track six independent truth planes:
+
+1. Owner-intent truth,
+2. substrate truth,
+3. composition truth,
+4. observable truth,
+5. interaction truth,
+6. promotion/delivery truth.
+
+A PASS on one plane never silently implies another.
+
+The general contract is `docs/QUALITY-SYSTEM.md`.
 
 ## Evidence maturity
 
@@ -114,29 +131,67 @@ Canonical startup and the strict runtime suite pass on Linux and Windows.
 Evidence:
 
 - `docs/evidence/p1-integrated-owner-candidate.md` — retained mechanical/canonical/package evidence,
-- `docs/evidence/p1-owner-interaction-failure.md` — Owner-facing failure and rendering/presentation regressions,
+- `docs/evidence/p1-owner-interaction-failure.md` — Owner-facing failure,
+- `docs/evidence/p1-g1-rendered-baseline.md` — rendered parity baseline,
+- `docs/evidence/p1-quality-system-postmortem.md` — process root cause,
 - `docs/p1-professional-rebuild-audit.md` — original P1 acceptance intent.
 
 ---
 
-# Active campaign — P1 Owner-facing recovery
+# Active campaign — Q0 quality-system hardening
 
-Status:
+**Q0 is the current stop condition. Visual recovery G2–G8 remains planned but is not allowed to advance materially until Q0 passes.**
+
+The reason is systemic: the previous process could accumulate extensive green technical evidence while the Owner-facing instrument remained obviously broken.
+
+Q0 exists to make that class of failure structurally harder to repeat.
+
+## Q0 requirements
+
+1. versioned Campaign Contract exists,
+2. machine-readable Readiness Manifest exists,
+3. contract/readiness consistency validator is green in CI,
+4. Owner delivery is hard-blocked unless readiness is authorized for the exact commit,
+5. every required gate must be re-verified on that exact commit before delivery,
+6. live project truth reflects the six-plane quality model,
+7. previous process failure is preserved in a durable postmortem,
+8. automatic Owner artifact production remains disabled while status is BLOCKED.
+
+Current machinery:
+
+- `docs/QUALITY-SYSTEM.md`,
+- `quality/p1-campaign-contract.json`,
+- `quality/p1-owner-readiness.json`,
+- `ci/verify_owner_readiness.py`,
+- `.github/workflows/owner-readiness.yml`,
+- manual delivery workflow guarded by exact-commit readiness.
+
+## Q0 promotion question
+
+> **Can the project itself prevent us from calling a candidate ready merely because hidden systems and CI look impressive?**
+
+Until the answer is defended, do not resume ordinary feature or presentation expansion.
+
+---
+
+# Queued campaign after Q0 — P1 Owner-facing recovery
+
+Status carried into Q0:
 
 - **strict P1 mechanical gates: PASS**
 - **integrated causal-loop gate: PASS**
 - **canonical startup Linux/Windows: PASS**
 - **first P1 Owner interaction: FAIL**
-- **visual/readability measurement surface: FAIL**
-- **new rendered-evidence lane: ACTIVE**
+- **first visual/readability measurement surface: FAIL**
+- **G1 Windows D3D12 rendered parity lane: PASS AS INSTRUMENTATION**
+- **G2-A ambient-source hypothesis: PASS AS BOUNDED FINDING**
+- **Owner readiness: BLOCKED**
 - **automatic Owner delivery: DISABLED**
 - **P1 merge to `main`: BLOCKED**
 
-## Campaign question
+## Recovery question
 
 > **Can Godot + FrameMatter present the already-important systems through a professional, physically legible visual instrument, so the Owner can judge the actual system rather than reconstruct it mentally from debug pixels?**
-
-The failed candidate demonstrated that mechanical truth and visual truth must be defended together.
 
 The Owner's observable product during this campaign is the screen:
 
@@ -144,41 +199,35 @@ The Owner's observable product during this campaign is the screen:
 
 Debug telemetry is subordinate to that hierarchy.
 
-## Recovery sequence
-
 The authoritative detailed plan is `docs/p1-owner-facing-recovery-campaign.md` and the acceptance gate is `docs/p1-visual-acceptance-contract.md`.
+
+## Recovery sequence after Q0
 
 ### G0 — failed baseline / mechanical freeze
 
-**PASS / ACTIVE AS HISTORICAL BASELINE**
+**PASS / HISTORICAL BASELINE**
 
-- first P1 Owner recording is durable negative evidence,
-- mechanical substrate evidence is retained,
-- no new feature/substrate tranche is allowed while visual recovery is active,
-- previous automatic delivery is disabled.
+The failed Owner candidate and mechanical evidence are preserved. No speculative feature tranche is permitted during recovery.
 
 ### G1 — rendered evidence harness
 
-**ACTIVE**
+**PASS AS INSTRUMENTATION / VISUAL BASELINE FAIL**
 
-- deterministic rendered captures must cover static, release, moving, storage-rebased, split and frozen states,
-- Linux Compatibility capture is a reproducible auxiliary lane,
-- a Windows rendered lane is being established as the closest CI parity path to the Owner executable,
-- backend differences must be recorded explicitly rather than collapsed into one screenshot claim.
-
-G1 is complete only when the campaign can inspect actual rendered pixels from a sufficiently relevant path before changing presentation.
+Windows D3D12 Forward+ reproduces the Owner-class black-surface failure and is the current acceptance-relevant parity lane. Linux Compatibility remains a secondary backend guardrail.
 
 ### G2 — lighting/environment truth
 
-**BLOCKED ON G1 BASELINE**
+**PARTIAL BOUNDED EVIDENCE; FURTHER PROMOTION PAUSED BY Q0**
 
-First change family is intentionally narrow:
+G2-A changed only Environment ambient source SKY→COLOR plus zero sky contribution. On the same deterministic Windows rendered initial state it changed approximately:
 
-1. correct the ambient-source mismatch,
-2. render exact A/B states,
-3. only then decide whether key/fill/exposure/shadow changes are required.
+- near-black `52.96% → 0.00%`,
+- luminance `< 0.08`: `54.70% → 1.74%`,
+- mean luminance `0.142 → 0.366`.
 
-Do not mix material/cell-language redesign into the first lighting experiment.
+This strongly attributes the catastrophic black collapse to project configuration. It does not establish final lighting/readability PASS.
+
+Further balanced-fill/SSAO challengers may exist as unpromoted data but are not a reason to bypass Q0.
 
 ### G3 — Matter visual language
 
@@ -190,13 +239,13 @@ Challenge at least two bounded approaches to cell-scale readability before promo
 
 **PENDING**
 
-Acceptance is useful rendered composition, not merely possession of `SpringArm3D`. Actor, relevant Space and world reference must remain understandable across movement, close obstacles, falls, rebase, split and freeze.
+Acceptance is useful rendered composition, not possession of `SpringArm3D`. Actor, relevant Space and world reference must remain understandable across movement, close obstacles, falls, rebase, split and freeze.
 
 ### G5 — interaction visual hierarchy
 
 **PENDING**
 
-Replace the default through-wall debug wire cue with depth-correct, operation-specific interaction language. REMOVE / PLACE / EXPAND must be obvious before clicking without covering the geometry.
+Replace the default through-wall debug wire cue with depth-correct, operation-specific interaction language. REMOVE / PLACE / EXPAND must be obvious before clicking without covering geometry.
 
 ### G6 — world/motion/topology causality
 
@@ -210,8 +259,6 @@ Reference environment, state cues and successor presentation must make release, 
 
 Only after competent G2–G6 work may Godot itself be judged. If the simple FrameMatter scene still requires disproportionate work or hits material host limitations, build a small equivalent web reference and compare the same geometry/camera target honestly.
 
-The failed black/white P1 recording is not evidence against Godot because concrete project-side rendering and presentation defects are already identified.
-
 ### G8 — adversarial visual preflight / Owner package
 
 **BLOCKED**
@@ -219,15 +266,21 @@ The failed black/white P1 recording is not evidence against Godot because concre
 Before another Owner executable:
 
 - full mechanical suite green,
-- rendered evidence green on the chosen parity path,
-- V-A through V-G from `docs/p1-visual-acceptance-contract.md` have current evidence and no material FAIL,
-- an autonomous rehearsal recording has been inspected frame-by-frame,
-- result is clearly superior to both P0.5 and the failed P1 candidate as a research instrument,
-- remaining visual defects are documented before packaging.
+- rendered evidence green on the parity path,
+- V-A through V-G have current evidence and no material FAIL,
+- every Campaign Contract gate is PASS,
+- every gate is re-verified on the exact candidate commit,
+- autonomous rehearsal recording inspected frame-by-frame,
+- result clearly superior to P0.5 and failed P1 as a research instrument,
+- zero open blockers,
+- Owner attention explicitly authorized,
+- exact commit bound in Readiness Manifest.
 
-Only then may the manual delivery workflow be used for another Owner candidate.
+Only then may manual delivery produce another Owner candidate.
 
-## Hard stop during recovery
+---
+
+# Hard stop while Q0 / recovery is active
 
 Not permitted:
 
@@ -237,12 +290,21 @@ Not permitted:
 - vehicle system,
 - arbitrary pitch/roll adhesion hacks,
 - packaging a new Owner candidate because mechanical CI is green,
-- treating visual work as optional polish.
+- treating visual work as optional polish,
+- weakening an original acceptance property because it is difficult to test,
+- promoting evidence from an older commit as if it certified a changed candidate.
 
-Permitted:
+Permitted during Q0:
+
+- quality/evidence infrastructure,
+- contract/readiness enforcement,
+- live-truth synchronization,
+- process postmortem and falsification of the new quality system.
+
+Permitted after Q0 during G2–G8:
 
 - rendered-evidence infrastructure,
-- lighting/material/camera/world/UI changes required by G2–G6,
+- lighting/material/camera/world/UI changes required by recovery,
 - mechanical fixes only when visual work exposes a real underlying invariant failure,
 - evidence/documentation/provenance work that keeps the campaign honest.
 
@@ -365,6 +427,7 @@ Trigger: planar/local Matter assumptions materially block a real planetary exper
 - freeze/provider replacement is not canonical-world reintegration.
 - dirty/update locality is not automatically final physical/world partitioning.
 - bounded/integrated PASS is not scale/playability/product PASS.
-- **Owner-facing PASS requires the rendered instrument to expose, not conceal, the defended system.**
+- Owner-facing PASS requires the observable instrument to expose, not conceal, the defended system.
+- promotion requires evidence for every contracted quality plane on the exact candidate commit.
 
 When a future mechanism conflicts with one of these, require stronger evidence before weakening the invariant.
