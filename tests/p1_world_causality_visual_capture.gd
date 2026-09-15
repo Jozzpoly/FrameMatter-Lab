@@ -49,13 +49,16 @@ func _run() -> void:
 		return
 
 	_p1 = packed.instantiate()
-	if _variant == VARIANT_COARSE_GRID:
-		var world_reference := _p1.get_node_or_null("WorldReference") as Node3D
-		_check(world_reference != null, "G6 challenger resolves authored WorldReference")
-		if world_reference != null:
-			var presentation := P1WorldReferencePresentation.new()
-			presentation.name = "P1WorldReferencePresentationEvidence"
-			world_reference.add_child(presentation)
+	var world_reference := _p1.get_node_or_null("WorldReference") as Node3D
+	_check(world_reference != null, "G6 capture resolves authored WorldReference")
+	var world_presentation: P1WorldReferencePresentation = null
+	if world_reference != null:
+		world_presentation = world_reference.get_node_or_null("P1WorldReferencePresentation") as P1WorldReferencePresentation
+	_check(world_presentation != null, "G6 capture resolves promoted canonical world datum")
+	if world_presentation != null:
+		# Both variants use the same production scene and presenter. Baseline only
+		# suppresses its visibility so A/B differs by one presentation dimension.
+		world_presentation.visible = _variant == VARIANT_COARSE_GRID
 	get_root().add_child(_p1)
 	await process_frame
 	await _advance_frames(ACQUIRE_FRAMES)
