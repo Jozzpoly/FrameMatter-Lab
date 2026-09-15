@@ -42,3 +42,6 @@ jobs:
 
       - name: Run P1 live topology consumer probe
         run: godot --headless --path . --script res://tests/p1_live_topology_consumer_probe.gd
+
+      - name: Run P1 storage rebase probe
+        run: godot --headless --path . --script res://tests/p1_storage_rebase_probe.gd
