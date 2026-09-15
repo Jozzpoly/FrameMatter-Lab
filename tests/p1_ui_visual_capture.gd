@@ -4,14 +4,11 @@ const ACQUIRE_FRAMES := 18
 const MOTION_FRAMES := 36
 const POST_SPLIT_FRAMES := 8
 const HUD_SAFE_POINT := Vector2(50.0, 50.0)
-const VARIANT_BASELINE := "baseline"
-const VARIANT_COMPACT := "compact"
 const MOTION_IMPULSE := Vector3(0.0, 0.0, -48.0)
 const MOTION_TORQUE := Vector3(0.0, 240.0, 0.0)
 
 var _failures: Array[String] = []
 var _output_dir := ""
-var _variant := VARIANT_BASELINE
 var _p1: Node
 
 
@@ -25,22 +22,12 @@ func _run() -> void:
 		_output_dir = ProjectSettings.globalize_path("res://artifacts/p1-ui-evidence")
 	DirAccess.make_dir_recursive_absolute(_output_dir)
 
-	var requested := OS.get_environment("P1_UI_VARIANT").strip_edges().to_lower()
-	if not requested.is_empty():
-		_variant = requested
-	_check(_variant == VARIANT_BASELINE or _variant == VARIANT_COMPACT, "UI capture variant is supported")
-
 	var packed := load("res://p1/main.tscn") as PackedScene
 	_check(packed != null, "UI capture loads canonical P1 scene")
 	if packed == null:
 		_finish()
 		return
 	_p1 = packed.instantiate()
-	if _variant == VARIANT_COMPACT:
-		var presentation := P1HudPresentation.new()
-		presentation.name = "P1HudPresentationEvidence"
-		_p1.add_child(presentation)
-		presentation.bind_host(_p1)
 	get_root().add_child(_p1)
 	await process_frame
 	await _advance_frames(ACQUIRE_FRAMES)
@@ -50,8 +37,9 @@ func _run() -> void:
 	var interactor := _p1.call("get_interactor") as P1MatterInteractor
 	var panel := _p1.get_node_or_null("HUD/Panel") as PanelContainer
 	var status := _p1.get_node_or_null("HUD/Panel/MarginContainer/VBoxContainer/Status") as Label
-	_check(source != null and control != null and interactor != null and panel != null and status != null, "UI capture resolves composed roles and default HUD")
-	if source == null or control == null or interactor == null or panel == null or status == null:
+	var presentation := _p1.get_node_or_null("P1HudPresentation") as P1HudPresentation
+	_check(source != null and control != null and interactor != null and panel != null and status != null and presentation != null, "UI capture resolves production roles and canonical HUD presenter")
+	if source == null or control == null or interactor == null or panel == null or status == null or presentation == null:
 		_p1.free()
 		_finish()
 		return
@@ -60,13 +48,12 @@ func _run() -> void:
 	await process_frame
 	interactor.update_target_from_pointer_position(HUD_SAFE_POINT)
 	_check(interactor.target_space == null, "UI-owned pointer region clears world target")
+	_check(panel.size.x <= 340.0 and panel.size.y <= 64.0, "canonical HUD remains bounded instead of recreating a top strip")
+	var normalized := status.text.to_lower()
+	_check(not normalized.contains("target") and not normalized.contains("support") and not normalized.contains("ω") and not normalized.contains(" v "), "canonical default status omits engineering telemetry")
+	_check(_p1.find_children("*", "P1HudPresentation", true, false).size() == 1, "canonical scene owns exactly one HUD presentation authority")
 
-	if _variant == VARIANT_COMPACT:
-		_check(panel.size.x <= 340.0 and panel.size.y <= 64.0, "compact HUD remains bounded instead of recreating a top strip")
-		var normalized := status.text.to_lower()
-		_check(not normalized.contains("target") and not normalized.contains("support") and not normalized.contains("ω") and not normalized.contains(" v "), "compact default status omits engineering telemetry")
-
-	print("P1_UI_VARIANT: %s panel_size=%s status=%s" % [_variant, str(panel.size), status.text])
+	print("P1_UI_CANONICAL panel_size=%s status=%s" % [str(panel.size), status.text])
 	await _capture("00_static")
 
 	_check(control.release_space(source), "UI sequence releases Space")
@@ -120,7 +107,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_UI_CAPTURE_PASS: variant=%s default UI hierarchy sequence completed." % _variant)
+		print("P1_UI_CAPTURE_PASS: canonical default UI hierarchy sequence completed.")
 		quit(0)
 		return
 	for failure in _failures:
