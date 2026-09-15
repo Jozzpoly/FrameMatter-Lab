@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://p1/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://p1/space_registry.gd" id="4_registry"]
 [ext_resource type="PackedScene" path="res://p1/matter_interactor.tscn" id="5_interactor"]
 [ext_resource type="Script" path="res://p1/space_control.gd" id="6_space_control"]
+[ext_resource type="Script" path="res://p1/matter_surface_grid.gd" id="7_surface_grid"]
 
 [sub_resource type="Environment" id="Environment_P1"]
 background_mode = 1
@@ -95,6 +96,9 @@ script = ExtResource("6_space_control")
 [node name="P1CameraRig" parent="." instance=ExtResource("3_camera")]
 
 [node name="P1MatterInteractor" parent="." instance=ExtResource("5_interactor")]
+
+[node name="P1MatterSurfaceGrid" type="Node" parent="."]
+script = ExtResource("7_surface_grid")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
