@@ -21,6 +21,7 @@ concurrency:
 jobs:
   p1-foundation:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -49,3 +50,23 @@ jobs:
 
       - name: Run P1 storage rebase probe
         run: godot --headless --path . --script res://tests/p1_storage_rebase_probe.gd
+
+  p1-windows-scene-diagnostic:
+    runs-on: windows-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Parse/import project
+        run: godot --headless --path . --editor --quit
+
+      - name: Run P1 composed scene foundation smoke
+        run: godot --headless --path . --script res://tests/p1_scene_foundation_smoke.gd
