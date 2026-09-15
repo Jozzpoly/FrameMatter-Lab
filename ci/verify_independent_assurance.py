@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Validate P1 independent-assurance evidence.
 
-Ordinary validation accepts a structurally valid PENDING report. Delivery mode
-requires a falsification-oriented PASS report bound to the exact approved frozen
-runtime and zero material findings.
+Ordinary validation accepts a structurally valid PENDING report or a completed
+read-only falsification PASS bound to the exact frozen candidate. Delivery mode
+adds the promotion-only requirements: the runtime must already be approved and
+the readiness assurance gate must be bound to the same runtime/report.
 """
 
 from __future__ import annotations
@@ -61,23 +62,18 @@ def validate_report(report: dict[str, Any], readiness: dict[str, Any], require_p
         errors.append("material_findings must be a list")
         findings = []
 
-    if report.get("status") == "PASS" or report.get("disposition") == "PASS":
-        require_pass = True
-
-    if require_pass:
-        approved = readiness.get("approved_runtime_commit")
+    report_claims_pass = report.get("status") == "PASS" or report.get("disposition") == "PASS"
+    if report_claims_pass or require_pass:
         candidate = readiness.get("candidate_runtime_commit")
         reviewed = report.get("reviewed_runtime_commit")
         if readiness.get("candidate_state") != "FROZEN":
             errors.append("assurance PASS requires candidate_state FROZEN")
         if not full_sha(candidate):
             errors.append("assurance PASS requires full candidate_runtime_commit")
-        if not full_sha(approved) or str(approved).lower() != str(candidate).lower():
-            errors.append("assurance PASS requires approved_runtime_commit == frozen candidate_runtime_commit")
         if not full_sha(reviewed) or str(reviewed).lower() != str(candidate).lower():
             errors.append("reviewed_runtime_commit does not match the frozen candidate runtime")
         if report.get("status") != "PASS" or report.get("disposition") != "PASS":
-            errors.append("delivery requires assurance status=PASS and disposition=PASS")
+            errors.append("completed assurance requires status=PASS and disposition=PASS")
         if not isinstance(report.get("review_context_id"), str) or not report.get("review_context_id", "").strip():
             errors.append("PASS report requires a non-empty review_context_id")
         if report.get("reviewer_context_separated_from_implementation") is not True:
@@ -96,6 +92,12 @@ def validate_report(report: dict[str, Any], readiness: dict[str, Any], require_p
             errors.append("PASS report requires evidence_examined")
         if findings:
             errors.append(f"PASS report has {len(findings)} material finding(s)")
+
+    if require_pass:
+        approved = readiness.get("approved_runtime_commit")
+        candidate = readiness.get("candidate_runtime_commit")
+        if not full_sha(approved) or str(approved).lower() != str(candidate).lower():
+            errors.append("assurance delivery requires approved_runtime_commit == frozen candidate_runtime_commit")
 
         gate = readiness.get("required_gates", {}).get("independent_assurance_review", {})
         if gate.get("status") != "PASS":
@@ -122,7 +124,7 @@ def main() -> None:
             print(f"ASSURANCE_ERROR: {error}", file=sys.stderr)
         raise SystemExit(1)
     if args.mode == "delivery":
-        print("INDEPENDENT_ASSURANCE_DELIVERY_PASS: frozen runtime received a separate read-only falsification review with zero material findings.")
+        print("INDEPENDENT_ASSURANCE_DELIVERY_PASS: frozen runtime received a separate read-only falsification review with zero material findings and is bound to the approved delivery runtime.")
     else:
         print(f"INDEPENDENT_ASSURANCE_REPORT_VALID: status={report['status']} disposition={report['disposition']}")
 
