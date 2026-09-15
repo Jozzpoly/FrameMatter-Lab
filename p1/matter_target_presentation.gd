@@ -21,6 +21,12 @@ var _provider: Node3D
 var _signature := ""
 
 
+func _ready() -> void:
+	# Children become ready before P1Main. Bind after scene initialization just
+	# like the other presentation consumers; target authority remains sibling-owned.
+	call_deferred("_bind_from_scene")
+
+
 func _process(_delta: float) -> void:
 	if suppress_legacy_outline:
 		_hide_legacy_outline()
@@ -54,6 +60,15 @@ func clear() -> void:
 		_overlay.free()
 	_overlay = null
 	_provider = null
+
+
+func _bind_from_scene() -> void:
+	if interactor != null and is_instance_valid(interactor):
+		return
+	var scene_root := get_parent()
+	if scene_root == null:
+		return
+	set_interactor(scene_root.get_node_or_null("P1MatterInteractor") as P1MatterInteractor)
 
 
 func _refresh_if_needed() -> void:
