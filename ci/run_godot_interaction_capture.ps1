@@ -50,6 +50,11 @@ try {
         exit 1
     }
 
+    if (-not $content.Contains("P1_INTERACTION_UI_BLOCK_PASS")) {
+        Write-Error "Expected G5 pointer/HUD exclusion PASS marker missing."
+        exit 1
+    }
+
     if (-not $content.Contains("D3D12") -or -not $content.Contains("Forward+")) {
         Write-Error "G5 Windows capture did not prove the expected D3D12 Forward+ path."
         exit 1
@@ -58,8 +63,7 @@ try {
     $required = @(
         "00_remove_target.png",
         "01_place_target.png",
-        "02_expand_center_reticle_miss.png",
-        "03_expand_pointer_hit.png"
+        "02_expand_target.png"
     )
     foreach ($file in $required) {
         $path = Join-Path $OutputDir $file
