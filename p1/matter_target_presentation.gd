@@ -7,6 +7,7 @@ extends Node
 
 const OVERLAY_NAME := "P1MatterTargetCue"
 const FACE_OFFSET := 0.025
+const PREDICTION_DEPTH := 0.34
 const REMOVE_COLOR := Color(1.0, 0.30, 0.18, 0.92)
 const PLACE_COLOR := Color(0.32, 1.0, 0.58, 0.88)
 const EXPAND_COLOR := Color(0.18, 0.82, 1.0, 0.92)
@@ -122,29 +123,29 @@ func _build_target_mesh(face: Vector3i) -> ArrayMesh:
 		_add_segment(surface, shared_face + (-u + v) * 0.24, shared_face + (u - v) * 0.24)
 		return surface.commit(mesh)
 
-	# PLACE and EXPAND use an open directional prism: the hit/source face stays
-	# readable while a far face and four rails show which adjacent cell will be
-	# created. Depth testing hides rails that should be physically occluded.
-	var source_half := 0.33
-	var far_half := 0.39
-	var far_face := shared_face + normal * (1.0 + FACE_OFFSET)
+	# PLACE and EXPAND are surface-led predictions rather than destination wire
+	# cubes. The hit face is the authority-bearing anchor; a shallow directional
+	# extrusion says "the adjacent cell on this side" without demanding that the
+	# entire future volume remain on-screen. The world grid provides cell scale.
+	var source_half := 0.34
+	var cap_half := 0.31
+	var cap_face := shared_face + normal * PREDICTION_DEPTH
 	var source_corners := _square_corners(shared_face, u, v, source_half)
-	var far_corners := _square_corners(far_face, u, v, far_half)
+	var cap_corners := _square_corners(cap_face, u, v, cap_half)
 	_add_square_from_corners(surface, source_corners)
-	_add_square_from_corners(surface, far_corners)
+	_add_square_from_corners(surface, cap_corners)
 	for i in range(4):
-		_add_segment(surface, source_corners[i], far_corners[i])
+		_add_segment(surface, source_corners[i], cap_corners[i])
 
-	# A small plus on the destination face makes PLACE readable even when some
-	# prism rails are hidden by real geometry.
-	_add_segment(surface, far_face - u * 0.20, far_face + u * 0.20)
-	_add_segment(surface, far_face - v * 0.20, far_face + v * 0.20)
+	# Plus marks creation, while the shallow prism supplies the exact side of the
+	# hit face. This geometry stays local to the visible interaction surface.
+	_add_segment(surface, cap_face - u * 0.18, cap_face + u * 0.18)
+	_add_segment(surface, cap_face - v * 0.18, cap_face + v * 0.18)
 
 	if not interactor.target_in_storage:
-		# EXPAND remains the same operation family but gets an outer destination
-		# frame. This encodes the storage-boundary consequence geometrically rather
-		# than relying on cyan alone.
-		_add_square(surface, far_face + normal * 0.006, u, v, 0.47)
+		# EXPAND is still PLACE semantics, but a second cap ring makes the storage
+		# consequence distinct without extending a full ghost cell under HUD/offscreen.
+		_add_square(surface, cap_face + normal * 0.006, u, v, 0.43)
 	return surface.commit(mesh)
 
 
