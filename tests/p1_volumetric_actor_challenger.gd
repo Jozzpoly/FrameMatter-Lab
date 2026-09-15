@@ -7,6 +7,8 @@ const RIDE_FRAMES := 36
 const WALK_FRAMES := 36
 
 var _failures: Array[String] = []
+var _observed_wall_blocks := 0
+var _observed_ceiling_blocks := 0
 
 
 func _init() -> void:
@@ -56,6 +58,7 @@ func _probe_static_floor_wall_ceiling(host: Node3D) -> void:
 	_check(actor.global_position.x < 4.72, "P1 volumetric capsule does not pass through a vertical Matter wall")
 	_check(actor.observed_wall_blocks > 0, "P1 actor records volumetric wall blocking")
 	_check(actor.grounded, "P1 actor remains grounded while blocked by wall")
+	_observed_wall_blocks = actor.observed_wall_blocks
 
 	actor.free()
 	await process_frame
@@ -74,6 +77,7 @@ func _probe_static_floor_wall_ceiling(host: Node3D) -> void:
 		peak_y = maxf(peak_y, jumper.global_position.y)
 	_check(jumper.observed_ceiling_blocks > 0, "P1 volumetric capsule detects roof contact during jump")
 	_check(peak_y < 2.20, "P1 jump cannot tunnel through the low Matter ceiling")
+	_observed_ceiling_blocks = jumper.observed_ceiling_blocks
 
 	jumper.free()
 	space.free()
@@ -148,8 +152,8 @@ func _probe_dynamic_support_without_push(host: Node3D) -> void:
 			walk_distance,
 			linear_delta,
 			angular_delta,
-			actor.observed_wall_blocks,
-			actor.observed_ceiling_blocks,
+			_observed_wall_blocks,
+			_observed_ceiling_blocks,
 		]
 	)
 
