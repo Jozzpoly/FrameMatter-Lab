@@ -55,6 +55,9 @@ jobs:
       - name: Run P1 live topology consumer probe
         run: bash ci/run_godot_probe.sh res://tests/p1_live_topology_consumer_probe.gd P1_LIVE_TOPOLOGY_PASS
 
+      - name: Run promoted Matter surface grid lifecycle probe
+        run: bash ci/run_godot_probe.sh res://tests/p1_matter_surface_grid_probe.gd P1_MATTER_SURFACE_GRID_PASS
+
       - name: Run P1 storage rebase probe
         run: bash ci/run_godot_probe.sh res://tests/p1_storage_rebase_probe.gd P1_STORAGE_REBASE_PASS
 
