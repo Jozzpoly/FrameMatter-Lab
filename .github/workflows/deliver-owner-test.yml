@@ -1,39 +1,16 @@
 name: Deliver P1 Owner Candidate
 
+# Owner delivery is intentionally manual while the P1 Owner-facing recovery
+# campaign is active. Mechanical green is no longer sufficient to produce an
+# Owner candidate. Re-enable automatic delivery only after G8 rendered preflight.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "p1/**"
-      - "actor/**"
-      - "construct/**"
-      - "matter/**"
-      - "space/**"
-      - "tests/p1_*.gd"
-      - "ci/**"
-      - "project.godot"
-      - "export_presets.cfg"
-      - ".github/workflows/deliver-owner-test.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "p1/**"
-      - "actor/**"
-      - "construct/**"
-      - "matter/**"
-      - "space/**"
-      - "tests/p1_*.gd"
-      - "ci/**"
-      - "project.godot"
-      - "export_presets.cfg"
-      - ".github/workflows/deliver-owner-test.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: "p1-owner-candidate-${{ github.event.pull_request.number || github.ref }}"
+  group: "p1-owner-candidate-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
@@ -110,6 +87,7 @@ jobs:
           branch_or_ref=${GITHUB_REF}
           canonical_main_scene=res://p1/main.tscn
           strict_integrated_gate=P1_INTEGRATED_CAUSAL_LOOP_PASS
+          delivery_policy=manual_after_G8_rendered_preflight
           EOF
           cp build/P1-BUILD-INFO.txt build/web/P1-BUILD-INFO.txt
           cp build/P1-BUILD-INFO.txt build/windows/P1-BUILD-INFO.txt
@@ -136,6 +114,7 @@ jobs:
           echo "P1 canonical startup PASS"
           echo "P1 bounded/integrated runtime suite PASS"
           echo "P1 integrated causal loop PASS"
+          echo "Manual delivery policy: G8 rendered preflight required before Owner use"
           echo "Browser export PASS"
           echo "Windows export PASS"
           echo "Artifacts: FrameMatter-P1-Web and FrameMatter-P1-Windows"
