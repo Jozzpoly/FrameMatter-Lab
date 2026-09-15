@@ -58,7 +58,7 @@ The Owner recording showed, among other problems:
 - telemetry-dominated default UI,
 - weak visible STATIC/DYNAMIC and topology semantics.
 
-A new Windows D3D12 Forward+ rendered-evidence lane reproduced the critical black-surface failure in CI.
+A Windows D3D12 Forward+ rendered-evidence lane reproduced the critical black-surface failure in CI.
 
 A bounded G2-A experiment changed only the Environment ambient source from SKY to COLOR and zeroed sky contribution. On the same deterministic Windows rendered scene this changed approximately:
 
@@ -66,9 +66,7 @@ A bounded G2-A experiment changed only the Environment ambient source from SKY t
 - luminance below `0.08`: `54.70% → 1.74%`,
 - mean luminance `0.142 → 0.366`.
 
-That proves the most severe black collapse was a project-side rendering configuration failure, not evidence that Godot itself cannot render the intended LAB.
-
-It also proves the previous quality process was inadequate: a trivial visible defect could survive a long technically green campaign.
+That strongly attributes the most severe black collapse to a project-side rendering configuration failure rather than a demonstrated Godot rendering limitation. It does **not** establish overall visual quality.
 
 Evidence:
 
@@ -76,13 +74,13 @@ Evidence:
 - `docs/evidence/p1-g1-rendered-baseline.md`,
 - `docs/evidence/p1-quality-system-postmortem.md`.
 
-## Active campaign — Q0 quality-system hardening
+## Q0 Owner-centered quality system — DEFENDED FOR PROMOTION BOUNDARIES
 
-**Do not treat current P1 as an Owner-ready candidate. Do not merge P1 to `main`. Do not resume feature expansion.**
+Q0 was introduced because the previous process could accumulate extensive green hidden-system evidence while the Owner-visible instrument remained obviously broken.
 
-Before continuing the visual recovery campaign materially, FrameMatter is hardening the process that decides what "ready" means.
+Q0 now has bounded process evidence and adversarial self-tests. It is **not** a guarantee of product quality; it is a defended promotion-boundary system intended to make unearned Owner delivery structurally harder.
 
-The new quality model tracks six independent truth planes:
+The model separates six truth planes:
 
 1. Owner-intent truth,
 2. substrate truth,
@@ -93,43 +91,49 @@ The new quality model tracks six independent truth planes:
 
 A PASS on one plane never implies another.
 
-The durable process contract is:
+The current promotion model is:
+
+> OPEN development → FROZEN runtime candidate → gate × scenario evidence on that exact runtime → independent read-only assurance → authorization → delivery of exactly that frozen runtime.
+
+Key machinery:
 
 - `docs/QUALITY-SYSTEM.md` — general Owner-centered quality model,
-- `quality/p1-campaign-contract.json` — versioned statement of what P1 must actually achieve,
-- `quality/p1-owner-readiness.json` — current evidence state against that contract,
-- `ci/verify_owner_readiness.py` — machine enforcement,
-- `.github/workflows/owner-readiness.yml` — ordinary consistency validation.
+- `quality/contracts/p1-owner-facing-recovery.v3.json` — sealed/versioned campaign contract,
+- `quality/p1-owner-readiness.json` — current 2D gate/scenario evidence state,
+- `quality/assurance/p1-independent-review.json` — independent-assurance state,
+- `ci/verify_owner_readiness.py` — contract/readiness and frozen-runtime enforcement,
+- `ci/verify_independent_assurance.py` — independent-review enforcement,
+- `.github/workflows/owner-readiness.yml` — adversarial CI validation,
+- `.github/workflows/deliver-owner-test.yml` — manual delivery that materializes only the approved frozen runtime.
 
-Current P1 readiness is explicitly **BLOCKED**.
+The guard is adversarially tested against scope weakening, sealed-contract mutation, proxy evidence drift, moving candidates, stale runtime evidence, missing representative scenarios and missing independent assurance. Negative controls prove the current blocked campaign cannot pass delivery enforcement.
 
-Owner delivery is manual-only **and** technically hard-blocked. Manual workflow dispatch is not sufficient. Delivery can run only when:
+Evidence: `docs/evidence/p1-q0-owner-quality-system.md`.
 
-- every Campaign Contract gate is `PASS`,
-- every gate has durable repository evidence,
-- every gate has been re-verified on the exact candidate commit,
-- no blockers remain,
-- Owner attention is explicitly authorized,
-- `approved_commit` exactly matches the commit being packaged.
+## Active campaign — P1 Owner-facing recovery / G2 lighting and form
 
-This is intentionally stricter than the old delivery pipeline.
+**Current P1 remains `OPEN` and `BLOCKED`. Do not treat it as Owner-ready and do not merge it to `main`.**
 
-## After Q0
+Feature/substrate expansion remains frozen while the visible research instrument is repaired.
 
-The existing P1 Owner-facing recovery campaign remains the execution plan:
+Current execution sequence:
 
-- G1 — real rendered evidence harness: established,
-- G2 — lighting/environment truth,
+- G1 — real rendered evidence harness: **PASS as instrumentation**,
+- G2 — lighting/environment/form readability: **ACTIVE**,
 - G3 — Matter visual language and cell scale,
 - G4 — camera as an experiment instrument,
 - G5 — interaction hierarchy,
 - G6 — world/motion/topology causality,
 - G7 — evidence-based Godot/host viability checkpoint,
-- G8 — complete adversarial rehearsal + final readiness audit.
+- G8 — freeze one runtime candidate, re-earn the full gate × scenario matrix, run adversarial rehearsal and independent assurance, then perform final readiness audit.
+
+The current Windows acceptance-relevant rendered path is Godot 4.7.2 Forward+ / D3D12. Linux Compatibility remains a secondary regression lane.
+
+G2 currently compares canonical lighting against test-only `balanced_fill` and `balanced_fill_ssao` challengers. A lighting azimuth-stress capture is used before any variant may be promoted.
 
 The visual acceptance contract is `docs/p1-visual-acceptance-contract.md`.
 
-No new Owner package is allowed before G8 and exact-commit readiness authorization.
+No new Owner package is allowed before G8 and frozen-runtime readiness authorization.
 
 ## Important distinctions
 
@@ -175,10 +179,11 @@ These open boundaries do not excuse broken presentation of the systems already b
 - **`ROADMAP.md`** — adaptive decision map and campaign boundaries.
 - **`docs/research-state.md`** — defended / provisional / falsified / open technical truth.
 - **`docs/QUALITY-SYSTEM.md`** — campaign quality and promotion model.
+- **`docs/INDEPENDENT-ASSURANCE.md`** — final read-only red-team contract.
 - **`docs/p1-owner-facing-recovery-campaign.md`** — P1 recovery execution plan.
 - **`docs/p1-visual-acceptance-contract.md`** — Owner-visible acceptance dimensions.
 - **`docs/evidence/`** — durable evidence, including failures and postmortems.
-- **`quality/`** — machine-readable campaign contract and readiness state.
+- **`quality/`** — machine-readable campaign contract, readiness and assurance state.
 
 ## Working rule
 
