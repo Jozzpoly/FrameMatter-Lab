@@ -10,6 +10,7 @@ on:
       - "space/**"
       - "p1/**"
       - "tests/p1_*.gd"
+      - "ci/**"
       - "project.godot"
       - ".github/workflows/p1-rebuild.yml"
   workflow_dispatch:
@@ -21,7 +22,7 @@ concurrency:
 jobs:
   p1-foundation:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -33,30 +34,33 @@ jobs:
           use-dotnet: false
           include-templates: false
 
-      - name: Parse/import project
+      - name: Import project
         run: godot --headless --path . --editor --quit
 
+      - name: Compile P1 dependency graph
+        run: bash ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
+
       - name: Run P1 volumetric actor challenger
-        run: godot --headless --path . --script res://tests/p1_volumetric_actor_challenger.gd
+        run: bash ci/run_godot_probe.sh res://tests/p1_volumetric_actor_challenger.gd P1_VOLUMETRIC_ACTOR_PASS
 
       - name: Run P1 composed scene foundation smoke
-        run: godot --headless --path . --script res://tests/p1_scene_foundation_smoke.gd
+        run: bash ci/run_godot_probe.sh res://tests/p1_scene_foundation_smoke.gd P1_SCENE_FOUNDATION_PASS
 
       - name: Run P1 multi-Space registry probe
-        run: godot --headless --path . --script res://tests/p1_space_registry_probe.gd
+        run: bash ci/run_godot_probe.sh res://tests/p1_space_registry_probe.gd P1_SPACE_REGISTRY_PASS
 
       - name: Run P1 live topology consumer probe
-        run: godot --headless --path . --script res://tests/p1_live_topology_consumer_probe.gd
+        run: bash ci/run_godot_probe.sh res://tests/p1_live_topology_consumer_probe.gd P1_LIVE_TOPOLOGY_PASS
 
       - name: Run P1 storage rebase probe
-        run: godot --headless --path . --script res://tests/p1_storage_rebase_probe.gd
+        run: bash ci/run_godot_probe.sh res://tests/p1_storage_rebase_probe.gd P1_STORAGE_REBASE_PASS
 
       - name: Run P1 finite Space control probe
-        run: godot --headless --path . --script res://tests/p1_finite_space_control_probe.gd
+        run: bash ci/run_godot_probe.sh res://tests/p1_finite_space_control_probe.gd P1_FINITE_CONTROL_PASS
 
   p1-windows-scene-diagnostic:
     runs-on: windows-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -68,8 +72,13 @@ jobs:
           use-dotnet: false
           include-templates: false
 
-      - name: Parse/import project
+      - name: Import project
         run: godot --headless --path . --editor --quit
 
+      - name: Compile P1 dependency graph
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_compile_gate.gd -PassMarker P1_COMPILE_GATE_PASS
+
       - name: Run P1 composed scene foundation smoke
-        run: godot --headless --path . --script res://tests/p1_scene_foundation_smoke.gd
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_scene_foundation_smoke.gd -PassMarker P1_SCENE_FOUNDATION_PASS
