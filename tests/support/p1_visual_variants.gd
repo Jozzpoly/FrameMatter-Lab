@@ -21,6 +21,18 @@ static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 	if variant == "canonical" or variant == "balanced_fill":
 		return
 
+	if variant == "state_contour_soft_neutral_reference":
+		# G3-S promotion-equivalence lane. Disable only the promoted production
+		# state/focus presenter, then recreate the accepted test-only challenger.
+		# Production G3 cell granularity stays active on both sides.
+		var state_presenter := p1.get_node_or_null("P1MatterStatePresentation") as P1MatterStatePresentation
+		if state_presenter == null:
+			failures.append("G3-S reference cannot resolve production P1MatterStatePresentation")
+			return
+		state_presenter.set_enabled(false)
+		StateSemanticsVariants.refresh(p1, "state_contour_soft_neutral_focus", failures)
+		return
+
 	if variant in [
 		"state_material",
 		"state_contour",
