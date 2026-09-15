@@ -15,8 +15,11 @@ if [[ $GODOT_STATUS -ne 0 ]]; then
   exit 1
 fi
 
-if grep -Eq 'SCRIPT ERROR:|ERROR: Failed to load script|P1_[A-Z0-9_]+_(FAIL|TIMEOUT)' "$LOG_FILE"; then
-  echo "Probe emitted a script/load/failure error despite process exit 0." >&2
+# Strict P1 evidence contract: a PASS marker cannot coexist with a Godot
+# engine/script error. Warnings remain visible evidence, but every ERROR line
+# must be investigated instead of being silently accepted as green.
+if grep -Eq '^ERROR:|SCRIPT ERROR:|P1_[A-Z0-9_]+_(FAIL|TIMEOUT)' "$LOG_FILE"; then
+  echo "Probe emitted an engine/script/failure error despite process exit 0." >&2
   exit 1
 fi
 
