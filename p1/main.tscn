@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="Script" path="res://p1/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://p1/matter_target_presentation.gd" id="9_target_presentation"]
 [ext_resource type="Script" path="res://p1/interaction_feedback.gd" id="10_interaction_feedback"]
 [ext_resource type="Script" path="res://p1/world_reference_presentation.gd" id="11_world_reference_presentation"]
+[ext_resource type="Script" path="res://p1/hud_presentation.gd" id="12_hud_presentation"]
 
 [sub_resource type="Environment" id="Environment_P1"]
 background_mode = 1
@@ -113,13 +114,17 @@ script = ExtResource("8_state_presentation")
 [node name="P1MatterTargetPresentation" type="Node" parent="."]
 script = ExtResource("9_target_presentation")
 
+[node name="P1HudPresentation" type="Node" parent="."]
+script = ExtResource("12_hud_presentation")
+
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="Panel" type="PanelContainer" parent="HUD"]
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 1120.0
-offset_bottom = 112.0
+offset_right = 346.0
+offset_bottom = 74.0
+clip_contents = true
 theme_override_styles/panel = SubResource("HUDPanelStyle")
 
 [node name="MarginContainer" type="MarginContainer" parent="HUD/Panel"]
@@ -132,13 +137,13 @@ theme_override_constants/margin_bottom = 8
 theme_override_constants/separation = 5
 
 [node name="Status" type="Label" parent="HUD/Panel/MarginContainer/VBoxContainer"]
-theme_override_font_sizes/font_size = 16
-text = "P1 INTERACTIVE FOUNDATION"
+theme_override_font_sizes/font_size = 15
+text = "STATIC   ·   REMOVE   ·   1 SPACE"
 
 [node name="Hint" type="Label" parent="HUD/Panel/MarginContainer/VBoxContainer"]
-theme_override_colors/font_color = Color(0.75, 0.82, 0.90, 1)
-theme_override_font_sizes/font_size = 13
-text = "WASD move   Space jump   T release/freeze   arrows impulse/torque   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset"
+theme_override_colors/font_color = Color(0.68, 0.76, 0.84, 1)
+theme_override_font_sizes/font_size = 11
+text = "WASD move   ·   T state   ·   E edit   ·   LMB apply"
 
 [node name="P1InteractionFeedback" type="Control" parent="HUD"]
 anchors_preset = 15
