@@ -45,7 +45,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$P1_VISUAL_EVIDENCE_DIR"
           set +e
-          xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/p1_visual_capture.gd 2>&1 | tee /tmp/p1_visual_capture.log
+          xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/p1_visual_capture.gd 2>&1 | tee /tmp/p1_visual_capture.log
           status=${PIPESTATUS[0]}
           set -e
           if [ "$status" -ne 0 ]; then
@@ -72,6 +72,7 @@ jobs:
             echo "workflow_run=${GITHUB_RUN_ID}"
             echo "commit=${GITHUB_SHA}"
             echo "renderer=Godot 4.7.2 gl_compatibility under Xvfb / software Mesa"
+            echo "audio_driver=Dummy"
             echo "source_scene=res://p1/main.tscn"
             echo "capture_script=res://tests/p1_visual_capture.gd"
           } > "$P1_VISUAL_EVIDENCE_DIR/VISUAL-EVIDENCE-INFO.txt"
