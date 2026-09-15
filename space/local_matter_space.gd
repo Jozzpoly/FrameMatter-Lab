@@ -14,7 +14,7 @@ enum ProviderKind {
 
 signal provider_transition_committed(previous_provider_id: int, current_provider_id: int, provider_kind: int)
 signal topology_split_committed(result)
-signal storage_rebased(local_shift: Vector3i, previous_size: Vector3i, current_size: Vector3i)
+signal storage_rebase_committed(report: Dictionary)
 
 var volume: CellVolume
 var lineage: MatterLineageMap
@@ -33,7 +33,11 @@ var _pending_provider_kind := ProviderKind.NONE
 var _pending_linear_velocity := Vector3.ZERO
 var _pending_angular_velocity := Vector3.ZERO
 var _pending_connected_component_split := false
+var _pending_storage_rebase := false
+var _pending_storage_cell := Vector3i.ZERO
+var _pending_storage_padding := 0
 var _last_transition_report: Dictionary = {}
+var _last_storage_rebase_report: Dictionary = {}
 var _last_split_result: LocalMatterSplitResult
 var _physics_boundary_connected := false
 var _retired := false
@@ -66,7 +70,12 @@ func initialize_dynamic(
 func request_dynamic(linear_velocity: Vector3, angular_velocity: Vector3) -> bool:
 	if _retired or _active_provider == null:
 		return false
-	if _provider_kind == ProviderKind.DYNAMIC or _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split:
+	if (
+		_provider_kind == ProviderKind.DYNAMIC
+		or _pending_provider_kind != ProviderKind.NONE
+		or _pending_connected_component_split
+		or _pending_storage_rebase
+	):
 		return false
 	_pending_provider_kind = ProviderKind.DYNAMIC
 	_pending_linear_velocity = linear_velocity
@@ -77,7 +86,12 @@ func request_dynamic(linear_velocity: Vector3, angular_velocity: Vector3) -> boo
 func request_static() -> bool:
 	if _retired or _active_provider == null:
 		return false
-	if _provider_kind == ProviderKind.STATIC or _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split:
+	if (
+		_provider_kind == ProviderKind.STATIC
+		or _pending_provider_kind != ProviderKind.NONE
+		or _pending_connected_component_split
+		or _pending_storage_rebase
+	):
 		return false
 	_pending_provider_kind = ProviderKind.STATIC
 	return true
@@ -86,11 +100,36 @@ func request_static() -> bool:
 func request_connected_component_split() -> bool:
 	if _retired or _active_provider == null or not (_active_provider is ConstructBody):
 		return false
-	if _provider_kind != ProviderKind.DYNAMIC or _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split:
+	if (
+		_provider_kind != ProviderKind.DYNAMIC
+		or _pending_provider_kind != ProviderKind.NONE
+		or _pending_connected_component_split
+		or _pending_storage_rebase
+	):
 		return false
 	if MatterTopology.extract_connected_components(volume).size() <= 1:
 		return false
 	_pending_connected_component_split = true
+	return true
+
+
+func request_storage_rebase(local_cell: Vector3i, padding: int = 2) -> bool:
+	if _retired or volume == null or lineage == null or _active_provider == null:
+		return false
+	if volume.in_bounds(local_cell):
+		return false
+	if (
+		_pending_provider_kind != ProviderKind.NONE
+		or _pending_connected_component_split
+		or _pending_storage_rebase
+	):
+		return false
+	var expansion := _compute_storage_expansion(local_cell, padding)
+	if expansion.is_empty():
+		return false
+	_pending_storage_rebase = true
+	_pending_storage_cell = local_cell
+	_pending_storage_padding = max(0, padding)
 	return true
 
 
@@ -100,97 +139,10 @@ func allocate_lineage_token() -> int:
 	return lineage_issuer.allocate()
 
 
-func ensure_storage_contains(local_cell: Vector3i, padding: int = 2) -> Dictionary:
-	if _retired or volume == null or lineage == null or _active_provider == null:
-		return {}
-	if volume.in_bounds(local_cell):
-		return {
-			"expanded": false,
-			"cell": local_cell,
-			"local_shift": Vector3i.ZERO,
-			"previous_size": volume.size,
-			"current_size": volume.size,
-		}
-	if _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split:
-		return {}
-
-	var grow := max(0, padding)
-	var min_coord := Vector3i(
-		min(0, local_cell.x - grow),
-		min(0, local_cell.y - grow),
-		min(0, local_cell.z - grow)
-	)
-	var max_exclusive := Vector3i(
-		max(volume.size.x, local_cell.x + 1 + grow),
-		max(volume.size.y, local_cell.y + 1 + grow),
-		max(volume.size.z, local_cell.z + 1 + grow)
-	)
-	var new_size := max_exclusive - min_coord
-	var new_cell_count := new_size.x * new_size.y * new_size.z
-	if new_cell_count <= 0 or new_cell_count > MAX_EXPANDED_STORAGE_CELLS:
-		return {}
-
-	var local_shift := -min_coord
-	var previous_size := volume.size
-	var previous_volume := volume
-	var previous_lineage := lineage
-	var previous_revision := previous_volume.revision
-	var new_volume := CellVolume.new(new_size)
-	var new_lineage := MatterLineageMap.new(new_size)
-
-	for z in range(previous_size.z):
-		for y in range(previous_size.y):
-			for x in range(previous_size.x):
-				var old_cell := Vector3i(x, y, z)
-				var material_id := previous_volume.get_cell(old_cell)
-				if material_id == CellVolume.EMPTY:
-					continue
-				var mapped_cell := old_cell + local_shift
-				new_volume.set_cell(mapped_cell, material_id)
-				var token := previous_lineage.get_lineage(old_cell)
-				assert(token != MatterLineageMap.NONE)
-				new_lineage.set_lineage(mapped_cell, token)
-	# Storage rebasing is not a logical Matter edit. Preserve the source revision
-	# so the subsequent actual placement is the revision-changing operation.
-	new_volume.revision = previous_revision
-
-	var provider := _active_provider
-	var previous_transform := provider.global_transform
-	var rebased_transform := previous_transform * Transform3D(Basis.IDENTITY, -Vector3(local_shift))
-	var preserved_linear := Vector3.ZERO
-	var preserved_angular := Vector3.ZERO
-	if provider is ConstructBody:
-		preserved_linear = provider.linear_velocity
-		preserved_angular = provider.angular_velocity
-
-	volume = new_volume
-	lineage = new_lineage
-	provider.global_transform = rebased_transform
-	if provider is MatterRepresentation:
-		(provider as MatterRepresentation).set_volume(new_volume)
-	elif provider is ConstructBody:
-		var body := provider as ConstructBody
-		body.set_volume(new_volume)
-		body.linear_velocity = preserved_linear
-		body.angular_velocity = preserved_angular
-	else:
-		assert(false, "Unsupported active Matter provider")
-	provider.reset_physics_interpolation()
-
-	storage_rebased.emit(local_shift, previous_size, new_size)
-	return {
-		"expanded": true,
-		"cell": local_cell + local_shift,
-		"local_shift": local_shift,
-		"previous_size": previous_size,
-		"current_size": new_size,
-	}
-
-
 func mutate_cell(cell: Vector3i, material_id: int, created_lineage_token: int = MatterLineageMap.NONE) -> bool:
 	if _retired or volume == null or lineage == null or _active_provider == null:
 		return false
-	if _pending_connected_component_split:
+	if _pending_connected_component_split or _pending_storage_rebase:
 		return false
 	if not volume.in_bounds(cell):
 		return false
@@ -236,6 +188,10 @@ func get_last_transition_report() -> Dictionary:
 	return _last_transition_report.duplicate(true)
 
 
+func get_last_storage_rebase_report() -> Dictionary:
+	return _last_storage_rebase_report.duplicate(true)
+
+
 func get_last_split_result() -> LocalMatterSplitResult:
 	return _last_split_result
 
@@ -252,6 +208,10 @@ func is_transition_pending() -> bool:
 
 func is_topology_split_pending() -> bool:
 	return _pending_connected_component_split
+
+
+func is_storage_rebase_pending() -> bool:
+	return _pending_storage_rebase
 
 
 func is_retired() -> bool:
@@ -290,8 +250,113 @@ func _on_physics_frame() -> void:
 	if _pending_connected_component_split:
 		_commit_connected_component_split()
 		return
+	if _pending_storage_rebase:
+		_commit_storage_rebase()
+		return
 	if _pending_provider_kind != ProviderKind.NONE:
 		_commit_pending_transition()
+
+
+func _commit_storage_rebase() -> void:
+	assert(_active_provider != null)
+	assert(volume != null and lineage != null)
+	var expansion := _compute_storage_expansion(_pending_storage_cell, _pending_storage_padding)
+	assert(not expansion.is_empty())
+
+	var local_shift: Vector3i = expansion["local_shift"]
+	var previous_size := volume.size
+	var previous_volume := volume
+	var previous_lineage := lineage
+	var previous_revision := previous_volume.revision
+	var new_size: Vector3i = expansion["current_size"]
+	var new_volume := CellVolume.new(new_size)
+	var new_lineage := MatterLineageMap.new(new_size)
+
+	for z in range(previous_size.z):
+		for y in range(previous_size.y):
+			for x in range(previous_size.x):
+				var old_cell := Vector3i(x, y, z)
+				var material_id := previous_volume.get_cell(old_cell)
+				if material_id == CellVolume.EMPTY:
+					continue
+				var mapped_cell := old_cell + local_shift
+				new_volume.set_cell(mapped_cell, material_id)
+				var token := previous_lineage.get_lineage(old_cell)
+				assert(token != MatterLineageMap.NONE)
+				new_lineage.set_lineage(mapped_cell, token)
+	# Coordinate-frame maintenance is not a logical Matter edit.
+	new_volume.revision = previous_revision
+
+	var provider := _active_provider
+	var provider_id := provider.get_instance_id()
+	var previous_transform := provider.global_transform
+	var rebased_transform := previous_transform * Transform3D(Basis.IDENTITY, -Vector3(local_shift))
+	var preserved_linear := Vector3.ZERO
+	var preserved_angular := Vector3.ZERO
+	if provider is ConstructBody:
+		preserved_linear = provider.linear_velocity
+		preserved_angular = provider.angular_velocity
+
+	volume = new_volume
+	lineage = new_lineage
+	provider.global_transform = rebased_transform
+	if provider is MatterRepresentation:
+		(provider as MatterRepresentation).set_volume(new_volume)
+	elif provider is ConstructBody:
+		var body := provider as ConstructBody
+		body.set_volume(new_volume)
+		body.linear_velocity = preserved_linear
+		body.angular_velocity = preserved_angular
+	else:
+		assert(false, "Unsupported active Matter provider")
+	provider.reset_physics_interpolation()
+
+	_last_storage_rebase_report = {
+		"requested_source_cell": _pending_storage_cell,
+		"mapped_cell": _pending_storage_cell + local_shift,
+		"local_shift": local_shift,
+		"previous_size": previous_size,
+		"current_size": new_size,
+		"previous_transform": previous_transform,
+		"current_transform": rebased_transform,
+		"provider_id": provider_id,
+	}
+	_pending_storage_rebase = false
+	_pending_storage_cell = Vector3i.ZERO
+	_pending_storage_padding = 0
+	storage_rebase_committed.emit(_last_storage_rebase_report.duplicate(true))
+
+
+func _compute_storage_expansion(local_cell: Vector3i, padding: int) -> Dictionary:
+	if volume == null or volume.in_bounds(local_cell):
+		return {}
+	var grow := max(0, padding)
+	var min_coord := Vector3i.ZERO
+	var max_exclusive := volume.size
+	if local_cell.x < 0:
+		min_coord.x = local_cell.x - grow
+	elif local_cell.x >= volume.size.x:
+		max_exclusive.x = local_cell.x + 1 + grow
+	if local_cell.y < 0:
+		min_coord.y = local_cell.y - grow
+	elif local_cell.y >= volume.size.y:
+		max_exclusive.y = local_cell.y + 1 + grow
+	if local_cell.z < 0:
+		min_coord.z = local_cell.z - grow
+	elif local_cell.z >= volume.size.z:
+		max_exclusive.z = local_cell.z + 1 + grow
+	var new_size := max_exclusive - min_coord
+	var new_cell_count := new_size.x * new_size.y * new_size.z
+	if new_cell_count <= 0 or new_cell_count > MAX_EXPANDED_STORAGE_CELLS:
+		return {}
+	var local_shift := -min_coord
+	return {
+		"requested_source_cell": local_cell,
+		"mapped_cell": local_cell + local_shift,
+		"local_shift": local_shift,
+		"previous_size": volume.size,
+		"current_size": new_size,
+	}
 
 
 func _commit_pending_transition() -> void:
