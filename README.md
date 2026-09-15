@@ -27,7 +27,9 @@ The repository now has defended evidence across several layers:
 - exact merged-cuboid collision removed the demonstrated one-shape-per-cell scale bottleneck in dense/shell cases,
 - post-R1 profiling shows full mesh/cuboid/COM derivation—not installing a handful of merged shapes—now dominates representative full rebuilds,
 - bounded derived-region experiments prove strong edit locality is possible without making regions logical identity, but naive fixed regions can badly inflate final collider partitions,
-- the real LAB now composes an embodied actor, direct selected-cell Matter remove/place, static→dynamic ride/walk, moving edit and freeze through the shared runtime.
+- the real LAB composes an embodied actor, direct selected-cell Matter remove/place, static→dynamic ride/walk, moving edit and freeze through the shared runtime,
+- the first direct Owner run confirmed that this loop can be exercised but exposed severe prototype interaction/readability friction rather than a demonstrated substrate failure,
+- P0.5 now wraps the same defended consumer with a closer orbit/zoom camera, explicit remove/place previews, Matter grid context, compact/debug HUD split and non-destructive test recovery.
 
 These are not production architecture, world-scale or product-quality claims.
 
@@ -35,36 +37,41 @@ These are not production architecture, world-scale or product-quality claims.
 
 The project deliberately stopped representation optimization before it became architecture by inertia.
 
-Active pressure is **P0 — direct Owner interaction with the first embodied consumer**:
+Active pressure is **P0.5 — direct Owner interaction through a less contaminated measurement surface**:
 
-> walk on/around Matter → point at a local cell → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect/debug the result.
+> walk on/around Matter → point at a clearly previewed local cell → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect/debug only when useful.
 
-The automated composition gate is **PASS in a bounded translation+yaw scope**. On runtime commit `09eb18e8…`, current-campaign validation, fast invariants and the full historical research ratchet through R2A are green. This is integrated automated evidence, **not playability/product PASS**.
+The defended P0 composition gate remains **PASS in a bounded translation+yaw scope**. P0.5 adds a separate structural interaction-surface gate and does not replace the underlying Matter/lifecycle test. The green P0.5 delivery run `#6` / `34915675303` passed both gates and exported Windows + Web packages.
 
 The first pitch/roll P0 challenger also exposed a useful boundary: the current actor transports support in frame coordinates but validates/snaps with a world-down single ray. It remained grounded but drifted locally on tilted support. Arbitrary pitch/roll therefore remains an explicit actor/gravity/orientation frontier rather than being hidden by a LAB-specific adhesion hack.
 
-The next material evidence must come from direct Owner use of the LAB: camera/movement feel, pointer targeting, remove/place clarity, perceived edit latency and whether the loop reveals a compelling next pressure.
+The next material evidence must again come from direct Owner use. P0.5 exists specifically so camera/movement feel, pointer targeting, remove/place clarity, perceived edit latency and the underlying moving-Matter loop can be judged with less prototype friction.
 
-If edit latency becomes limiting, R2A already provides measured locality evidence. If actor geometry/orientation dominates, the actor frontier should move next. If lifecycle/topology semantics fail under interaction, those exact invariants should be reopened instead of hidden behind consumer glue.
+If edit latency becomes limiting, R2A already provides measured locality evidence. If actor geometry/orientation dominates, the actor frontier should move next. If lifecycle/topology semantics fail under interaction, those exact invariants should be reopened instead of hidden behind consumer glue. If interaction is still the dominant problem, improve only the highest-value obstacle instead of turning P0.5 into an endless polish campaign.
 
-### Current P0 controls
+### Current P0.5 controls
 
 - `WASD` — move relative to the current view/support,
 - `Space` — jump,
 - `T` — activate static Space / freeze dynamic Space,
-- `LMB` — remove pointed occupied Matter cell,
-- `RMB` — place Matter in the pointed adjacent empty in-bounds cell,
+- `LMB` — remove the previewed occupied Matter cell,
+- `RMB` — place Matter in the previewed adjacent empty in-bounds cell,
+- `MMB + mouse` — orbit camera,
+- mouse wheel — zoom,
+- `Home` — reset camera view,
+- `K` — recover actor onto the current active Space for test continuity,
+- `F1` — compact Owner HUD / full engineering telemetry,
 - `R` — reset LAB,
 - `M`, `C`, `F` — retained legacy instrumentation probes.
 
 ### Owner-test builds
 
-P0 has a dedicated delivery workflow: **[Deliver P0 Owner Test](https://github.com/Jozzpoly/FrameMatter-Lab/actions/workflows/deliver-owner-test.yml)**.
+P0.5 has a dedicated gated delivery workflow: **[Deliver P0.5 Owner Test](https://github.com/Jozzpoly/FrameMatter-Lab/actions/workflows/deliver-owner-test.yml)**.
 
-Every delivery run first executes the real P0 smoke and only packages the experiment if that gate passes. A successful run publishes two 30-day downloadable artifacts:
+Every delivery run first executes the defended P0 smoke and the P0.5 interaction-baseline smoke. Packaging only proceeds when both pass. A successful run publishes two 30-day downloadable artifacts:
 
-- `FrameMatter-P0-Windows` — standalone Windows x86-64 executable with embedded PCK; this is the preferred Owner-test build,
-- `FrameMatter-P0-Web` — browser export bundle for hosting/HTTP testing.
+- `FrameMatter-P05-Windows` — standalone Windows x86-64 executable with embedded PCK; this is the preferred Owner-test build,
+- `FrameMatter-P05-Web` — browser export bundle for hosting/HTTP testing.
 
 The web bundle itself exports successfully with Godot 4.7.2 + built-in Jolt. A permanent GitHub Pages URL is intentionally not claimed until Pages is enabled in repository settings; delivery artifacts do not depend on that setting.
 
@@ -77,6 +84,8 @@ The web bundle itself exports successfully with Godot 4.7.2 + built-in Jolt. A p
 - **freeze/static transition ≠ canonical-world reintegration ≠ bake/resample.**
 - **dirty/invalidation region ≠ final physical representation partition.**
 - **support-frame transport ≠ gravity/orientation/adhesion semantics.**
+- **P0.5 presentation grid ≠ world/chunk/physics partition.**
+- **test recovery ≠ gameplay recovery design.**
 - **bounded/integrated automated PASS ≠ playability/product proof.**
 
 ## Stack
