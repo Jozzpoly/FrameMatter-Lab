@@ -34,6 +34,7 @@ const SCRIPT_PATHS: PackedStringArray = [
 	"res://tests/p1_space_registry_probe.gd",
 	"res://tests/p1_live_topology_consumer_probe.gd",
 	"res://tests/p1_storage_rebase_probe.gd",
+	"res://tests/p1_storage_actor_context_challenger.gd",
 	"res://tests/p1_finite_space_control_probe.gd",
 ]
 
