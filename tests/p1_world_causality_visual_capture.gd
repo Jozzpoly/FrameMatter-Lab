@@ -159,15 +159,32 @@ func _run() -> void:
 	await _capture("06_split_independent_motion")
 
 	await _capture("07_pre_freeze_dynamic")
-	var pre_freeze_transform := actor_successor.get_active_provider().global_transform
+	# request_static() is asynchronous. A moving rigid body may legally advance
+	# during the final solver phase before LocalMatterSpace commits replacement at
+	# the physics boundary. Therefore request-time -> commit-boundary motion is
+	# telemetry, not a pose-reset failure. The actual continuity invariant is the
+	# transform copied from the outgoing dynamic provider to the incoming static
+	# provider in the transition report.
+	var freeze_request_transform := actor_successor.get_active_provider().global_transform
 	_check(_control.freeze_space(actor_successor), "G6 freeze request succeeds on actor successor")
 	await actor_successor.provider_transition_committed
+	var freeze_report := actor_successor.get_last_transition_report()
+	var freeze_previous_transform: Transform3D = freeze_report.get("previous_transform", freeze_request_transform)
+	var freeze_current_transform: Transform3D = freeze_report.get("current_transform", actor_successor.get_active_provider().global_transform)
+	var freeze_phase_advance := _transform_error(freeze_request_transform, freeze_previous_transform)
+	var freeze_transition_jump := _transform_error(freeze_previous_transform, freeze_current_transform)
 	await _advance_frames(SETTLE_FRAMES)
 	var frozen_transform := actor_successor.get_active_provider().global_transform
-	var freeze_pose_error := _transform_error(pre_freeze_transform, frozen_transform)
+	var freeze_settle_drift := _transform_error(freeze_current_transform, frozen_transform)
 	_check(actor_successor.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "G6 actor successor becomes static")
-	_check(freeze_pose_error < 0.001, "G6 freeze preserves current transformed world pose")
-	print("P1_G6_FREEZE pose_error=%.8f frozen_origin=%s" % [freeze_pose_error, str(frozen_transform.origin)])
+	_check(freeze_transition_jump < 0.00001, "G6 freeze provider replacement preserves commit-boundary world pose")
+	_check(freeze_settle_drift < 0.0001, "G6 newly frozen successor remains at committed world pose")
+	print("P1_G6_FREEZE phase_advance=%.8f transition_jump=%.8f settle_drift=%.8f frozen_origin=%s" % [
+		freeze_phase_advance,
+		freeze_transition_jump,
+		freeze_settle_drift,
+		str(frozen_transform.origin),
+	])
 	await _capture("08_post_freeze_same_pose")
 
 	var frozen_before_wait := actor_successor.get_active_provider().global_transform
