@@ -70,6 +70,34 @@ jobs:
             echo "Campaign is not BLOCKED; negative control is intentionally skipped."
           fi
 
+      - name: Prove READY state passes delivery enforcement
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
+          print(data["status"])
+          PY
+          )
+          if [ "$status" = "READY_FOR_OWNER" ]; then
+            python ci/verify_owner_readiness.py --mode delivery
+            python ci/verify_independent_assurance.py --mode delivery
+            candidate=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
+          print(data["candidate_runtime_commit"])
+          PY
+            )
+            approved=$(python ci/verify_owner_readiness.py --mode approved-runtime)
+            test "$approved" = "$candidate"
+            echo "OWNER_READINESS_READY_DELIVERY_PASS: approved runtime $approved"
+          else
+            echo "Campaign is not READY_FOR_OWNER; positive delivery control is intentionally skipped."
+          fi
+
       - name: Show current promotion state
         run: |
           python - <<'PY'
