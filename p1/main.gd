@@ -11,6 +11,7 @@ var _last_event := "P1 boot"
 @onready var _registry: P1SpaceRegistry = $P1SpaceRegistry
 @onready var _player: SpaceQueryCharacter = $P1Player
 @onready var _camera_rig: P1CameraRig = $P1CameraRig
+@onready var _interactor: P1MatterInteractor = $P1MatterInteractor
 @onready var _status_label: Label = $HUD/Panel/MarginContainer/VBoxContainer/Status
 @onready var _hint_label: Label = $HUD/Panel/MarginContainer/VBoxContainer/Hint
 
@@ -20,8 +21,13 @@ func _ready() -> void:
 	_registry.provider_changed.connect(_on_registry_provider_changed)
 	_registry.split_committed.connect(_on_registry_split_committed)
 	_registry.active_spaces_changed.connect(_on_active_spaces_changed)
+	_interactor.edit_mode_changed.connect(_on_edit_mode_changed)
+	_interactor.edit_applied.connect(_on_edit_applied)
+	_interactor.edit_rejected.connect(_on_edit_rejected)
 	_initialize_space()
 	_camera_rig.set_target(_player)
+	_interactor.set_camera(_camera_rig.get_camera())
+	_interactor.set_registry(_registry)
 	_refresh_camera_context()
 	_recover_player_to_space("initial spawn")
 	_update_hud()
@@ -70,6 +76,10 @@ func get_player() -> SpaceQueryCharacter:
 
 func get_camera_rig() -> P1CameraRig:
 	return _camera_rig
+
+
+func get_interactor() -> P1MatterInteractor:
+	return _interactor
 
 
 func activate_dynamic_probe_for_test() -> bool:
@@ -290,6 +300,24 @@ func _refresh_camera_context() -> void:
 	_camera_rig.set_context_target(context_space.get_active_provider(), context_space.get_content_center_local())
 
 
+func _on_edit_mode_changed(_mode: int) -> void:
+	_last_event = "edit mode → %s" % _interactor.get_mode_name()
+
+
+func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_queued: bool) -> void:
+	_focus_space = space
+	_refresh_camera_context()
+	_last_event = "%s %s%s" % [
+		"removed" if mode == P1MatterInteractor.EditMode.REMOVE else "placed",
+		str(cell),
+		"; topology split queued" if split_queued else "",
+	]
+
+
+func _on_edit_rejected(reason: String) -> void:
+	_last_event = "edit blocked: %s" % reason
+
+
 func _is_live_space(space: LocalMatterSpace) -> bool:
 	return space != null and is_instance_valid(space) and not space.is_retired() and space.get_active_provider() != null
 
@@ -304,13 +332,21 @@ func _update_hud() -> void:
 		support = "local Space"
 	elif not _player.grounded:
 		support = "airborne"
-	_status_label.text = "P1 INTERACTIVE FOUNDATION   •   %s   •   actor %s   •   support %s   •   live Spaces %d" % [
+	var target := "none"
+	if _interactor.target_space != null:
+		target = "%s%s" % [
+			str(_interactor.get_target_cell()),
+			"" if _interactor.target_in_storage else " [storage edge]",
+		]
+	_status_label.text = "P1   •   %s   •   actor %s   •   support %s   •   Spaces %d   •   EDIT %s   •   target %s" % [
 		kind,
 		"grounded" if _player.grounded else "airborne",
 		support,
 		_registry.get_active_count(),
+		_interactor.get_mode_name(),
+		target,
 	]
-	_hint_label.text = "WASD move   Space jump   MMB orbit   wheel zoom   Home camera   K recover   R reset\n%s" % _last_event
+	_hint_label.text = "WASD move   Space jump   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset\n%s" % _last_event
 
 
 func _ensure_input_actions() -> void:
@@ -325,6 +361,8 @@ func _ensure_input_actions() -> void:
 	_ensure_key_action("p1_recover", KEY_K)
 	_ensure_key_action("p1_camera_reset", KEY_HOME)
 	_ensure_key_action("p1_reset", KEY_R)
+	_ensure_key_action("p1_edit_toggle", KEY_E)
+	_ensure_mouse_action("p1_edit_apply", MOUSE_BUTTON_LEFT)
 
 
 func _ensure_key_action(action: StringName, physical_keycode: Key) -> void:
@@ -333,6 +371,15 @@ func _ensure_key_action(action: StringName, physical_keycode: Key) -> void:
 	InputMap.add_action(action)
 	var event := InputEventKey.new()
 	event.physical_keycode = physical_keycode
+	InputMap.action_add_event(action, event)
+
+
+func _ensure_mouse_action(action: StringName, button: MouseButton) -> void:
+	if InputMap.has_action(action):
+		return
+	InputMap.add_action(action)
+	var event := InputEventMouseButton.new()
+	event.button_index = button
 	InputMap.action_add_event(action, event)
 
 
