@@ -29,9 +29,20 @@ jobs:
       LIBGL_ALWAYS_SOFTWARE: "1"
       P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/p1-visual-evidence/linux-gl-compatibility
       P1_VISUAL_VARIANT: canonical
+      P1_VISUAL_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Checkout
+      - name: Checkout exact source commit
         uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_VISUAL_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          checked_out=$(git rev-parse HEAD)
+          test "$checked_out" = "$P1_VISUAL_SOURCE_SHA"
+          echo "P1 rendered exact source checkout: $checked_out"
 
       - name: Setup Godot 4.7.2
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -73,10 +84,13 @@ jobs:
       - name: Record Linux rendered evidence provenance
         shell: bash
         run: |
+          checked_out=$(git rev-parse HEAD)
           {
             echo "FrameMatter P1 rendered visual evidence"
             echo "workflow_run=${GITHUB_RUN_ID}"
-            echo "commit=${GITHUB_SHA}"
+            echo "source_commit=${P1_VISUAL_SOURCE_SHA}"
+            echo "checked_out_commit=${checked_out}"
+            echo "event_commit=${GITHUB_SHA}"
             echo "platform=ubuntu-latest"
             echo "renderer=Godot 4.7.2 gl_compatibility under Xvfb / Mesa llvmpipe"
             echo "variant=canonical"
@@ -103,9 +117,21 @@ jobs:
     env:
       P1_VISUAL_VARIANT: ${{ matrix.variant }}
       P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-visual-evidence\windows-${{ matrix.variant }}
+      P1_VISUAL_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Checkout
+      - name: Checkout exact source commit
         uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_VISUAL_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          if ($checkedOut -ne $env:P1_VISUAL_SOURCE_SHA) {
+            throw "P1 rendered evidence checkout mismatch: expected $env:P1_VISUAL_SOURCE_SHA, got $checkedOut"
+          }
+          "P1 rendered exact source checkout: $checkedOut"
 
       - name: Setup Godot 4.7.2
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -125,10 +151,13 @@ jobs:
       - name: Record Windows rendered evidence provenance
         shell: pwsh
         run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
           @"
           FrameMatter P1 rendered visual evidence
           workflow_run=$env:GITHUB_RUN_ID
-          commit=$env:GITHUB_SHA
+          source_commit=$env:P1_VISUAL_SOURCE_SHA
+          checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
           platform=windows-latest
           renderer=Godot 4.7.2 Forward+ / D3D12
           variant=$env:P1_VISUAL_VARIANT
