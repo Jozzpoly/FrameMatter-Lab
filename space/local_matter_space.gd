@@ -124,12 +124,12 @@ func request_storage_rebase(local_cell: Vector3i, padding: int = 2) -> bool:
 		or _pending_storage_rebase
 	):
 		return false
-	var expansion := _compute_storage_expansion(local_cell, padding)
+	var expansion: Dictionary = _compute_storage_expansion(local_cell, padding)
 	if expansion.is_empty():
 		return false
 	_pending_storage_rebase = true
 	_pending_storage_cell = local_cell
-	_pending_storage_padding = max(0, padding)
+	_pending_storage_padding = maxi(0, padding)
 	return true
 
 
@@ -154,7 +154,7 @@ func mutate_cell(cell: Vector3i, material_id: int, created_lineage_token: int = 
 		volume.set_cell(cell, CellVolume.EMPTY)
 		lineage.clear_lineage(cell)
 	elif previous_material == CellVolume.EMPTY:
-		var lineage_token := created_lineage_token
+		var lineage_token: int = created_lineage_token
 		if lineage_token == MatterLineageMap.NONE:
 			lineage_token = allocate_lineage_token()
 		assert(lineage_token != MatterLineageMap.NONE)
@@ -260,14 +260,14 @@ func _on_physics_frame() -> void:
 func _commit_storage_rebase() -> void:
 	assert(_active_provider != null)
 	assert(volume != null and lineage != null)
-	var expansion := _compute_storage_expansion(_pending_storage_cell, _pending_storage_padding)
+	var expansion: Dictionary = _compute_storage_expansion(_pending_storage_cell, _pending_storage_padding)
 	assert(not expansion.is_empty())
 
 	var local_shift: Vector3i = expansion["local_shift"]
-	var previous_size := volume.size
-	var previous_volume := volume
-	var previous_lineage := lineage
-	var previous_revision := previous_volume.revision
+	var previous_size: Vector3i = volume.size
+	var previous_volume: CellVolume = volume
+	var previous_lineage: MatterLineageMap = lineage
+	var previous_revision: int = previous_volume.revision
 	var new_size: Vector3i = expansion["current_size"]
 	var new_volume := CellVolume.new(new_size)
 	var new_lineage := MatterLineageMap.new(new_size)
@@ -276,20 +276,20 @@ func _commit_storage_rebase() -> void:
 		for y in range(previous_size.y):
 			for x in range(previous_size.x):
 				var old_cell := Vector3i(x, y, z)
-				var material_id := previous_volume.get_cell(old_cell)
+				var material_id: int = previous_volume.get_cell(old_cell)
 				if material_id == CellVolume.EMPTY:
 					continue
 				var mapped_cell := old_cell + local_shift
 				new_volume.set_cell(mapped_cell, material_id)
-				var token := previous_lineage.get_lineage(old_cell)
+				var token: int = previous_lineage.get_lineage(old_cell)
 				assert(token != MatterLineageMap.NONE)
 				new_lineage.set_lineage(mapped_cell, token)
 	# Coordinate-frame maintenance is not a logical Matter edit.
 	new_volume.revision = previous_revision
 
-	var provider := _active_provider
-	var provider_id := provider.get_instance_id()
-	var previous_transform := provider.global_transform
+	var provider: Node3D = _active_provider
+	var provider_id: int = provider.get_instance_id()
+	var previous_transform: Transform3D = provider.global_transform
 	var rebased_transform := previous_transform * Transform3D(Basis.IDENTITY, -Vector3(local_shift))
 	var preserved_linear := Vector3.ZERO
 	var preserved_angular := Vector3.ZERO
@@ -330,9 +330,9 @@ func _commit_storage_rebase() -> void:
 func _compute_storage_expansion(local_cell: Vector3i, padding: int) -> Dictionary:
 	if volume == null or volume.in_bounds(local_cell):
 		return {}
-	var grow := max(0, padding)
+	var grow: int = maxi(0, padding)
 	var min_coord := Vector3i.ZERO
-	var max_exclusive := volume.size
+	var max_exclusive: Vector3i = volume.size
 	if local_cell.x < 0:
 		min_coord.x = local_cell.x - grow
 	elif local_cell.x >= volume.size.x:
@@ -345,11 +345,11 @@ func _compute_storage_expansion(local_cell: Vector3i, padding: int) -> Dictionar
 		min_coord.z = local_cell.z - grow
 	elif local_cell.z >= volume.size.z:
 		max_exclusive.z = local_cell.z + 1 + grow
-	var new_size := max_exclusive - min_coord
-	var new_cell_count := new_size.x * new_size.y * new_size.z
+	var new_size: Vector3i = max_exclusive - min_coord
+	var new_cell_count: int = new_size.x * new_size.y * new_size.z
 	if new_cell_count <= 0 or new_cell_count > MAX_EXPANDED_STORAGE_CELLS:
 		return {}
-	var local_shift := -min_coord
+	var local_shift: Vector3i = -min_coord
 	return {
 		"requested_source_cell": local_cell,
 		"mapped_cell": local_cell + local_shift,
