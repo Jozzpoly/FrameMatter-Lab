@@ -58,7 +58,8 @@ try {
     $required = @(
         "00_remove_target.png",
         "01_place_target.png",
-        "02_expand_target.png"
+        "02_expand_center_reticle_miss.png",
+        "03_expand_pointer_hit.png"
     )
     foreach ($file in $required) {
         $path = Join-Path $OutputDir $file
