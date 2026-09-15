@@ -124,8 +124,19 @@ def main() -> None:
     check("independent_assurance_review" in contract_gates,
           "sealed contract explicitly requires independent assurance")
 
-    errors = guard.enforce_delivery(manifest, contract, contract_gates)
-    check(bool(errors), "real BLOCKED state is rejected by delivery enforcement")
+    # The negative-control fixture must be synthetic rather than inheriting the
+    # live campaign status. Once the real campaign legitimately reaches
+    # READY_FOR_OWNER, using the live manifest here would make the self-test fail
+    # because the fixture stopped being BLOCKED, not because delivery enforcement
+    # became weaker.
+    blocked = copy.deepcopy(manifest)
+    blocked["status"] = "BLOCKED"
+    blocked["promotion_authorized"] = False
+    blocked["approved_runtime_commit"] = ""
+    blocked["owner_attention_event"] = {"allowed": False, "reason": "synthetic blocked negative control"}
+    blocked["open_blockers"] = ["synthetic readiness blocker"]
+    errors = guard.enforce_delivery(blocked, contract, contract_gates)
+    check(bool(errors), "synthetic BLOCKED state is rejected by delivery enforcement")
     check(any("not READY_FOR_OWNER" in error for error in errors),
           "BLOCKED state fails for explicit readiness reason")
 
