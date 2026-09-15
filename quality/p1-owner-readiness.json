@@ -54,16 +54,20 @@
       ]
     },
     "form_depth_readability": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "rendered_review",
       "verified_runtime_commit": "",
-      "evidence": []
+      "evidence": [
+        "docs/evidence/p1-g2-lighting-form.md"
+      ]
     },
     "matter_granularity": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "rendered_review",
       "verified_runtime_commit": "",
-      "evidence": []
+      "evidence": [
+        "docs/evidence/p1-g3-matter-granularity.md"
+      ]
     },
     "system_state_semantics": {
       "status": "PENDING",
@@ -133,11 +137,10 @@
     "fall_and_recovery": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []}
   },
   "open_blockers": [
-    "G2 lighting/form readability not yet promoted",
-    "G3 Matter visual language not yet defended",
-    "G4 camera composition not yet defended",
-    "G5 interaction hierarchy not yet defended",
-    "G6 world/motion/topology causality not yet defended",
+    "G4 system-state semantics not yet defended",
+    "G5 camera composition not yet defended",
+    "G6 interaction hierarchy not yet defended",
+    "World/motion/topology causality not yet defended",
     "Default UI hierarchy not yet defended",
     "No frozen G8 runtime candidate has been selected",
     "Representative scenario coverage has not been re-earned on one frozen runtime",
