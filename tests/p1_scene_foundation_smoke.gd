@@ -3,25 +3,40 @@ extends SceneTree
 const ACQUIRE_FRAMES := 14
 const WORLD_FALL_FRAMES := 90
 const POST_TRANSITION_FRAMES := 8
+const WATCHDOG_SECONDS := 12.0
 
 var _failures: Array[String] = []
+var _phase := "boot"
+var _finished := false
 
 
 func _init() -> void:
 	call_deferred("_run")
+	call_deferred("_watchdog")
+
+
+func _watchdog() -> void:
+	await create_timer(WATCHDOG_SECONDS).timeout
+	if _finished:
+		return
+	push_error("P1_SCENE_FOUNDATION_TIMEOUT: phase=%s" % _phase)
+	quit(1)
 
 
 func _run() -> void:
+	_phase = "load scene"
 	var packed := load("res://p1/main.tscn") as PackedScene
 	_check(packed != null, "P1 composed main scene loads")
 	if packed == null:
 		_finish()
 		return
 
+	_phase = "instantiate scene"
 	var p1 := packed.instantiate()
 	get_root().add_child(p1)
 	await process_frame
 
+	_phase = "resolve composed roles"
 	var world_reference := p1.get_node_or_null("WorldReference") as StaticBody3D
 	var world_collision := p1.get_node_or_null("WorldReference/CollisionShape3D") as CollisionShape3D
 	var player := p1.get_node_or_null("P1Player") as SpaceQueryCharacter
@@ -44,12 +59,14 @@ func _run() -> void:
 		_finish()
 		return
 
+	_phase = "acquire Matter support"
 	await _advance_frames(ACQUIRE_FRAMES)
 	_check(player.grounded, "P1 player acquires Matter deck support")
 	_check(player.support_space == space, "P1 player support resolves to the logical Space")
 	_check(camera_rig.target == player, "P1 camera targets the player")
 	_check(camera_rig.context_target == space.get_active_provider(), "P1 camera also tracks the active Space provider as context")
 
+	_phase = "fall to real world reference"
 	# Prove the visible grey world floor is not decorative. Move the actor well
 	# outside the Matter deck, clear old support and let the same volumetric
 	# controller fall under gravity onto WorldReference.
@@ -65,14 +82,22 @@ func _run() -> void:
 	_check(player.support_space == null, "ordinary world floor is support without pretending to be a logical LocalMatterSpace")
 	_check(player.support_body == world_reference, "P1 visible world floor is the actual support body")
 
+	_phase = "recover to Matter support"
 	p1.call("recover_player_for_test")
 	await _advance_frames(ACQUIRE_FRAMES)
 	_check(player.grounded and player.support_space == space, "P1 recovery returns to the same logical Space")
 
+	_phase = "request dynamic provider"
 	var logical_space_id := space.get_instance_id()
 	var old_provider_id := space.get_active_provider().get_instance_id()
 	_check(bool(p1.call("activate_dynamic_probe_for_test")), "P1 internal lifecycle probe queues static→dynamic replacement")
-	await space.provider_transition_committed
+	if not space.is_transition_pending():
+		_failures.append("P1 activation did not leave a pending provider transition")
+	else:
+		_phase = "await dynamic provider commit"
+		await space.provider_transition_committed
+
+	_phase = "validate provider succession"
 	await _advance_frames(POST_TRANSITION_FRAMES)
 	_check(space.get_instance_id() == logical_space_id, "P1 activation preserves logical Space identity")
 	_check(space.get_active_provider() is ConstructBody, "P1 activation installs the real dynamic provider")
@@ -92,6 +117,7 @@ func _run() -> void:
 		]
 	)
 
+	_phase = "finish"
 	p1.free()
 	_finish()
 
@@ -103,6 +129,7 @@ func _advance_frames(count: int) -> void:
 
 
 func _finish() -> void:
+	_finished = true
 	if _failures.is_empty():
 		print("P1_SCENE_FOUNDATION_PASS: real world collision, volumetric actor, SpringArm camera context and logical-Space provider replacement compose in the new scene without inheriting P0/P0.5 consumer code.")
 		quit(0)
