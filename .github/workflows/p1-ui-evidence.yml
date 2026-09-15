@@ -23,13 +23,8 @@ jobs:
   windows-forward-plus-ui:
     runs-on: windows-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        variant: [baseline, compact]
     env:
-      P1_UI_VARIANT: ${{ matrix.variant }}
-      P1_UI_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-ui-evidence\${{ matrix.variant }}
+      P1_UI_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-ui-evidence\canonical
       P1_UI_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - name: Checkout exact source commit
@@ -45,7 +40,7 @@ jobs:
             throw "UI evidence checkout mismatch: expected $env:P1_UI_SOURCE_SHA, got $checkedOut"
           }
           "UI exact source checkout: $checkedOut"
-          "UI hierarchy variant: $env:P1_UI_VARIANT"
+          "UI hierarchy variant: canonical"
 
       - name: Setup Godot 4.7.2
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -58,7 +53,7 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_import.ps1
 
-      - name: Capture UI hierarchy evidence
+      - name: Capture canonical UI hierarchy evidence
         shell: pwsh
         run: ./ci/run_godot_ui_capture.ps1 -OutputDir $env:P1_UI_EVIDENCE_DIR
 
@@ -78,7 +73,7 @@ jobs:
           renderer=Godot 4.7.2 Forward+ / D3D12
           source_scene=res://p1/main.tscn
           capture_script=res://tests/p1_ui_visual_capture.gd
-          ui_variant=$env:P1_UI_VARIANT
+          ui_variant=canonical
           evidence_scope=default static / zero-motion release / finite motion / topology split
           "@ | Set-Content -Path (Join-Path $env:P1_UI_EVIDENCE_DIR "UI-EVIDENCE-INFO.txt")
 
@@ -86,7 +81,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P1-UI-Evidence-Windows-${{ matrix.variant }}
-          path: artifacts/p1-ui-evidence/${{ matrix.variant }}
+          name: FrameMatter-P1-UI-Evidence-Windows-Canonical
+          path: artifacts/p1-ui-evidence/canonical
           retention-days: 30
           if-no-files-found: warn
