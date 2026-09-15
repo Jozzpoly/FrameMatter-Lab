@@ -48,58 +48,59 @@ func _run() -> void:
 
 	var provider_id := body.get_instance_id()
 	var previous_revision := volume.revision
-	var old_com_world := body.global_transform * body.matter_center_of_mass_local
-	var truth: Dictionary = {}
+	var old_com_local := body.matter_center_of_mass_local
+	var lineage_truth: Dictionary = {}
 	for cell in source_cells:
-		var world_position := body.global_transform * (Vector3(cell) + Vector3(0.5, 0.5, 0.5))
-		truth[cell] = {
-			"world": world_position,
-			"lineage": lineage.get_lineage(cell),
-			"velocity": _velocity_at_point(linear, angular, old_com_world, world_position),
-		}
+		lineage_truth[cell] = lineage.get_lineage(cell)
 
 	var requested_old_frame_cell := Vector3i(-2, 0, 5)
-	var expansion := space.ensure_storage_contains(requested_old_frame_cell, 2)
-	_check(not expansion.is_empty(), "out-of-bounds local target can request bounded dense-storage expansion")
+	_check(space.request_storage_rebase(requested_old_frame_cell, 2), "out-of-bounds local target queues bounded storage-frame rebase")
+	_check(space.is_storage_rebase_pending(), "storage rebase waits for the shared physics boundary")
+	await space.storage_rebase_committed
+	var expansion := space.get_last_storage_rebase_report()
+	_check(not expansion.is_empty(), "storage boundary publishes explicit rebase mapping")
 	if expansion.is_empty():
 		host.free()
 		_finish()
 		return
 
 	var shift: Vector3i = expansion["local_shift"]
-	var mapped_target: Vector3i = expansion["cell"]
+	var mapped_target: Vector3i = expansion["mapped_cell"]
+	var previous_transform: Transform3D = expansion["previous_transform"]
 	var current_body := space.get_active_provider() as ConstructBody
-	_check(bool(expansion["expanded"]), "storage challenger reports a real expansion")
 	_check(shift != Vector3i.ZERO, "negative-side expansion rebases local storage coordinates")
 	_check(current_body != null and current_body.get_instance_id() == provider_id, "storage rebase preserves provider identity")
 	_check(space.volume.in_bounds(mapped_target), "requested old-frame target maps inside expanded storage")
 	_check(space.volume.revision == previous_revision, "pure storage rebase does not masquerade as Matter mutation revision")
+	_check(not space.is_storage_rebase_pending(), "storage rebase clears pending state at commit boundary")
 
 	var max_world_error := 0.0
 	var max_velocity_error := 0.0
 	var lineage_errors := 0
-	for old_cell_variant in truth.keys():
-		var old_cell := old_cell_variant as Vector3i
+	var old_com_world := previous_transform * old_com_local
+	for old_cell_variant in lineage_truth.keys():
+		var old_cell: Vector3i = old_cell_variant
 		var mapped_cell := old_cell + shift
-		var expected: Dictionary = truth[old_cell]
 		_check(space.volume.get_cell(mapped_cell) != CellVolume.EMPTY, "rebased storage retains occupied Matter cell")
-		if space.lineage.get_lineage(mapped_cell) != int(expected["lineage"]):
+		if space.lineage.get_lineage(mapped_cell) != int(lineage_truth[old_cell]):
 			lineage_errors += 1
+		var expected_world := previous_transform * (Vector3(old_cell) + Vector3(0.5, 0.5, 0.5))
 		var world_now := current_body.global_transform * (Vector3(mapped_cell) + Vector3(0.5, 0.5, 0.5))
-		max_world_error = max(max_world_error, world_now.distance_to(expected["world"]))
+		max_world_error = max(max_world_error, world_now.distance_to(expected_world))
 
 	var new_com_world := current_body.global_transform * current_body.matter_center_of_mass_local
 	var com_world_error := old_com_world.distance_to(new_com_world)
-	for old_cell_variant in truth.keys():
-		var expected: Dictionary = truth[old_cell_variant]
-		var world_position: Vector3 = expected["world"]
+	for old_cell_variant in lineage_truth.keys():
+		var old_cell: Vector3i = old_cell_variant
+		var world_position := previous_transform * (Vector3(old_cell) + Vector3(0.5, 0.5, 0.5))
+		var expected_velocity := _velocity_at_point(linear, angular, old_com_world, world_position)
 		var velocity_now := _velocity_at_point(
 			current_body.linear_velocity,
 			current_body.angular_velocity,
 			new_com_world,
 			world_position
 		)
-		max_velocity_error = max(max_velocity_error, velocity_now.distance_to(expected["velocity"]))
+		max_velocity_error = max(max_velocity_error, velocity_now.distance_to(expected_velocity))
 
 	_check(lineage_errors == 0, "storage rebase preserves every Matter lineage token")
 	_check(max_world_error < 0.00001, "storage-coordinate rebase preserves every retained Matter world position")
@@ -109,7 +110,7 @@ func _run() -> void:
 	_check(current_body.angular_velocity.distance_to(angular) < 0.000001, "storage rebase preserves rigid angular velocity")
 
 	var pre_place_revision := space.volume.revision
-	_check(space.mutate_cell(mapped_target, CellVolume.SOLID), "fresh Matter can be placed into newly expanded storage")
+	_check(space.mutate_cell(mapped_target, CellVolume.SOLID), "fresh Matter can be placed into newly expanded storage after rebase commit")
 	var fresh_token := space.lineage.get_lineage(mapped_target)
 	_check(fresh_token > max_source_token, "new Matter after rebase receives fresh non-colliding lineage below UI authority")
 	_check(space.volume.revision == pre_place_revision + 1, "actual placement advances Matter revision exactly once")
@@ -157,7 +158,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_STORAGE_REBASE_PASS: dense local storage can grow/rebase without moving retained Matter, changing provider identity or corrupting rigid kinematics.")
+		print("P1_STORAGE_REBASE_PASS: physics-boundary dense storage rebasing preserves retained Matter world state/provider identity; placement stays a separate logical edit.")
 		quit(0)
 		return
 	for failure in _failures:
