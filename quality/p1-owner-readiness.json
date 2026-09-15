@@ -1,6 +1,8 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "campaign_id": "p1-owner-facing-recovery",
+  "campaign_contract": "quality/p1-campaign-contract.json",
+  "campaign_contract_version": 1,
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
   "status": "BLOCKED",
@@ -26,6 +28,7 @@
       "evidence_type": "campaign_contract",
       "verified_commit": "",
       "evidence": [
+        "quality/p1-campaign-contract.json",
         "docs/p1-owner-facing-recovery-campaign.md",
         "docs/p1-visual-acceptance-contract.md",
         "docs/QUALITY-SYSTEM.md"
