@@ -1,0 +1,84 @@
+name: P1 rendered visual evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "p1/**"
+      - "matter/**"
+      - "construct/**"
+      - "actor/**"
+      - "space/**"
+      - "tests/p1_visual_capture.gd"
+      - "project.godot"
+      - ".github/workflows/p1-visual-evidence.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-visual-evidence-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rendered-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/p1-visual-evidence
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict import / compile preflight
+        run: bash ci/run_godot_import.sh
+
+      - name: Capture rendered P1 evidence under Xvfb
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$P1_VISUAL_EVIDENCE_DIR"
+          set +e
+          xvfb-run -a godot --path . --rendering-method gl_compatibility --script res://tests/p1_visual_capture.gd 2>&1 | tee /tmp/p1_visual_capture.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "Rendered capture process failed with exit code $status"
+            exit "$status"
+          fi
+          if grep -Eq 'SCRIPT ERROR:|ERROR:' /tmp/p1_visual_capture.log; then
+            echo "Rendered capture emitted engine/script ERROR output"
+            exit 1
+          fi
+          if ! grep -q 'P1_VISUAL_CAPTURE_PASS' /tmp/p1_visual_capture.log; then
+            echo "Rendered capture did not emit the expected PASS marker"
+            exit 1
+          fi
+          test -f "$P1_VISUAL_EVIDENCE_DIR/00_initial_static.png"
+          test -f "$P1_VISUAL_EVIDENCE_DIR/02_dynamic_motion.png"
+          test -f "$P1_VISUAL_EVIDENCE_DIR/04_split_successors.png"
+
+      - name: Record rendered evidence provenance
+        shell: bash
+        run: |
+          {
+            echo "FrameMatter P1 rendered visual evidence"
+            echo "workflow_run=${GITHUB_RUN_ID}"
+            echo "commit=${GITHUB_SHA}"
+            echo "renderer=Godot 4.7.2 gl_compatibility under Xvfb / software Mesa"
+            echo "source_scene=res://p1/main.tscn"
+            echo "capture_script=res://tests/p1_visual_capture.gd"
+          } > "$P1_VISUAL_EVIDENCE_DIR/VISUAL-EVIDENCE-INFO.txt"
+
+      - name: Upload rendered visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-Rendered-Evidence
+          path: artifacts/p1-visual-evidence
+          retention-days: 30
