@@ -1,6 +1,6 @@
 # P1 Owner-facing recovery campaign
 
-Status: **ACTIVE / G2 + G3 + G3-S + G4 BOUNDED PASS / G5 INTERACTION NEXT**
+Status: **ACTIVE / G2 + G3 + G3-S + G4 + G5 BOUNDED PASS / G6 CAUSALITY NEXT**
 
 This campaign exists because the first P1 Owner candidate passed mechanical/integration gates but failed the actual Owner-facing acceptance target: a coherent, physically legible sandbox loop.
 
@@ -203,21 +203,37 @@ Explicit nonclaims remain: final game camera feel/cinematography, arbitrary geom
 
 ## G5 — interaction visual hierarchy
 
-**ACTIVE NEXT / PENDING**
+**BOUNDED PASS / POINTER + FACE-LED INTERACTION PROMOTED**
 
-Rebuild edit feedback as a tool rather than debug drawing.
+G5 replaced the old center-reticle / through-wall wire-cube interaction language with a pointer-owned, depth-tested surface language.
 
-- default target cue must respect depth/occlusion,
-- REMOVE / PLACE / EXPAND need distinct but related language,
-- exact target cell/face must be obvious before click,
-- success/rejection feedback should be causal and temporary,
-- reticle/UI must remain subordinate to world interaction.
+The promoted policy is:
 
-The old `no_depth_test` wire cube is not acceptable as default Owner interaction language.
+- pointer position is the production acquisition source,
+- HUD-owned screen regions clear world targeting before the physical ray is evaluated,
+- the central `+` reticle is absent because it would falsely imply center-ray authority,
+- REMOVE anchors a red face-local square + `X` to the exact hit face,
+- PLACE uses the same face as authority plus a shallow green directional extrusion and creation `+`,
+- out-of-storage PLACE / EXPAND uses the same family in cyan plus a second cap ring,
+- target cues obey world depth and cannot draw through the actor/world,
+- brief local `REMOVED` / `PLACED` / `BLOCKED` feedback is driven by real edit success/rejection signals and automatically recedes,
+- the retired `TargetOutline` node and its `no_depth_test` materials are physically absent from production.
+
+The winning direction was reached through bounded rejection, not styling by accumulation. A full destination prism was rejected because EXPAND reached into HUD/off-screen territory and still read like a debug volume. Face-led geometry with center acquisition was also rejected because correct depth testing could leave REMOVE hidden behind the actor; restoring through-wall visibility would have repeated the original defect. Pointer acquisition solved the ownership problem without changing Matter target authority.
+
+G5 also exposed two evidence-system defects. A deterministic rejection capture initially left the OS mouse at viewport center while driving an explicit screen-point ray, falsely placing `BLOCKED` near the actor. The corrected harness aligns the live pointer with the attempted point before real rejection. Separately, the older general visual harness still called removed camera helper `_apply_orbit`; it now uses the current explicit-user-orbit path, and its workflow checks out/verifies the exact PR head SHA rather than a synthetic merge commit.
+
+Final exact-source interaction run `35015880416` on commit `8e6431d7a64c9f80f0c70b81d4d486e066d8496e` passed Windows Godot 4.7.2 Forward+ / D3D12 evidence for HUD exclusion, real REMOVE, real success feedback, real rejected repeat REMOVE, feedback expiry, PLACE and out-of-storage EXPAND. The same source also passed the full P1 rebuild run `35015880447`, G4 camera run `35015880440`, and general rendered parity run `35015880448` on both Windows D3D12 and Linux Compatibility.
+
+Evidence: `docs/evidence/p1-g5-interaction-hierarchy.md`.
+
+Gate result: **interaction hierarchy PASS within the current authored P1 scene, pointer/mouse input model and Windows D3D12 evidence path.**
+
+Explicit nonclaims remain: final interaction feel, controller/touch/VR input, final colors/typography, broad accessibility proof, default UI hierarchy, G6 world/motion/topology causality, cross-layer rehearsal and Owner readiness.
 
 ## G6 — world/motion/topology causality
 
-**PENDING**
+**PENDING / NEXT**
 
 Reference environment and state cues must make real physical state readable.
 
@@ -285,6 +301,6 @@ Only the first answer permits delivery.
 
 ## Current stop condition
 
-**Continue G5 interaction visual hierarchy.**
+**Continue G6 world / motion / topology causality.**
 
-Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2, G3, G3-S and G4 are defended bounded foundations, not a substitute for the remaining interaction, world-causality, UI, rehearsal and assurance gates.
+Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2, G3, G3-S, G4 and G5 are defended bounded foundations, not a substitute for the remaining world-causality, UI, rehearsal and assurance gates.
