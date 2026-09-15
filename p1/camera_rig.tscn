@@ -7,7 +7,6 @@ radius = 0.18
 
 [node name="P1CameraRig" type="Node3D"]
 script = ExtResource("1_camera")
-emergency_track_pitch = 0.12
 
 [node name="YawPivot" type="Node3D" parent="."]
 
