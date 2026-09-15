@@ -7,7 +7,10 @@ on:
       - "quality/**"
       - "ci/verify_owner_readiness.py"
       - "ci/test_owner_readiness_guard.py"
+      - "ci/verify_independent_assurance.py"
+      - "ci/test_independent_assurance_guard.py"
       - "docs/QUALITY-SYSTEM.md"
+      - "docs/INDEPENDENT-ASSURANCE.md"
       - "docs/p1-owner-facing-recovery-campaign.md"
       - "docs/p1-visual-acceptance-contract.md"
       - "docs/evidence/p1-*.md"
@@ -21,7 +24,7 @@ permissions:
 jobs:
   validate-readiness-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Checkout governance state with history
         uses: actions/checkout@v6
@@ -33,6 +36,12 @@ jobs:
 
       - name: Adversarially self-test the readiness guard
         run: python ci/test_owner_readiness_guard.py
+
+      - name: Validate independent assurance report state
+        run: python ci/verify_independent_assurance.py --mode validate
+
+      - name: Adversarially self-test independent assurance
+        run: python ci/test_independent_assurance_guard.py
 
       - name: Prove BLOCKED state cannot pass delivery enforcement
         shell: bash
@@ -71,14 +80,20 @@ jobs:
           print("contract:", data["campaign_contract"])
           print("contract_version:", data["campaign_contract_version"])
           print("status:", data["status"])
+          print("candidate_state:", data["candidate_state"])
+          print("candidate_runtime_commit:", data["candidate_runtime_commit"] or "<none>")
           print("promotion_authorized:", data["promotion_authorized"])
           print("approved_runtime_commit:", data["approved_runtime_commit"] or "<none>")
           print("owner_attention_allowed:", data["owner_attention_event"]["allowed"])
           print("open_blockers:", len(data["open_blockers"]))
           for name, gate in data["required_gates"].items():
               print(
-                  f"{name}: {gate['status']} type={gate['evidence_type']} "
-                  f"verified_runtime={gate['verified_runtime_commit'] or '<none>'} "
-                  f"evidence={len(gate['evidence'])}"
+                  f"gate {name}: {gate['status']} type={gate['evidence_type']} "
+                  f"runtime={gate['verified_runtime_commit'] or '<none>'} evidence={len(gate['evidence'])}"
+              )
+          for name, row in data["scenario_coverage"].items():
+              print(
+                  f"scenario {name}: {row['status']} runtime={row['verified_runtime_commit'] or '<none>'} "
+                  f"evidence={len(row['evidence'])}"
               )
           PY
