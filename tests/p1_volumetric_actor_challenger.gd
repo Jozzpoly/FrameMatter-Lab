@@ -41,8 +41,8 @@ func _probe_static_floor_wall_ceiling(host: Node3D) -> void:
 
 	var actor := SpaceQueryCharacter.new()
 	actor.name = "P1StaticActor"
-	actor.global_position = Vector3(2.5, 1.93, 4.5)
 	host.add_child(actor)
+	actor.global_position = Vector3(2.5, 1.93, 4.5)
 	await _advance_frames(ACQUIRE_FRAMES)
 
 	_check(actor.grounded, "P1 volumetric actor acquires floor support")
@@ -62,8 +62,8 @@ func _probe_static_floor_wall_ceiling(host: Node3D) -> void:
 
 	var jumper := SpaceQueryCharacter.new()
 	jumper.name = "P1CeilingActor"
-	jumper.global_position = Vector3(2.5, 1.93, 4.5)
 	host.add_child(jumper)
+	jumper.global_position = Vector3(2.5, 1.93, 4.5)
 	await _advance_frames(ACQUIRE_FRAMES)
 	_check(jumper.grounded, "P1 ceiling challenger starts grounded")
 	jumper.request_jump()
@@ -102,8 +102,8 @@ func _probe_dynamic_support_without_push(host: Node3D) -> void:
 
 	var actor := SpaceQueryCharacter.new()
 	actor.name = "P1DynamicActor"
-	actor.global_position = Vector3(3.5, 1.93, 3.5)
 	host.add_child(actor)
+	actor.global_position = Vector3(3.5, 1.93, 3.5)
 	await _advance_frames(ACQUIRE_FRAMES)
 
 	var body := space.get_active_provider() as ConstructBody
