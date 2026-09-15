@@ -6,15 +6,15 @@
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
   "status": "BLOCKED",
-  "candidate_state": "OPEN",
-  "candidate_runtime_commit": "",
+  "candidate_state": "FROZEN",
+  "candidate_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
   "owner_goal": "Provide a professional, physically legible sandbox research surface where the Owner can directly see and judge editable Matter, moving/static local Spaces, actor relations, editing, topology consequences and motion without reconstructing hidden mechanics from debug output.",
   "owner_visible_surface": "Windows desktop P1 runtime, rendered scene, camera, interaction feedback and default UI",
   "promotion_authorized": false,
   "approved_runtime_commit": "",
   "owner_attention_event": {
     "allowed": false,
-    "reason": "Owner-facing recovery campaign is active; no frozen G8 candidate has passed final evidence and independent assurance."
+    "reason": "Exact runtime candidate is frozen and revalidated, but G8 adversarial rehearsal, independent assurance and final readiness audit remain open."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -28,93 +28,104 @@
     "owner_intent_contract": {
       "status": "PASS",
       "evidence_type": "campaign_contract",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
         "quality/contracts/p1-owner-facing-recovery.v3.json",
         "docs/evidence/p1-campaign-contract-v3.md",
         "docs/p1-owner-facing-recovery-campaign.md",
         "docs/p1-visual-acceptance-contract.md",
-        "docs/QUALITY-SYSTEM.md"
+        "docs/QUALITY-SYSTEM.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "mechanical_integrated_runtime": {
       "status": "PASS",
       "evidence_type": "mechanical_runtime",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-integrated-owner-candidate.md"
+        "docs/evidence/p1-integrated-owner-candidate.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "rendered_parity_harness": {
       "status": "PASS",
       "evidence_type": "rendered_parity",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-g1-rendered-baseline.md"
+        "docs/evidence/p1-g1-rendered-baseline.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "form_depth_readability": {
       "status": "PASS",
       "evidence_type": "rendered_review",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-g2-lighting-form.md"
+        "docs/evidence/p1-g2-lighting-form.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "matter_granularity": {
       "status": "PASS",
       "evidence_type": "rendered_review",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-g3-matter-granularity.md"
+        "docs/evidence/p1-g3-matter-granularity.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "system_state_semantics": {
       "status": "PASS",
       "evidence_type": "rendered_review",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-g3s-system-state-semantics.md"
+        "docs/evidence/p1-g3s-system-state-semantics.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "camera_composition": {
       "status": "PASS",
       "evidence_type": "rendered_stress_sequence",
-      "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-g4-camera-composition.md"
+        "docs/evidence/p1-g4-camera-composition.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "interaction_hierarchy": {
       "status": "PASS",
       "evidence_type": "interactive_rehearsal",
-      "verified_runtime_commit": "8e6431d7a64c9f80f0c70b81d4d486e066d8496e",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-g5-interaction-hierarchy.md"
+        "docs/evidence/p1-g5-interaction-hierarchy.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "world_motion_causality": {
       "status": "PASS",
       "evidence_type": "rendered_motion_sequence",
-      "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-g6-world-motion-causality.md"
+        "docs/evidence/p1-g6-world-motion-causality.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "ui_hierarchy": {
       "status": "PASS",
       "evidence_type": "rendered_review",
-      "verified_runtime_commit": "fb3dd5c898ed288a4a264aace088cc89433b640e",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-ui-hierarchy.md"
+        "docs/evidence/p1-ui-hierarchy.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "cross_layer_visible_composition": {
       "status": "PASS",
       "evidence_type": "composed_rehearsal",
-      "verified_runtime_commit": "35f8cae44e36d3bb5e1ad2451259fece28605b0f",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-cross-layer-visible-composition.md"
+        "docs/evidence/p1-cross-layer-visible-composition.md",
+        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
     "adversarial_rehearsal": {
@@ -137,20 +148,58 @@
     }
   },
   "scenario_coverage": {
-    "default_static_matter": {"status": "PASS", "verified_runtime_commit": "fb3dd5c898ed288a4a264aace088cc89433b640e", "evidence": ["docs/evidence/p1-ui-hierarchy.md"]},
-    "edit_target_remove_place_expand": {"status": "PASS", "verified_runtime_commit": "8e6431d7a64c9f80f0c70b81d4d486e066d8496e", "evidence": ["docs/evidence/p1-g5-interaction-hierarchy.md"]},
-    "zero_launch_release": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
-    "dynamic_translation_and_yaw": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
-    "moving_edit_and_storage_rebase": {"status": "PASS", "verified_runtime_commit": "35f8cae44e36d3bb5e1ad2451259fece28605b0f", "evidence": ["docs/evidence/p1-cross-layer-visible-composition.md"]},
-    "topology_split_and_successor_relations": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
-    "freeze_at_current_pose": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
-    "close_camera_obstacle_stress": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]},
-    "actor_near_space_edge": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]},
-    "fall_and_recovery": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]}
+    "default_static_matter": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-ui-hierarchy.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "edit_target_remove_place_expand": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-g5-interaction-hierarchy.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "zero_launch_release": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-g6-world-motion-causality.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "dynamic_translation_and_yaw": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-g6-world-motion-causality.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "moving_edit_and_storage_rebase": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-cross-layer-visible-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "topology_split_and_successor_relations": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-g6-world-motion-causality.md", "docs/evidence/p1-cross-layer-visible-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "freeze_at_current_pose": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-g6-world-motion-causality.md", "docs/evidence/p1-cross-layer-visible-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "close_camera_obstacle_stress": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-g4-camera-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "actor_near_space_edge": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-g4-camera-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "fall_and_recovery": {
+      "status": "PASS",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-g4-camera-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    }
   },
   "open_blockers": [
-    "No frozen G8 runtime candidate has been selected",
-    "Representative scenario coverage has not been re-earned on one frozen runtime",
     "G8 adversarial rehearsal not yet passed",
     "Independent assurance review not yet passed",
     "Final readiness audit not yet passed"
