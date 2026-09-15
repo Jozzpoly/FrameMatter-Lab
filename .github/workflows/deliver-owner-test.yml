@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout governance and evidence state
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Enforce Owner-readiness authorization
         id: readiness
@@ -28,6 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           python ci/verify_owner_readiness.py --mode delivery
+          python ci/verify_independent_assurance.py --mode delivery
           runtime_commit=$(python ci/verify_owner_readiness.py --mode approved-runtime)
           echo "runtime_commit=$runtime_commit" >> "$GITHUB_OUTPUT"
           echo "governance_commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
@@ -57,9 +60,8 @@ jobs:
           use-dotnet: false
           include-templates: true
 
-      # These are packaging-environment sanity checks, not a substitute for the
-      # evidence campaign. They use the current governance wrappers against the
-      # frozen runtime checkout.
+      # Packaging-environment sanity checks use the current governance wrappers
+      # against the frozen runtime checkout. They do not substitute for G8 evidence.
       - name: Strict import of approved runtime
         run: cd runtime && bash ../ci/run_godot_import.sh
 
@@ -101,6 +103,7 @@ jobs:
           governance_ref=${GITHUB_REF}
           canonical_main_scene=res://p1/main.tscn
           readiness_manifest=quality/p1-owner-readiness.json
+          independent_assurance=PASS
           delivery_model=frozen_runtime_authorized_by_later_governance
           EOF
           cp runtime/build/P1-BUILD-INFO.txt runtime/build/web/P1-BUILD-INFO.txt
@@ -125,6 +128,7 @@ jobs:
       - name: Delivery summary
         run: |
           echo "Owner-readiness authorization PASS"
+          echo "Independent assurance PASS"
           echo "Approved runtime checkout identity PASS"
           echo "Approved runtime packaging sanity PASS"
           echo "Browser export PASS"
