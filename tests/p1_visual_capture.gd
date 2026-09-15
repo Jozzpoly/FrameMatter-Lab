@@ -109,7 +109,7 @@ func _capture_lighting_turntable(camera_rig: P1CameraRig) -> void:
 		camera_rig.set("_yaw", deg_to_rad(azimuth_deg))
 		camera_rig.set("_pitch", 0.48)
 		camera_rig.set("_distance", 8.4)
-		camera_rig.call("_apply_orbit")
+		camera_rig.call("_apply_user_orbit_immediately")
 		await _advance_frames(2)
 		await _capture("10_light_az%03d" % int(azimuth_deg))
 
@@ -126,7 +126,7 @@ func _capture_granularity_distances(camera_rig: P1CameraRig) -> void:
 		["22_granularity_far", 12.0],
 	]:
 		camera_rig.set("_distance", float(entry[1]))
-		camera_rig.call("_apply_orbit")
+		camera_rig.call("_apply_user_orbit_immediately")
 		await _advance_frames(2)
 		await _capture(String(entry[0]))
 
