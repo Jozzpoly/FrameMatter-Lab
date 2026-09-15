@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "campaign_id": "p1-owner-facing-recovery",
+  "campaign_contract_version": 3,
+  "status": "PENDING",
+  "disposition": "PENDING",
+  "reviewed_runtime_commit": "",
+  "review_mode": "read_only_falsification",
+  "reviewer_role": "independent_assurance",
+  "review_context_id": "",
+  "reviewer_context_separated_from_implementation": false,
+  "runtime_was_frozen": false,
+  "candidate_changes_authored_during_review": false,
+  "owner_goal_evaluated": false,
+  "claim_evidence_fit_evaluated": false,
+  "nominal_scenarios_reviewed": [],
+  "off_nominal_scenarios_reviewed": [],
+  "evidence_examined": [],
+  "material_findings": [],
+  "notes": "Pending. This report becomes eligible for PASS only after one runtime candidate is frozen and reviewed from a separate read-only falsification context."
+}
