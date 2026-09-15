@@ -5,6 +5,7 @@ extends RefCounted
 
 const SURFACE_GRID_OFFSET := 0.006
 const SURFACE_GRID_ALPHA := 0.16
+const SURFACE_GRID_SOFT_ALPHA := 0.10
 const MODULATION_LOW := 0.93
 const MODULATION_HIGH := 1.0
 const META_BASE_COLOR := &"g3_original_base_color"
@@ -21,7 +22,11 @@ static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 		return
 
 	if variant == "surface_cells":
-		_refresh_surface_cell_overlays(p1, failures)
+		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_ALPHA)
+		return
+
+	if variant == "surface_cells_soft":
+		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_SOFT_ALPHA)
 		return
 
 	if variant == "surface_modulation":
@@ -43,7 +48,7 @@ static func _apply_ssao(p1: Node, failures: Array[String]) -> void:
 	environment.ssao_power = 1.35
 
 
-static func _refresh_surface_cell_overlays(p1: Node, failures: Array[String]) -> void:
+static func _refresh_surface_cell_overlays(p1: Node, failures: Array[String], alpha: float) -> void:
 	var spaces: Array[LocalMatterSpace] = p1.call("get_active_spaces")
 	if spaces.is_empty():
 		failures.append("surface_cells challenger found no active Spaces")
@@ -67,7 +72,7 @@ static func _refresh_surface_cell_overlays(p1: Node, failures: Array[String]) ->
 
 		var material := StandardMaterial3D.new()
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.albedo_color = Color(0.035, 0.075, 0.11, SURFACE_GRID_ALPHA)
+		material.albedo_color = Color(0.035, 0.075, 0.11, alpha)
 		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		# Deliberately keep depth testing enabled. G3-A is a surface cue, not an
 		# x-ray/debug overlay.
