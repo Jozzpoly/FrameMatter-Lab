@@ -40,6 +40,9 @@ jobs:
       - name: Compile P1 dependency graph
         run: bash ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
 
+      - name: Verify canonical P1 startup
+        run: bash ci/run_godot_probe.sh res://tests/p1_canonical_startup_smoke.gd P1_CANONICAL_STARTUP_PASS
+
       - name: Run P1 volumetric actor challenger
         run: bash ci/run_godot_probe.sh res://tests/p1_volumetric_actor_challenger.gd P1_VOLUMETRIC_ACTOR_PASS
 
@@ -81,6 +84,10 @@ jobs:
       - name: Strict synchronous project import
         shell: pwsh
         run: ./ci/run_godot_import.ps1
+
+      - name: Verify canonical P1 startup
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_canonical_startup_smoke.gd -PassMarker P1_CANONICAL_STARTUP_PASS
 
       - name: Run real P1 composed scene foundation smoke
         shell: pwsh
