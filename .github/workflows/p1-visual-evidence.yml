@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [canonical, state_material, state_contour]
+        variant: [canonical, state_material_refined, state_contour_refined]
     runs-on: windows-latest
     timeout-minutes: 10
     env:
