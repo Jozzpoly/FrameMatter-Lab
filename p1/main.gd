@@ -2,13 +2,20 @@ extends Node3D
 
 const SPACE_SIZE := Vector3i(16, 6, 16)
 const PLAYER_SPEED := 4.2
+const STORAGE_REBASE_PADDING := 2
+const OWNER_CENTRAL_IMPULSE := 36.0
+const OWNER_TORQUE_IMPULSE := 180.0
 const TEST_LINEAR_VELOCITY := Vector3(0.65, 0.0, -0.16)
 const TEST_ANGULAR_VELOCITY := Vector3(0.0, 0.22, 0.0)
 
 var _focus_space: LocalMatterSpace
 var _last_event := "P1 boot"
+var _pending_storage_place := false
+var _pending_storage_place_space: LocalMatterSpace
+var _pending_storage_place_source_cell := Vector3i.ZERO
 
 @onready var _registry: P1SpaceRegistry = $P1SpaceRegistry
+@onready var _space_control: P1SpaceControl = $P1SpaceControl
 @onready var _player: SpaceQueryCharacter = $P1Player
 @onready var _camera_rig: P1CameraRig = $P1CameraRig
 @onready var _interactor: P1MatterInteractor = $P1MatterInteractor
@@ -24,6 +31,7 @@ func _ready() -> void:
 	_registry.active_spaces_changed.connect(_on_active_spaces_changed)
 	_interactor.edit_mode_changed.connect(_on_edit_mode_changed)
 	_interactor.edit_applied.connect(_on_edit_applied)
+	_interactor.storage_expansion_requested.connect(_on_storage_expansion_requested)
 	_interactor.edit_rejected.connect(_on_edit_rejected)
 	_initialize_space()
 	_camera_rig.set_target(_player)
@@ -60,6 +68,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		_reset_experiment()
 		return
 
+	# Space-control keys are discrete physical pulses. Ignore OS key-repeat so a
+	# held key cannot masquerade as hidden continuous velocity control.
+	if _is_echo_key_event(event):
+		return
+	if event.is_action_pressed("p1_space_toggle"):
+		_toggle_focused_space_state()
+		return
+	if event.is_action_pressed("p1_space_forward_impulse"):
+		_apply_focused_central_impulse(Vector3(0.0, 0.0, -OWNER_CENTRAL_IMPULSE))
+		return
+	if event.is_action_pressed("p1_space_back_impulse"):
+		_apply_focused_central_impulse(Vector3(0.0, 0.0, OWNER_CENTRAL_IMPULSE))
+		return
+	if event.is_action_pressed("p1_space_yaw_left"):
+		_apply_focused_torque_impulse(Vector3(0.0, OWNER_TORQUE_IMPULSE, 0.0))
+		return
+	if event.is_action_pressed("p1_space_yaw_right"):
+		_apply_focused_torque_impulse(Vector3(0.0, -OWNER_TORQUE_IMPULSE, 0.0))
+		return
+
 
 func get_space() -> LocalMatterSpace:
 	# Compatibility accessor for the bounded P1 foundation smoke. Internally P1
@@ -81,6 +109,10 @@ func get_camera_rig() -> P1CameraRig:
 
 func get_interactor() -> P1MatterInteractor:
 	return _interactor
+
+
+func get_space_control() -> P1SpaceControl:
+	return _space_control
 
 
 func activate_dynamic_probe_for_test() -> bool:
@@ -105,18 +137,31 @@ func freeze_static_probe_for_test() -> bool:
 	return accepted
 
 
+func toggle_focused_space_for_test() -> bool:
+	return _toggle_focused_space_state()
+
+
+func apply_focused_central_impulse_for_test(local_impulse: Vector3) -> bool:
+	return _apply_focused_central_impulse(local_impulse)
+
+
+func apply_focused_torque_impulse_for_test(local_impulse: Vector3) -> bool:
+	return _apply_focused_torque_impulse(local_impulse)
+
+
 func recover_player_for_test() -> void:
 	_recover_player_to_space("test recovery")
 
 
 func _initialize_space() -> void:
+	_clear_pending_storage_place()
 	_registry.clear()
 	for child in $Spaces.get_children():
 		child.free()
 
 	var volume := CellVolume.new(SPACE_SIZE)
-	# A deliberately larger authored test deck than P0.5. P1-C/D now consume
-	# topology honestly; storage expansion remains a separate pressure probe.
+	# A deliberately larger authored test deck than P0.5. P1 now subjects this
+	# same authored Space to editing, storage maintenance, topology and motion.
 	volume.fill_box(Vector3i(2, 0, 2), Vector3i(14, 1, 14), CellVolume.SOLID)
 	volume.fill_box(Vector3i(3, 1, 4), Vector3i(4, 3, 9), CellVolume.SOLID)
 	volume.fill_box(Vector3i(11, 1, 8), Vector3i(13, 2, 10), CellVolume.SOLID)
@@ -225,6 +270,38 @@ func _update_player_intent() -> void:
 		_player.rotation.y = atan2(-planar.x, -planar.z)
 
 
+func _toggle_focused_space_state() -> bool:
+	if not _is_live_space(_focus_space):
+		_last_event = "Space control blocked: no live focus"
+		return false
+	var accepted := false
+	if _focus_space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC:
+		accepted = _space_control.release_space(_focus_space)
+		_last_event = "Space released with zero hidden launch" if accepted else "Space release rejected"
+	else:
+		accepted = _space_control.freeze_space(_focus_space)
+		_last_event = "Space frozen at current pose" if accepted else "Space freeze rejected"
+	return accepted
+
+
+func _apply_focused_central_impulse(local_impulse: Vector3) -> bool:
+	if not _is_live_space(_focus_space):
+		_last_event = "impulse blocked: no live focus"
+		return false
+	var accepted: bool = _space_control.apply_local_central_impulse(_focus_space, local_impulse)
+	_last_event = "finite local impulse %s" % str(local_impulse) if accepted else "impulse blocked: release Space first"
+	return accepted
+
+
+func _apply_focused_torque_impulse(local_impulse: Vector3) -> bool:
+	if not _is_live_space(_focus_space):
+		_last_event = "torque blocked: no live focus"
+		return false
+	var accepted: bool = _space_control.apply_local_torque_impulse(_focus_space, local_impulse)
+	_last_event = "finite local torque impulse %s" % str(local_impulse) if accepted else "torque blocked: release Space first"
+	return accepted
+
+
 func _on_registry_provider_changed(space: LocalMatterSpace) -> void:
 	if space == _focus_space or _player.support_space == space:
 		_focus_space = space
@@ -234,14 +311,56 @@ func _on_registry_provider_changed(space: LocalMatterSpace) -> void:
 
 func _on_registry_storage_rebased(space: LocalMatterSpace, report: Dictionary) -> void:
 	var actor_rebased := false
+	var local_shift: Vector3i = report["local_shift"]
 	if _player.grounded and _player.support_space == space:
-		var local_shift: Vector3i = report["local_shift"]
 		actor_rebased = _player.rebase_support_local_coordinates(Vector3(local_shift))
 
 	if space == _focus_space or _player.support_space == space:
 		_focus_space = space
 		_refresh_camera_context()
+
+	if _pending_storage_place and _pending_storage_place_space == space:
+		var mapped_cell: Vector3i = _pending_storage_place_source_cell + local_shift
+		call_deferred("_complete_pending_storage_placement", space, mapped_cell)
+		_last_event = "storage frame rebased; placement mapped%s" % ("; actor mapped" if actor_rebased else "")
+		return
 	_last_event = "storage frame rebased%s" % ("; actor mapped" if actor_rebased else "")
+
+
+func _on_storage_expansion_requested(space: LocalMatterSpace, source_cell: Vector3i) -> void:
+	if _pending_storage_place:
+		_last_event = "storage expansion blocked: placement transaction already pending"
+		return
+	if not _is_live_space(space):
+		_last_event = "storage expansion blocked: target Space is not live"
+		return
+
+	_pending_storage_place = true
+	_pending_storage_place_space = space
+	_pending_storage_place_source_cell = source_cell
+	if not space.request_storage_rebase(source_cell, STORAGE_REBASE_PADDING):
+		_clear_pending_storage_place()
+		_last_event = "storage expansion request rejected"
+		return
+	_focus_space = space
+	_last_event = "storage expansion queued for %s" % str(source_cell)
+
+
+func _complete_pending_storage_placement(space: LocalMatterSpace, mapped_cell: Vector3i) -> void:
+	if not _pending_storage_place or _pending_storage_place_space != space:
+		return
+	_clear_pending_storage_place()
+	if not _is_live_space(space):
+		_last_event = "mapped placement cancelled: Space retired"
+		return
+	var placed: bool = _interactor.apply_edit_to_cell(space, mapped_cell, P1MatterInteractor.EditMode.PLACE)
+	_last_event = "storage expanded → placed %s" % str(mapped_cell) if placed else "mapped placement rejected"
+
+
+func _clear_pending_storage_place() -> void:
+	_pending_storage_place = false
+	_pending_storage_place_space = null
+	_pending_storage_place_source_cell = Vector3i.ZERO
 
 
 func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterSplitResult) -> void:
@@ -256,6 +375,8 @@ func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterS
 				if transferred:
 					_focus_space = successor
 
+	if _pending_storage_place and _pending_storage_place_space == source:
+		_clear_pending_storage_place()
 	if not transferred and source == _focus_space:
 		_focus_space = _registry.find_nearest_space(_player.global_position)
 	_refresh_camera_context()
@@ -291,6 +412,8 @@ func _find_actor_successor_mapping(result: LocalMatterSplitResult, source_local_
 
 
 func _on_active_spaces_changed() -> void:
+	if _pending_storage_place and not _is_live_space(_pending_storage_place_space):
+		_clear_pending_storage_place()
 	if not _is_live_space(_focus_space):
 		_focus_space = _registry.find_nearest_space(_player.global_position)
 	_refresh_camera_context()
@@ -349,17 +472,23 @@ func _update_hud() -> void:
 	if _interactor.target_space != null:
 		target = "%s%s" % [
 			str(_interactor.get_target_cell()),
-			"" if _interactor.target_in_storage else " [storage edge]",
+			"" if _interactor.target_in_storage else " [expand]",
 		]
-	_status_label.text = "P1   •   %s   •   actor %s   •   support %s   •   Spaces %d   •   EDIT %s   •   target %s" % [
+	var motion := ""
+	var provider: Node3D = _focus_space.get_active_provider()
+	if provider is RigidBody3D:
+		var rigid := provider as RigidBody3D
+		motion = "   •   v %.2f   •   ω %.2f" % [rigid.linear_velocity.length(), rigid.angular_velocity.length()]
+	_status_label.text = "P1   •   %s   •   actor %s   •   support %s   •   Spaces %d   •   EDIT %s   •   target %s%s" % [
 		kind,
 		"grounded" if _player.grounded else "airborne",
 		support,
 		_registry.get_active_count(),
 		_interactor.get_mode_name(),
 		target,
+		motion,
 	]
-	_hint_label.text = "WASD move   Space jump   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset\n%s" % _last_event
+	_hint_label.text = "WASD move   Space jump   T release/freeze   ↑↓ impulse   ←→ torque   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset\n%s" % _last_event
 
 
 func _ensure_input_actions() -> void:
@@ -375,6 +504,11 @@ func _ensure_input_actions() -> void:
 	_ensure_key_action("p1_camera_reset", KEY_HOME)
 	_ensure_key_action("p1_reset", KEY_R)
 	_ensure_key_action("p1_edit_toggle", KEY_E)
+	_ensure_key_action("p1_space_toggle", KEY_T)
+	_ensure_key_action("p1_space_forward_impulse", KEY_UP)
+	_ensure_key_action("p1_space_back_impulse", KEY_DOWN)
+	_ensure_key_action("p1_space_yaw_left", KEY_LEFT)
+	_ensure_key_action("p1_space_yaw_right", KEY_RIGHT)
 	_ensure_mouse_action("p1_edit_apply", MOUSE_BUTTON_LEFT)
 
 
@@ -394,6 +528,10 @@ func _ensure_mouse_action(action: StringName, button: MouseButton) -> void:
 	var event := InputEventMouseButton.new()
 	event.button_index = button
 	InputMap.action_add_event(action, event)
+
+
+func _is_echo_key_event(event: InputEvent) -> bool:
+	return event is InputEventKey and (event as InputEventKey).echo
 
 
 func _occupied_cells(volume: CellVolume) -> Array[Vector3i]:
