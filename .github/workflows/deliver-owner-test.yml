@@ -1,9 +1,8 @@
 name: Deliver P1 Owner Candidate
 
-# Owner delivery is intentionally manual while the P1 Owner-facing recovery
-# campaign is active. Manual dispatch is not authorization by itself: the
-# machine-readable Owner readiness manifest must also pass and be bound to the
-# exact commit being packaged.
+# Delivery materializes an already-approved frozen runtime candidate. The
+# governance/evidence commit that authorizes delivery may be newer than the
+# runtime commit. Manual dispatch is never authorization by itself.
 on:
   workflow_dispatch:
 
@@ -16,15 +15,40 @@ concurrency:
 
 jobs:
   build:
-    name: Validate + build P1 Owner candidate
+    name: Materialize approved P1 Owner candidate
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - name: Checkout
+      - name: Checkout governance and evidence state
         uses: actions/checkout@v6
 
-      - name: Enforce exact Owner-readiness authorization
-        run: python ci/verify_owner_readiness.py --mode delivery --commit "$GITHUB_SHA"
+      - name: Enforce Owner-readiness authorization
+        id: readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python ci/verify_owner_readiness.py --mode delivery
+          runtime_commit=$(python ci/verify_owner_readiness.py --mode approved-runtime)
+          echo "runtime_commit=$runtime_commit" >> "$GITHUB_OUTPUT"
+          echo "governance_commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "Approved frozen runtime: $runtime_commit"
+          echo "Governance/evidence commit: $GITHUB_SHA"
+
+      - name: Checkout the exact approved runtime separately
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.readiness.outputs.runtime_commit }}
+          path: runtime
+          fetch-depth: 1
+
+      - name: Prove runtime checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual=$(git -C runtime rev-parse HEAD)
+          expected='${{ steps.readiness.outputs.runtime_commit }}'
+          test "$actual" = "$expected"
+          echo "APPROVED_RUNTIME_CHECKOUT_PASS: $actual"
 
       - name: Setup Godot 4.7.2 with export templates
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -33,76 +57,60 @@ jobs:
           use-dotnet: false
           include-templates: true
 
-      - name: Strict project import
-        run: bash ci/run_godot_import.sh
+      # These are packaging-environment sanity checks, not a substitute for the
+      # evidence campaign. They use the current governance wrappers against the
+      # frozen runtime checkout.
+      - name: Strict import of approved runtime
+        run: cd runtime && bash ../ci/run_godot_import.sh
 
-      - name: Compile P1 dependency graph
-        run: bash ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
+      - name: Compile approved runtime dependency graph
+        run: cd runtime && bash ../ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
 
-      - name: Verify canonical P1 startup
-        run: bash ci/run_godot_probe.sh res://tests/p1_canonical_startup_smoke.gd P1_CANONICAL_STARTUP_PASS
+      - name: Verify approved runtime canonical startup
+        run: cd runtime && bash ../ci/run_godot_probe.sh res://tests/p1_canonical_startup_smoke.gd P1_CANONICAL_STARTUP_PASS
 
-      - name: Verify P1 volumetric actor
-        run: bash ci/run_godot_probe.sh res://tests/p1_volumetric_actor_challenger.gd P1_VOLUMETRIC_ACTOR_PASS
+      - name: Rehearse approved runtime integrated causal loop
+        run: cd runtime && bash ../ci/run_godot_probe.sh res://tests/p1_integrated_causal_loop_probe.gd P1_INTEGRATED_CAUSAL_LOOP_PASS
 
-      - name: Verify P1 composed scene foundation
-        run: bash ci/run_godot_probe.sh res://tests/p1_scene_foundation_smoke.gd P1_SCENE_FOUNDATION_PASS
-
-      - name: Verify P1 multi-Space registry
-        run: bash ci/run_godot_probe.sh res://tests/p1_space_registry_probe.gd P1_SPACE_REGISTRY_PASS
-
-      - name: Verify P1 live topology consumer
-        run: bash ci/run_godot_probe.sh res://tests/p1_live_topology_consumer_probe.gd P1_LIVE_TOPOLOGY_PASS
-
-      - name: Verify P1 storage rebase
-        run: bash ci/run_godot_probe.sh res://tests/p1_storage_rebase_probe.gd P1_STORAGE_REBASE_PASS
-
-      - name: Verify actor/camera storage-frame continuity
-        run: bash ci/run_godot_probe.sh res://tests/p1_storage_actor_context_challenger.gd P1_STORAGE_ACTOR_CONTEXT_PASS
-
-      - name: Verify finite Space control
-        run: bash ci/run_godot_probe.sh res://tests/p1_finite_space_control_probe.gd P1_FINITE_CONTROL_PASS
-
-      - name: Verify integrated P1 causal loop
-        run: bash ci/run_godot_probe.sh res://tests/p1_integrated_causal_loop_probe.gd P1_INTEGRATED_CAUSAL_LOOP_PASS
-
-      - name: Export browser candidate
+      - name: Export browser candidate from approved runtime
         run: |
-          mkdir -p build/web
+          mkdir -p runtime/build/web
+          cd runtime
           godot --headless --path . --export-release "Web" build/web/index.html
           test -f build/web/index.html
           test -f build/web/index.wasm
           test -f build/web/index.pck
           touch build/web/.nojekyll
 
-      - name: Export Windows candidate
+      - name: Export Windows candidate from approved runtime
         run: |
-          mkdir -p build/windows
+          mkdir -p runtime/build/windows
+          cd runtime
           godot --headless --path . --export-release "Windows Desktop" build/windows/FrameMatter-P1-Owner-Candidate.exe
           test -f build/windows/FrameMatter-P1-Owner-Candidate.exe
 
-      - name: Record candidate provenance
+      - name: Record dual-layer provenance
+        shell: bash
         run: |
-          cat > build/P1-BUILD-INFO.txt <<EOF
+          cat > runtime/build/P1-BUILD-INFO.txt <<EOF
           FrameMatter P1 Owner Candidate
-          commit=${GITHUB_SHA}
+          approved_runtime_commit=${{ steps.readiness.outputs.runtime_commit }}
+          governance_evidence_commit=${{ steps.readiness.outputs.governance_commit }}
           workflow_run=${GITHUB_RUN_ID}
           godot=4.7.2
-          branch_or_ref=${GITHUB_REF}
+          governance_ref=${GITHUB_REF}
           canonical_main_scene=res://p1/main.tscn
-          strict_integrated_gate=P1_INTEGRATED_CAUSAL_LOOP_PASS
           readiness_manifest=quality/p1-owner-readiness.json
-          readiness_commit=${GITHUB_SHA}
-          delivery_policy=exact_commit_owner_readiness_required
+          delivery_model=frozen_runtime_authorized_by_later_governance
           EOF
-          cp build/P1-BUILD-INFO.txt build/web/P1-BUILD-INFO.txt
-          cp build/P1-BUILD-INFO.txt build/windows/P1-BUILD-INFO.txt
+          cp runtime/build/P1-BUILD-INFO.txt runtime/build/web/P1-BUILD-INFO.txt
+          cp runtime/build/P1-BUILD-INFO.txt runtime/build/windows/P1-BUILD-INFO.txt
 
       - name: Upload browser candidate artifact
         uses: actions/upload-artifact@v4
         with:
           name: FrameMatter-P1-Web
-          path: build/web
+          path: runtime/build/web
           if-no-files-found: error
           retention-days: 30
 
@@ -110,17 +118,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FrameMatter-P1-Windows
-          path: build/windows
+          path: runtime/build/windows
           if-no-files-found: error
           retention-days: 30
 
       - name: Delivery summary
         run: |
-          echo "Exact-commit Owner readiness PASS"
-          echo "P1 strict dependency graph PASS"
-          echo "P1 canonical startup PASS"
-          echo "P1 bounded/integrated runtime suite PASS"
-          echo "P1 integrated causal loop PASS"
+          echo "Owner-readiness authorization PASS"
+          echo "Approved runtime checkout identity PASS"
+          echo "Approved runtime packaging sanity PASS"
           echo "Browser export PASS"
           echo "Windows export PASS"
+          echo "Runtime: ${{ steps.readiness.outputs.runtime_commit }}"
+          echo "Governance: ${{ steps.readiness.outputs.governance_commit }}"
           echo "Artifacts: FrameMatter-P1-Web and FrameMatter-P1-Windows"
