@@ -126,11 +126,36 @@ func _position_label() -> void:
 	if _label == null:
 		return
 	var viewport_rect := get_viewport_rect()
-	var anchor := viewport_rect.size * 0.5
-	if interactor != null and is_instance_valid(interactor):
-		anchor = interactor.target_screen_position
+	var anchor := _resolved_screen_anchor(viewport_rect.size * 0.5)
 	var size := _label.size
 	var desired := anchor + POINTER_OFFSET
 	desired.x = clampf(desired.x, SCREEN_MARGIN, maxf(SCREEN_MARGIN, viewport_rect.size.x - size.x - SCREEN_MARGIN))
 	desired.y = clampf(desired.y, SCREEN_MARGIN, maxf(SCREEN_MARGIN, viewport_rect.size.y - size.y - SCREEN_MARGIN))
 	_label.position = desired
+
+
+func _resolved_screen_anchor(fallback: Vector2) -> Vector2:
+	if interactor == null or not is_instance_valid(interactor):
+		return fallback
+	var camera := interactor.camera
+	var space := interactor.target_space
+	if (
+		camera != null
+		and is_instance_valid(camera)
+		and space != null
+		and is_instance_valid(space)
+		and not space.is_retired()
+		and space.get_active_provider() != null
+	):
+		var face := interactor.place_cell - interactor.remove_cell
+		if absi(face.x) + absi(face.y) + absi(face.z) == 1:
+			var provider := space.get_active_provider()
+			var remove_center := Vector3(interactor.remove_cell) + Vector3(0.5, 0.5, 0.5)
+			var local_face_center := remove_center + Vector3(face) * 0.5
+			var world_face_center := provider.to_global(local_face_center)
+			if not camera.is_position_behind(world_face_center):
+				return camera.unproject_position(world_face_center)
+	var viewport := camera.get_viewport() if camera != null and is_instance_valid(camera) else null
+	if viewport != null:
+		return viewport.get_mouse_position()
+	return fallback
