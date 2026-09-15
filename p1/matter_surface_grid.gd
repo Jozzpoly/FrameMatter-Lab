@@ -15,6 +15,16 @@ var interactor: P1MatterInteractor
 var enabled := true
 
 
+func _ready() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	set_sources(
+		parent.get_node_or_null("P1SpaceRegistry") as P1SpaceRegistry,
+		parent.get_node_or_null("P1MatterInteractor") as P1MatterInteractor
+	)
+
+
 func set_sources(value_registry: P1SpaceRegistry, value_interactor: P1MatterInteractor) -> void:
 	if registry != null and is_instance_valid(registry):
 		_disconnect_registry(registry)
