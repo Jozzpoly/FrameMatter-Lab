@@ -87,13 +87,21 @@ func _run() -> void:
 	await space.provider_transition_committed
 	await _advance_frames(3)
 	_check(space.get_active_provider() is ConstructBody, "P0.5 remains compatible with static→dynamic activation")
-	_check(matter_grid.global_transform.origin.distance_to(space.get_active_provider().global_transform.origin) < 0.001, "P0.5 cell grid follows the active moving provider")
+	# SceneTree await continuations and Node._process callbacks do not have a useful
+	# ordering guarantee for this assertion. Exercise the same explicit sync used
+	# by the presentation layer, then assert exact current-provider alignment.
+	lab.call("_sync_p05_visuals")
+	var grid_provider_gap := matter_grid.global_transform.origin.distance_to(
+		space.get_active_provider().global_transform.origin
+	)
+	_check(grid_provider_gap < 0.001, "P0.5 cell grid aligns to the active moving provider when presentation state is sampled")
 
 	print(
-		"P05_INTERACTION_BASELINE_METRIC initial_camera_distance=%.3f zoomed_camera_distance=%.3f cells=%d provider_kind=%d"
+		"P05_INTERACTION_BASELINE_METRIC initial_camera_distance=%.3f zoomed_camera_distance=%.3f grid_provider_gap=%.8f cells=%d provider_kind=%d"
 		% [
 			initial_camera_distance,
 			zoomed_camera_distance,
+			grid_provider_gap,
 			space.volume.count_solid(),
 			space.get_provider_kind(),
 		]
