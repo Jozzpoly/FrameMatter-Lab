@@ -67,6 +67,9 @@ jobs:
       - name: Challenge actor/camera storage-frame continuity
         run: bash ci/run_godot_probe.sh res://tests/p1_storage_actor_context_challenger.gd P1_STORAGE_ACTOR_CONTEXT_PASS
 
+      - name: Verify camera presentation/control frame separation
+        run: bash ci/run_godot_probe.sh res://tests/p1_camera_control_frame_probe.gd P1_CAMERA_CONTROL_FRAME_PASS
+
       - name: Run P1 finite Space control probe
         run: bash ci/run_godot_probe.sh res://tests/p1_finite_space_control_probe.gd P1_FINITE_CONTROL_PASS
 
