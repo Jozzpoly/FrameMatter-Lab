@@ -1,8 +1,9 @@
 name: Deliver P1 Owner Candidate
 
 # Owner delivery is intentionally manual while the P1 Owner-facing recovery
-# campaign is active. Mechanical green is no longer sufficient to produce an
-# Owner candidate. Re-enable automatic delivery only after G8 rendered preflight.
+# campaign is active. Manual dispatch is not authorization by itself: the
+# machine-readable Owner readiness manifest must also pass and be bound to the
+# exact commit being packaged.
 on:
   workflow_dispatch:
 
@@ -21,6 +22,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Enforce exact Owner-readiness authorization
+        run: python ci/verify_owner_readiness.py --mode delivery --commit "$GITHUB_SHA"
 
       - name: Setup Godot 4.7.2 with export templates
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -87,7 +91,9 @@ jobs:
           branch_or_ref=${GITHUB_REF}
           canonical_main_scene=res://p1/main.tscn
           strict_integrated_gate=P1_INTEGRATED_CAUSAL_LOOP_PASS
-          delivery_policy=manual_after_G8_rendered_preflight
+          readiness_manifest=quality/p1-owner-readiness.json
+          readiness_commit=${GITHUB_SHA}
+          delivery_policy=exact_commit_owner_readiness_required
           EOF
           cp build/P1-BUILD-INFO.txt build/web/P1-BUILD-INFO.txt
           cp build/P1-BUILD-INFO.txt build/windows/P1-BUILD-INFO.txt
@@ -110,11 +116,11 @@ jobs:
 
       - name: Delivery summary
         run: |
+          echo "Exact-commit Owner readiness PASS"
           echo "P1 strict dependency graph PASS"
           echo "P1 canonical startup PASS"
           echo "P1 bounded/integrated runtime suite PASS"
           echo "P1 integrated causal loop PASS"
-          echo "Manual delivery policy: G8 rendered preflight required before Owner use"
           echo "Browser export PASS"
           echo "Windows export PASS"
           echo "Artifacts: FrameMatter-P1-Web and FrameMatter-P1-Windows"
