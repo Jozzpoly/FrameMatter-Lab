@@ -14,7 +14,6 @@ const EXPAND_COLOR := Color(0.18, 0.82, 1.0, 0.92)
 
 var interactor: P1MatterInteractor
 var enabled := true
-var suppress_legacy_outline := true
 
 var _overlay: MeshInstance3D
 var _provider: Node3D
@@ -28,8 +27,6 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if suppress_legacy_outline:
-		_hide_legacy_outline()
 	_refresh_if_needed()
 
 
@@ -51,7 +48,6 @@ func set_enabled(value: bool) -> void:
 
 func refresh_now() -> void:
 	_signature = ""
-	_hide_legacy_outline()
 	_refresh_if_needed()
 
 
@@ -176,8 +172,7 @@ func _make_material(color: Color) -> StandardMaterial3D:
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.albedo_color = color
 	material.vertex_color_use_as_albedo = false
-	# Intentionally leave no_depth_test at its default false. Occlusion is part of
-	# the G5 contract, not an optional visual preference.
+	# Occlusion is part of the G5 contract. The cue must obey world depth.
 	return material
 
 
@@ -210,11 +205,3 @@ func _add_square_from_corners(surface: SurfaceTool, corners: Array[Vector3]) -> 
 func _add_segment(surface: SurfaceTool, a: Vector3, b: Vector3) -> void:
 	surface.add_vertex(a)
 	surface.add_vertex(b)
-
-
-func _hide_legacy_outline() -> void:
-	if interactor == null or not is_instance_valid(interactor):
-		return
-	var outline := interactor.get_node_or_null("TargetOutline") as MeshInstance3D
-	if outline != null:
-		outline.visible = false
