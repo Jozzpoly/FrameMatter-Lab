@@ -3,6 +3,7 @@
   "campaign_id": "p1-owner-facing-recovery",
   "contract_version": 2,
   "previous_contract": "quality/contracts/p1-owner-facing-recovery.v1.json",
+  "previous_contract_git_blob_sha1": "52f9da2dda7b7ed2249069e6b89f15441a324f23",
   "change_record": "docs/evidence/p1-campaign-contract-v2.md",
   "owner_goal": "Provide a professional, physically legible sandbox research surface where the Owner can directly see and judge editable Matter, moving/static local Spaces, actor relations, editing, topology consequences and motion without reconstructing hidden mechanics from debug output.",
   "owner_visible_surface": "Windows desktop P1 runtime, rendered scene, camera, interaction feedback and default UI",
