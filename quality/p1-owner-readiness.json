@@ -102,10 +102,12 @@
       ]
     },
     "ui_hierarchy": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "rendered_review",
-      "verified_runtime_commit": "",
-      "evidence": []
+      "verified_runtime_commit": "fb3dd5c898ed288a4a264aace088cc89433b640e",
+      "evidence": [
+        "docs/evidence/p1-ui-hierarchy.md"
+      ]
     },
     "cross_layer_visible_composition": {
       "status": "PENDING",
@@ -133,7 +135,7 @@
     }
   },
   "scenario_coverage": {
-    "default_static_matter": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "default_static_matter": {"status": "PASS", "verified_runtime_commit": "fb3dd5c898ed288a4a264aace088cc89433b640e", "evidence": ["docs/evidence/p1-ui-hierarchy.md"]},
     "edit_target_remove_place_expand": {"status": "PASS", "verified_runtime_commit": "8e6431d7a64c9f80f0c70b81d4d486e066d8496e", "evidence": ["docs/evidence/p1-g5-interaction-hierarchy.md"]},
     "zero_launch_release": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
     "dynamic_translation_and_yaw": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
@@ -145,7 +147,6 @@
     "fall_and_recovery": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]}
   },
   "open_blockers": [
-    "Default UI hierarchy not yet defended",
     "No frozen G8 runtime candidate has been selected",
     "Representative scenario coverage has not been re-earned on one frozen runtime",
     "Cross-layer visible composition rehearsal not yet passed",
