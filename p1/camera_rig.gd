@@ -16,9 +16,8 @@ const ESCAPE_PITCH_ADDS := [0.0, 0.18, 0.36]
 @export var context_blend_full: float = 14.0
 @export var max_context_weight: float = 0.42
 
-# G4 bounded challenger controls. These stay inert in canonical runtime until a
-# rendered A/B earns promotion. They are composition safeguards, not new world
-# or Space authority.
+# Rejected G4 challenger controls retained only until same-commit promotion
+# equivalence is recorded. Canonical runtime starts in adaptive relational mode.
 @export var max_context_focus_shift: float = 3.2
 @export var context_extent_distance_scale: float = 0.95
 @export var compression_trigger_ratio: float = 0.72
@@ -27,17 +26,16 @@ const ESCAPE_PITCH_ADDS := [0.0, 0.18, 0.36]
 @export var compression_focus_lift: float = 0.90
 @export var compression_response_speed: float = 18.0
 
-# G4 adaptive challenger. Local obstruction and extreme actor↔Space separation
-# are deliberately solved as different composition problems. A blocked orbit
-# searches for a nearby clear camera ray. Extreme separation keeps actor X/Z as
-# the hard anchor, may lift the presentation focus toward a higher context, and
-# turns the view along actor→Space without rotating the player's control frame.
+# Promoted G4 policy. Local obstruction and extreme actor↔Space separation are
+# different composition problems. Blocked orbits search nearby collision-clear
+# rays. Extreme separation keeps actor X/Z as the hard anchor, lifts only the
+# presentation focus toward higher context when needed, and turns the rendered
+# view along actor→Space without rotating the player's control frame.
 @export var emergency_relation_start: float = 18.0
 @export var emergency_relation_full: float = 28.0
-@export var emergency_track_focus_weight: float = 0.0
 @export var emergency_vertical_lift_weight: float = 0.55
 @export var emergency_vertical_lift_cap: float = 4.5
-@export var emergency_track_pitch: float = 0.48
+@export var emergency_track_pitch: float = 0.12
 @export var camera_probe_radius: float = 0.28
 @export var escape_clearance_target: float = 0.78
 @export var escape_orbit_response_speed: float = 20.0
@@ -51,8 +49,8 @@ var _yaw: float = default_yaw
 var _pitch: float = default_pitch
 var _distance: float = default_distance
 var _orbiting := false
-var _composition_guard_enabled := false
-var _adaptive_relational_enabled := false
+var _composition_guard_enabled := true
+var _adaptive_relational_enabled := true
 var _compression_amount := 0.0
 var _last_desired_distance := 0.0
 var _runtime_yaw: float = default_yaw
@@ -90,10 +88,11 @@ func set_context_target(
 	context_planar_radius = maxf(0.0, planar_radius)
 
 
+# Temporary A/B hooks. They are not production authority and will be removed
+# after canonical↔challenger promotion equivalence is recorded.
 func set_composition_guard_enabled(enabled: bool) -> void:
 	_composition_guard_enabled = enabled
-	if not enabled:
-		_adaptive_relational_enabled = false
+	_adaptive_relational_enabled = false
 	_compression_amount = 0.0
 	_last_desired_distance = 0.0
 	_runtime_yaw = _yaw
@@ -182,8 +181,10 @@ func _process(delta: float) -> void:
 					1.0,
 					clampf((separation - emergency_relation_start) / emergency_span, 0.0, 1.0)
 				)
-				var track_shift := (context_point - actor_focus) * emergency_track_focus_weight
-				focus = actor_focus + bounded_shift.lerp(track_shift, emergency_relation_t)
+				# Extreme relation keeps actor X/Z authoritative. Only vertical focus
+				# may rise toward a higher context so opaque world geometry does not
+				# force the camera to pretend it can see through the reference plane.
+				focus = actor_focus
 				var upward_gap := maxf(0.0, context_point.y - actor_focus.y)
 				var vertical_lift := minf(
 					emergency_vertical_lift_cap,
@@ -201,9 +202,8 @@ func _process(delta: float) -> void:
 			max_distance
 		)
 
-		# Space extent is soft context pressure, not a demand to fit the complete
-		# Space. Explicit close zoom remains possible; the floor only affects the
-		# ordinary/default research view.
+		# Matter extent is soft composition pressure, not a demand to show every
+		# occupied cell. Explicit close zoom remains available to the Owner.
 		if (
 			_composition_guard_enabled
 			and context_planar_radius > 0.0
@@ -263,8 +263,8 @@ func _update_adaptive_orbit(
 		var actor_to_context := context_point - actor_focus
 		actor_to_context.y = 0.0
 		if actor_to_context.length_squared() > 0.000001:
-			# SpringArm extends along +Z from the focus. Put that arm on the side
-			# opposite the Space so the camera looks through the actor toward it.
+			# SpringArm extends along +Z from focus. Put the camera on the side
+			# opposite Space so the view runs from actor toward the experiment.
 			var arm_away_from_context := -actor_to_context.normalized()
 			var relation_yaw := atan2(arm_away_from_context.x, arm_away_from_context.z)
 			target_yaw = lerp_angle(_yaw, relation_yaw, emergency_relation_t)
