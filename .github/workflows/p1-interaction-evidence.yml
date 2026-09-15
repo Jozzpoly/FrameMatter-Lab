@@ -57,8 +57,9 @@ jobs:
         shell: pwsh
         run: |
           $output = & godot --path . --audio-driver Dummy --rendering-method forward_plus --rendering-driver d3d12 --script res://tests/p1_interaction_expand_diagnostic.gd 2>&1
+          $exitCode = $LASTEXITCODE
           $output | ForEach-Object { Write-Host $_ }
-          if ($LASTEXITCODE -ne 0) { throw "G5 EXPAND diagnostic exited with status $LASTEXITCODE" }
+          if ($exitCode -ne 0) { throw "G5 EXPAND diagnostic exited with status $exitCode" }
           if (($output -join "`n") -notmatch "P1_INTERACTION_EXPAND_DIAGNOSTIC_PASS") { throw "G5 EXPAND diagnostic PASS marker missing" }
 
       - name: Capture canonical G5 interaction baseline
