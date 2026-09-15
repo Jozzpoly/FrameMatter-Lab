@@ -4,7 +4,3 @@
 
 [node name="P1MatterInteractor" type="Node3D"]
 script = ExtResource("1_interactor")
-
-[node name="TargetOutline" type="MeshInstance3D" parent="."]
-visible = false
-cast_shadow = 0
