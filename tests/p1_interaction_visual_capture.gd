@@ -1,9 +1,9 @@
 extends SceneTree
 
 const ACQUIRE_FRAMES := 18
-const SETTLE_FRAMES := 3
+const SETTLE_FRAMES := 1
 const CENTER_ACTOR_LOCAL := Vector3(8.5, 2.15, 8.5)
-const EXPAND_ACTOR_LOCAL := Vector3(-1.5, 2.15, 8.5)
+const EXPAND_ACTOR_LOCAL := Vector3(-2.5, 1.60, 8.5)
 const SCAN_YAWS := [
 	0.72,
 	0.0,
@@ -17,6 +17,9 @@ const SCAN_YAWS := [
 ]
 const SCAN_PITCHES := [0.48, 0.34, 0.62, 0.78]
 const SCAN_DISTANCES := [5.2, 7.2, 4.0]
+const EXPAND_SCAN_YAWS := [-PI * 0.5, -PI * 0.45, -PI * 0.55, -PI * 0.35, -PI * 0.65]
+const EXPAND_SCAN_PITCHES := [0.62, 0.78, 0.48, 0.90]
+const EXPAND_SCAN_DISTANCES := [5.2, 7.2]
 
 var _failures: Array[String] = []
 var _output_dir := ""
@@ -66,18 +69,14 @@ func _run() -> void:
 	# center-reticle physics raycast against real Matter collision.
 	_player.set_physics_process(false)
 
-	_check(
-		await _find_target(P1MatterInteractor.EditMode.REMOVE, false, CENTER_ACTOR_LOCAL),
-		"G5 baseline resolves an actionable in-storage REMOVE target"
-	)
-	if _interactor.target_valid:
+	var remove_found := await _find_target(P1MatterInteractor.EditMode.REMOVE, false, CENTER_ACTOR_LOCAL)
+	_check(remove_found, "G5 baseline resolves an actionable in-storage REMOVE target")
+	if remove_found:
 		await _capture_target("00_remove_target", "REMOVE", false)
 
-	_check(
-		await _find_target(P1MatterInteractor.EditMode.PLACE, false, CENTER_ACTOR_LOCAL),
-		"G5 baseline resolves an actionable in-storage PLACE target"
-	)
-	if _interactor.target_valid:
+	var place_found := await _find_target(P1MatterInteractor.EditMode.PLACE, false, CENTER_ACTOR_LOCAL)
+	_check(place_found, "G5 baseline resolves an actionable in-storage PLACE target")
+	if place_found:
 		await _capture_target("01_place_target", "PLACE", false)
 
 	# Build a real connected Matter bridge to the dense-storage X=0 boundary.
@@ -93,11 +92,9 @@ func _run() -> void:
 		"G5 baseline builds connected storage-boundary cell x=0"
 	)
 	await _advance_frames(2)
-	_check(
-		await _find_target(P1MatterInteractor.EditMode.PLACE, true, EXPAND_ACTOR_LOCAL),
-		"G5 baseline resolves a real out-of-storage EXPAND placement target"
-	)
-	if _interactor.target_valid:
+	var expand_found := await _find_target(P1MatterInteractor.EditMode.PLACE, true, EXPAND_ACTOR_LOCAL)
+	_check(expand_found, "G5 baseline resolves a real out-of-storage EXPAND placement target")
+	if expand_found:
 		await _capture_target("02_expand_target", "EXPAND", true)
 
 	_player.set_physics_process(true)
@@ -114,11 +111,14 @@ func _find_target(mode: int, require_expand: bool, actor_local: Vector3) -> bool
 	_camera_rig.reset_view()
 	await _advance_frames(2)
 
-	for distance_variant in SCAN_DISTANCES:
+	var yaws: Array = EXPAND_SCAN_YAWS if require_expand else SCAN_YAWS
+	var pitches: Array = EXPAND_SCAN_PITCHES if require_expand else SCAN_PITCHES
+	var distances: Array = EXPAND_SCAN_DISTANCES if require_expand else SCAN_DISTANCES
+	for distance_variant in distances:
 		var distance := float(distance_variant)
-		for pitch_variant in SCAN_PITCHES:
+		for pitch_variant in pitches:
 			var pitch := float(pitch_variant)
-			for yaw_variant in SCAN_YAWS:
+			for yaw_variant in yaws:
 				var yaw := float(yaw_variant)
 				_camera_rig.set("_yaw", yaw)
 				_camera_rig.set("_pitch", pitch)
