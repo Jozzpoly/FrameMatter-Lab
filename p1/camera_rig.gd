@@ -27,14 +27,15 @@ const ESCAPE_PITCH_ADDS := [0.0, 0.18, 0.36]
 @export var compression_focus_lift: float = 0.90
 @export var compression_response_speed: float = 18.0
 
-# Second G4 challenger: solve the two observed failure classes independently.
-# Extreme actor↔Space separation gets bounded emergency group framing, while a
-# locally blocked orbit is solved by selecting a nearby collision-clear camera
-# ray. Neither path changes Space/Matter authority or normal user zoom limits.
-@export var emergency_group_start: float = 18.0
-@export var emergency_group_full: float = 28.0
-@export var emergency_group_distance_scale: float = 0.92
-@export var emergency_group_max_distance: float = 34.0
+# G4 adaptive challenger. Local obstruction and extreme actor↔Space separation
+# are deliberately solved as different composition problems. A blocked orbit
+# searches for a nearby clear camera ray. Extreme separation keeps the actor as
+# the hard subject and turns the view along actor→Space instead of attempting an
+# ever larger group-fit zoom through world geometry.
+@export var emergency_relation_start: float = 18.0
+@export var emergency_relation_full: float = 28.0
+@export var emergency_track_focus_weight: float = 0.15
+@export var emergency_track_pitch: float = 0.32
 @export var camera_probe_radius: float = 0.28
 @export var escape_clearance_target: float = 0.78
 @export var escape_orbit_response_speed: float = 20.0
@@ -146,15 +147,14 @@ func _process(delta: float) -> void:
 	var actor_focus: Vector3 = target_transform.origin + Vector3.UP * focus_height
 	var focus: Vector3 = actor_focus
 	var desired_distance: float = _distance
-	var separation := 0.0
-	var has_context := false
 	var context_point := Vector3.ZERO
+	var separation := 0.0
+	var emergency_relation_t := 0.0
 
 	if context_target != null and is_instance_valid(context_target):
 		var context_transform: Transform3D = context_target.get_global_transform_interpolated()
 		context_point = context_transform * context_local_point
 		separation = actor_focus.distance_to(context_point)
-		has_context = true
 		var blend_span: float = maxf(0.001, context_blend_full - context_blend_start)
 		var context_t: float = clampf(
 			(separation - context_blend_start) / blend_span,
@@ -168,34 +168,29 @@ func _process(delta: float) -> void:
 			if bounded_shift.length() > max_context_focus_shift:
 				bounded_shift = bounded_shift.normalized() * max_context_focus_shift
 
-			if _adaptive_relational_enabled and separation > emergency_group_start:
-				var emergency_span := maxf(0.001, emergency_group_full - emergency_group_start)
-				var emergency_t := smoothstep(
+			if _adaptive_relational_enabled and separation > emergency_relation_start:
+				var emergency_span := maxf(0.001, emergency_relation_full - emergency_relation_start)
+				emergency_relation_t = smoothstep(
 					0.0,
 					1.0,
-					clampf((separation - emergency_group_start) / emergency_span, 0.0, 1.0)
+					clampf((separation - emergency_relation_start) / emergency_span, 0.0, 1.0)
 				)
-				var group_shift: Vector3 = (context_point - actor_focus) * max_context_weight
-				focus = actor_focus + bounded_shift.lerp(group_shift, emergency_t)
-				var emergency_distance := minf(
-					emergency_group_max_distance,
-					separation * emergency_group_distance_scale
-				)
-				desired_distance = maxf(
-					desired_distance,
-					lerpf(max_distance, emergency_distance, emergency_t)
-				)
+				var track_shift := (context_point - actor_focus) * emergency_track_focus_weight
+				focus = actor_focus + bounded_shift.lerp(track_shift, emergency_relation_t)
 			else:
 				focus += bounded_shift
 		else:
 			focus = focus.lerp(context_point, context_weight)
 
-		if not (_adaptive_relational_enabled and separation > emergency_group_start):
-			desired_distance = clampf(
-				maxf(_distance, separation * 0.72),
-				min_distance,
-				max_distance
-			)
+		# Normal research framing can widen with actor↔Space separation, but the
+		# extreme relational mode deliberately stops at the ordinary camera range.
+		# Its job is to look from the actor toward the experiment, not to fit both
+		# endpoints by backing through arbitrary world geometry.
+		desired_distance = clampf(
+			maxf(_distance, separation * 0.72),
+			min_distance,
+			max_distance
+		)
 
 		# Space extent is soft context pressure, not a demand to fit the complete
 		# Space. Explicit close zoom remains possible; the floor only affects the
@@ -204,7 +199,7 @@ func _process(delta: float) -> void:
 			_composition_guard_enabled
 			and context_planar_radius > 0.0
 			and _distance >= default_distance - 0.001
-			and not (_adaptive_relational_enabled and separation > emergency_group_start)
+			and emergency_relation_t < 0.001
 		):
 			desired_distance = maxf(
 				desired_distance,
@@ -212,7 +207,14 @@ func _process(delta: float) -> void:
 			)
 
 	if _adaptive_relational_enabled:
-		_update_adaptive_orbit(focus, desired_distance, delta)
+		_update_adaptive_orbit(
+			focus,
+			desired_distance,
+			delta,
+			actor_focus,
+			context_point,
+			emergency_relation_t
+		)
 	elif _composition_guard_enabled:
 		focus += Vector3.UP * (_compression_amount * compression_focus_lift)
 		_apply_guarded_pitch()
@@ -220,12 +222,6 @@ func _process(delta: float) -> void:
 	global_position = focus
 	_spring_arm.spring_length = desired_distance
 	_last_desired_distance = desired_distance
-
-	# Keep these variables live in the debugger even when no extreme relation is
-	# active; they are intentionally local presentation evidence only.
-	if not has_context:
-		separation = 0.0
-		context_point = Vector3.ZERO
 
 
 func _update_compression_recovery(delta: float) -> void:
@@ -243,11 +239,29 @@ func _update_compression_recovery(delta: float) -> void:
 	_compression_amount = lerpf(_compression_amount, target_amount, response)
 
 
-func _update_adaptive_orbit(focus: Vector3, desired_distance: float, delta: float) -> void:
+func _update_adaptive_orbit(
+	focus: Vector3,
+	desired_distance: float,
+	delta: float,
+	actor_focus: Vector3,
+	context_point: Vector3,
+	emergency_relation_t: float
+) -> void:
 	var target_yaw := _yaw
 	var target_pitch := _pitch
-	var base_clearance := _probe_orbit_clearance(focus, target_yaw, target_pitch, desired_distance)
 
+	if emergency_relation_t > 0.0:
+		var actor_to_context := context_point - actor_focus
+		actor_to_context.y = 0.0
+		if actor_to_context.length_squared() > 0.000001:
+			# SpringArm extends along +Z from the focus. Put that arm on the side
+			# opposite the Space so the camera looks through the actor toward it.
+			var arm_away_from_context := -actor_to_context.normalized()
+			var relation_yaw := atan2(arm_away_from_context.x, arm_away_from_context.z)
+			target_yaw = lerp_angle(_yaw, relation_yaw, emergency_relation_t)
+		target_pitch = lerpf(_pitch, emergency_track_pitch, emergency_relation_t)
+
+	var base_clearance := _probe_orbit_clearance(focus, target_yaw, target_pitch, desired_distance)
 	if base_clearance < escape_clearance_target:
 		var best_score := -INF
 		var best_clearance := base_clearance
