@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [canonical, surface_cells, surface_modulation]
+        variant: [canonical, surface_cells, surface_cells_soft]
     runs-on: windows-latest
     timeout-minutes: 10
     env:
