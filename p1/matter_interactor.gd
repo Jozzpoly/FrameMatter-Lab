@@ -23,7 +23,7 @@ signal edit_rejected(reason: String)
 var camera: Camera3D
 var registry: P1SpaceRegistry
 var mode := EditMode.REMOVE
-var targeting_mode := TargetingMode.CENTER_RETICLE
+var targeting_mode := TargetingMode.POINTER
 var target_space: LocalMatterSpace
 var remove_cell := Vector3i.ZERO
 var place_cell := Vector3i.ZERO
@@ -67,7 +67,10 @@ func set_mode(value: int) -> void:
 func set_targeting_mode(value: int) -> void:
 	if value != TargetingMode.CENTER_RETICLE and value != TargetingMode.POINTER:
 		return
+	if targeting_mode == value:
+		return
 	targeting_mode = value
+	_clear_target()
 
 
 func toggle_mode() -> void:
@@ -158,6 +161,12 @@ func _process(_delta: float) -> void:
 		_clear_target()
 		return
 	if targeting_mode == TargetingMode.POINTER:
+		# UI owns the pointer while hovered. Never raycast through HUD controls and
+		# accidentally mutate Matter hidden behind presentation/UI.
+		var hovered_control := viewport.gui_get_hovered_control()
+		if hovered_control != null and hovered_control.is_visible_in_tree():
+			_clear_target()
+			return
 		_update_target_from_screen_position(viewport.get_mouse_position())
 	else:
 		_update_target_from_screen_position(viewport.get_visible_rect().size * 0.5)
@@ -174,14 +183,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func update_target_from_screen_position(screen_position: Vector2) -> void:
 	# Public interaction-surface primitive: resolve the same physical raycast and
 	# Matter/face semantics from an explicit viewport point. Production pointer
-	# targeting and deterministic evidence can share this path without inventing
-	# test-only target authority.
+	# targeting and deterministic evidence share this path without inventing a
+	# second target authority.
 	_update_target_from_screen_position(screen_position)
 
 
 func _update_target_from_camera() -> void:
-	# Compatibility path retained for existing probes and the bounded canonical
-	# center-reticle baseline. It delegates to the same screen-ray resolver.
+	# Compatibility path retained for older probes and explicit baseline evidence.
 	if camera == null or not is_instance_valid(camera):
 		_clear_target()
 		return
