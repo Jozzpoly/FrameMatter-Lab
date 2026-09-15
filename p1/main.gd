@@ -433,7 +433,25 @@ func _refresh_camera_context() -> void:
 		_camera_rig.set_context_target(null)
 		return
 	_focus_space = context_space
-	_camera_rig.set_context_target(context_space.get_active_provider(), context_space.get_content_center_local())
+	_camera_rig.set_context_target(
+		context_space.get_active_provider(),
+		context_space.get_content_center_local(),
+		_space_planar_radius(context_space)
+	)
+
+
+func _space_planar_radius(space: LocalMatterSpace) -> float:
+	if space == null or space.volume == null or space.volume.count_solid() == 0:
+		return 0.0
+	var center: Vector3 = space.get_content_center_local()
+	var radius := 0.0
+	for cell in _occupied_cells(space.volume):
+		var offset := Vector2(
+			float(cell.x) + 0.5 - center.x,
+			float(cell.z) + 0.5 - center.z
+		)
+		radius = maxf(radius, offset.length() + 0.70710678)
+	return radius
 
 
 func _on_edit_mode_changed(_mode: int) -> void:
