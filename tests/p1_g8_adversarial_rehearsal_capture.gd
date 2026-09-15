@@ -11,7 +11,9 @@ const SETTLE_FRAMES := 6
 const MOTION_FRAMES := 24
 const POST_REBASE_FRAMES := 4
 const POST_SPLIT_FRAMES := 6
-const SIBLING_MOTION_FRAMES := 24
+const SIBLING_MOTION_FRAMES := 45
+const SIBLING_PULSE_COUNT := 3
+const SIBLING_PULSE_GAP_FRAMES := 2
 const POST_FREEZE_FRAMES := 4
 const MAX_RECOVERY_FRAMES := 240
 
@@ -201,7 +203,16 @@ func _run() -> void:
 	var sibling_origin_before := Vector3.ZERO
 	if sibling != null:
 		sibling_origin_before = sibling.get_active_provider().global_position
-		_check(_control.apply_local_central_impulse(sibling, SIBLING_IMPULSE), "G8 sibling-only impulse accepted")
+		# A single legal pulse was insufficient to make the heavier sibling's
+		# independence visually readable in the first G8 run. Keep the acceptance
+		# threshold and use a short burst of the same production-scale finite pulse
+		# rather than injecting velocity or weakening the criterion.
+		for pulse in range(SIBLING_PULSE_COUNT):
+			_check(
+				_control.apply_local_central_impulse(sibling, SIBLING_IMPULSE),
+				"G8 sibling-only finite pulse %d/%d accepted" % [pulse + 1, SIBLING_PULSE_COUNT]
+			)
+			await _advance_frames(SIBLING_PULSE_GAP_FRAMES)
 	await _advance_frames(SIBLING_MOTION_FRAMES)
 	var sibling_delta := 0.0
 	if sibling != null:
@@ -248,9 +259,9 @@ func _run() -> void:
 	await _capture("11_post_automatic_fall_recovery")
 
 	print(
-		"P1_G8_ADVERSARIAL_METRIC close_arm_ratio=%.4f rebase_shift=%s linear_rebase_error=%.8f angular_rebase_error=%.8f handoff_world_error=%.8f sibling_delta=%.4f recovery_frames=%d successors=%d" % [
+		"P1_G8_ADVERSARIAL_METRIC close_arm_ratio=%.4f rebase_shift=%s linear_rebase_error=%.8f angular_rebase_error=%.8f handoff_world_error=%.8f sibling_pulses=%d sibling_delta=%.4f recovery_frames=%d successors=%d" % [
 			close_arm_ratio, str(local_shift), linear_rebase_error, angular_rebase_error,
-			handoff_world_error, sibling_delta, recovery_frames, active_spaces.size(),
+			handoff_world_error, SIBLING_PULSE_COUNT, sibling_delta, recovery_frames, active_spaces.size(),
 		]
 	)
 	_cleanup_and_finish()
