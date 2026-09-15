@@ -1,8 +1,8 @@
 {
   "schema_version": 4,
   "campaign_id": "p1-owner-facing-recovery",
-  "campaign_contract": "quality/contracts/p1-owner-facing-recovery.v2.json",
-  "campaign_contract_version": 2,
+  "campaign_contract": "quality/contracts/p1-owner-facing-recovery.v3.json",
+  "campaign_contract_version": 3,
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
   "status": "BLOCKED",
@@ -28,8 +28,8 @@
       "evidence_type": "campaign_contract",
       "verified_runtime_commit": "",
       "evidence": [
-        "quality/contracts/p1-owner-facing-recovery.v2.json",
-        "docs/evidence/p1-campaign-contract-v2.md",
+        "quality/contracts/p1-owner-facing-recovery.v3.json",
+        "docs/evidence/p1-campaign-contract-v3.md",
         "docs/p1-owner-facing-recovery-campaign.md",
         "docs/p1-visual-acceptance-contract.md",
         "docs/QUALITY-SYSTEM.md"
