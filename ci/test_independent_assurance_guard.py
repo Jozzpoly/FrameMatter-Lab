@@ -22,11 +22,24 @@ def check(condition: bool, label: str) -> None:
         failures.append(label)
 
 
-def make_ready() -> dict:
+def make_blocked_frozen() -> dict:
     data = copy.deepcopy(READINESS)
-    data["status"] = "READY_FOR_OWNER"
+    data["status"] = "BLOCKED"
     data["candidate_state"] = "FROZEN"
     data["candidate_runtime_commit"] = RUNTIME
+    data["approved_runtime_commit"] = ""
+    data["promotion_authorized"] = False
+    data["owner_attention_event"] = {"allowed": False, "reason": "synthetic assurance self-test remains blocked"}
+    gate = data["required_gates"]["independent_assurance_review"]
+    gate["status"] = "PENDING"
+    gate["verified_runtime_commit"] = ""
+    gate["evidence"] = []
+    return data
+
+
+def make_ready() -> dict:
+    data = make_blocked_frozen()
+    data["status"] = "READY_FOR_OWNER"
     data["approved_runtime_commit"] = RUNTIME
     data["promotion_authorized"] = True
     data["owner_attention_event"] = {"allowed": True, "reason": "synthetic assurance self-test"}
@@ -64,39 +77,48 @@ def main() -> None:
     errors = guard.validate_report(REPORT, READINESS, require_pass=False)
     check(not errors, "real PENDING assurance report is structurally valid: %s" % errors)
 
-    ready = make_ready()
     report = make_pass_report()
+    blocked = make_blocked_frozen()
+    errors = guard.validate_report(report, blocked, require_pass=False)
+    check(not errors, "completed separated review can be recorded while promotion remains BLOCKED: %s" % errors)
+    errors = guard.validate_report(report, blocked, require_pass=True)
+    check(any("approved_runtime_commit" in error for error in errors),
+          "completed review alone cannot satisfy delivery approval")
+    check(any("independent_assurance_review gate is not PASS" in error for error in errors),
+          "delivery still requires readiness assurance gate binding")
+
+    ready = make_ready()
     errors = guard.validate_report(report, ready, require_pass=True)
-    check(not errors, "complete separated PASS review is accepted: %s" % errors)
+    check(not errors, "complete separated PASS review is accepted for approved delivery: %s" % errors)
 
     wrong_runtime = copy.deepcopy(report)
     wrong_runtime["reviewed_runtime_commit"] = "89abcdef0123456789abcdef0123456789abcdef"
-    errors = guard.validate_report(wrong_runtime, ready, require_pass=True)
-    check(any("does not match" in error for error in errors), "review of a different runtime is rejected")
+    errors = guard.validate_report(wrong_runtime, blocked, require_pass=False)
+    check(any("does not match" in error for error in errors), "review of a different runtime is rejected before promotion")
 
     self_review = copy.deepcopy(report)
     self_review["reviewer_context_separated_from_implementation"] = False
-    errors = guard.validate_report(self_review, ready, require_pass=True)
+    errors = guard.validate_report(self_review, blocked, require_pass=False)
     check(any("separated" in error for error in errors), "non-separated implementation self-review is rejected")
 
     mutating_review = copy.deepcopy(report)
     mutating_review["candidate_changes_authored_during_review"] = True
-    errors = guard.validate_report(mutating_review, ready, require_pass=True)
+    errors = guard.validate_report(mutating_review, blocked, require_pass=False)
     check(any("candidate_changes_authored" in error for error in errors), "review that edits candidate is rejected")
 
     finding = copy.deepcopy(report)
     finding["material_findings"] = ["ordinary close camera view loses the active Space"]
-    errors = guard.validate_report(finding, ready, require_pass=True)
+    errors = guard.validate_report(finding, blocked, require_pass=False)
     check(any("material finding" in error for error in errors), "material finding blocks assurance PASS")
 
     happy_only = copy.deepcopy(report)
     happy_only["off_nominal_scenarios_reviewed"] = []
-    errors = guard.validate_report(happy_only, ready, require_pass=True)
+    errors = guard.validate_report(happy_only, blocked, require_pass=False)
     check(any("off_nominal" in error for error in errors), "happy-path-only assurance is rejected")
 
     missing_goal = copy.deepcopy(report)
     missing_goal["owner_goal_evaluated"] = False
-    errors = guard.validate_report(missing_goal, ready, require_pass=True)
+    errors = guard.validate_report(missing_goal, blocked, require_pass=False)
     check(any("owner_goal_evaluated" in error for error in errors), "assurance that ignores Owner goal is rejected")
 
     if failures:
@@ -104,9 +126,9 @@ def main() -> None:
             print("INDEPENDENT_ASSURANCE_SELFTEST_FAIL: " + failure, file=sys.stderr)
         raise SystemExit(1)
     print(
-        "INDEPENDENT_ASSURANCE_SELFTEST_PASS: guard accepts a separated frozen-runtime falsification review "
-        "and rejects wrong-runtime, self-review, candidate mutation, material findings, happy-path-only review "
-        "and omission of the Owner goal."
+        "INDEPENDENT_ASSURANCE_SELFTEST_PASS: guard accepts a separated frozen-runtime falsification review before promotion, "
+        "still rejects delivery until approval/gate binding, and rejects wrong-runtime, self-review, candidate mutation, "
+        "material findings, happy-path-only review and omission of the Owner goal."
     )
 
 
