@@ -110,10 +110,12 @@
       ]
     },
     "cross_layer_visible_composition": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "composed_rehearsal",
-      "verified_runtime_commit": "",
-      "evidence": []
+      "verified_runtime_commit": "35f8cae44e36d3bb5e1ad2451259fece28605b0f",
+      "evidence": [
+        "docs/evidence/p1-cross-layer-visible-composition.md"
+      ]
     },
     "adversarial_rehearsal": {
       "status": "PENDING",
@@ -139,7 +141,7 @@
     "edit_target_remove_place_expand": {"status": "PASS", "verified_runtime_commit": "8e6431d7a64c9f80f0c70b81d4d486e066d8496e", "evidence": ["docs/evidence/p1-g5-interaction-hierarchy.md"]},
     "zero_launch_release": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
     "dynamic_translation_and_yaw": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
-    "moving_edit_and_storage_rebase": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "moving_edit_and_storage_rebase": {"status": "PASS", "verified_runtime_commit": "35f8cae44e36d3bb5e1ad2451259fece28605b0f", "evidence": ["docs/evidence/p1-cross-layer-visible-composition.md"]},
     "topology_split_and_successor_relations": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
     "freeze_at_current_pose": {"status": "PASS", "verified_runtime_commit": "5a4f9bbc57742e6bb4561a199ec5d95761e72ef9", "evidence": ["docs/evidence/p1-g6-world-motion-causality.md"]},
     "close_camera_obstacle_stress": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]},
@@ -149,7 +151,6 @@
   "open_blockers": [
     "No frozen G8 runtime candidate has been selected",
     "Representative scenario coverage has not been re-earned on one frozen runtime",
-    "Cross-layer visible composition rehearsal not yet passed",
     "G8 adversarial rehearsal not yet passed",
     "Independent assurance review not yet passed",
     "Final readiness audit not yet passed"
