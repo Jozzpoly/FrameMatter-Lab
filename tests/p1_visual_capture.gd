@@ -8,6 +8,7 @@ const POST_FREEZE_FRAMES := 5
 const CENTRAL_IMPULSE := Vector3(0.0, 0.0, -36.0)
 const TORQUE_IMPULSE := Vector3(0.0, 90.0, 0.0)
 const EDGE_Z := 8
+const LIGHTING_AZIMUTHS_DEG := [0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0]
 
 var _failures: Array[String] = []
 var _output_dir := ""
@@ -52,6 +53,9 @@ func _run() -> void:
 
 	print("P1_VISUAL_CAPTURE_VARIANT: %s" % _visual_variant)
 	await _capture("00_initial_static")
+	await _capture_lighting_turntable(camera_rig)
+	camera_rig.reset_view()
+	await _advance_frames(2)
 
 	_check(bool(p1.call("toggle_focused_space_for_test")), "visual sequence releases the Space")
 	await source.provider_transition_committed
@@ -92,6 +96,19 @@ func _run() -> void:
 
 	p1.free()
 	_finish()
+
+
+func _capture_lighting_turntable(camera_rig: P1CameraRig) -> void:
+	# G2 evidence only: hold the same authored static state/pitch/distance and orbit
+	# through every octant. This is deliberately test-only so lighting challengers
+	# must survive orientation changes before any variant is promoted to runtime.
+	for azimuth_deg: float in LIGHTING_AZIMUTHS_DEG:
+		camera_rig.set("_yaw", deg_to_rad(azimuth_deg))
+		camera_rig.set("_pitch", 0.48)
+		camera_rig.set("_distance", 8.4)
+		camera_rig.call("_apply_orbit")
+		await _advance_frames(2)
+		await _capture("10_light_az%03d" % int(azimuth_deg))
 
 
 func _apply_visual_variant(p1: Node) -> void:
@@ -163,7 +180,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_VISUAL_CAPTURE_PASS: variant=%s canonical P1 produced rendered evidence for static, dynamic, moving, storage-rebased, split and frozen states." % _visual_variant)
+		print("P1_VISUAL_CAPTURE_PASS: variant=%s canonical P1 produced rendered evidence for static, lighting azimuth stress, dynamic, moving, storage-rebased, split and frozen states." % _visual_variant)
 		quit(0)
 		return
 	for failure in _failures:
