@@ -1,18 +1,20 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "campaign_id": "p1-owner-facing-recovery",
   "campaign_contract": "quality/contracts/p1-owner-facing-recovery.v3.json",
   "campaign_contract_version": 3,
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
   "status": "BLOCKED",
+  "candidate_state": "OPEN",
+  "candidate_runtime_commit": "",
   "owner_goal": "Provide a professional, physically legible sandbox research surface where the Owner can directly see and judge editable Matter, moving/static local Spaces, actor relations, editing, topology consequences and motion without reconstructing hidden mechanics from debug output.",
   "owner_visible_surface": "Windows desktop P1 runtime, rendered scene, camera, interaction feedback and default UI",
   "promotion_authorized": false,
   "approved_runtime_commit": "",
   "owner_attention_event": {
     "allowed": false,
-    "reason": "Owner-facing recovery campaign is active; G8 adversarial preflight and independent assurance have not passed."
+    "reason": "Owner-facing recovery campaign is active; no frozen G8 candidate has passed final evidence and independent assurance."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -118,6 +120,18 @@
       "evidence": []
     }
   },
+  "scenario_coverage": {
+    "default_static_matter": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "edit_target_remove_place_expand": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "zero_launch_release": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "dynamic_translation_and_yaw": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "moving_edit_and_storage_rebase": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "topology_split_and_successor_relations": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "freeze_at_current_pose": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "close_camera_obstacle_stress": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "actor_near_space_edge": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "fall_and_recovery": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []}
+  },
   "open_blockers": [
     "G2 lighting/form readability not yet promoted",
     "G3 Matter visual language not yet defended",
@@ -125,6 +139,8 @@
     "G5 interaction hierarchy not yet defended",
     "G6 world/motion/topology causality not yet defended",
     "Default UI hierarchy not yet defended",
+    "No frozen G8 runtime candidate has been selected",
+    "Representative scenario coverage has not been re-earned on one frozen runtime",
     "Cross-layer visible composition rehearsal not yet passed",
     "G8 adversarial rehearsal not yet passed",
     "Independent assurance review not yet passed",
