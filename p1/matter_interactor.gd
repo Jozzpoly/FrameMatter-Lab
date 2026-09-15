@@ -8,6 +8,7 @@ enum EditMode {
 
 signal edit_mode_changed(mode: int)
 signal edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, topology_split_queued: bool)
+signal storage_expansion_requested(space: LocalMatterSpace, source_cell: Vector3i)
 signal edit_rejected(reason: String)
 
 @export var max_distance := 14.0
@@ -28,14 +29,14 @@ var last_rejection := ""
 
 var _remove_material: StandardMaterial3D
 var _place_material: StandardMaterial3D
-var _blocked_material: StandardMaterial3D
+var _expand_material: StandardMaterial3D
 
 
 func _ready() -> void:
 	_build_outline_mesh()
 	_remove_material = _make_line_material(Color(1.0, 0.24, 0.16, 1.0))
 	_place_material = _make_line_material(Color(0.20, 1.0, 0.55, 1.0))
-	_blocked_material = _make_line_material(Color(1.0, 0.68, 0.16, 1.0))
+	_expand_material = _make_line_material(Color(0.18, 0.82, 1.0, 1.0))
 	_outline.visible = false
 
 
@@ -70,10 +71,30 @@ func get_target_cell() -> Vector3i:
 
 
 func apply_current_edit() -> bool:
-	if not target_valid or target_space == null:
+	if target_space == null:
 		_reject("no Matter target")
 		return false
-	return apply_edit_to_cell(target_space, get_target_cell(), mode)
+	if mode == EditMode.PLACE:
+		return request_place_to_cell(target_space, place_cell)
+	if not target_valid:
+		_reject("no Matter target")
+		return false
+	return apply_edit_to_cell(target_space, remove_cell, EditMode.REMOVE)
+
+
+func request_place_to_cell(space: LocalMatterSpace, cell: Vector3i) -> bool:
+	if space == null or not is_instance_valid(space) or space.is_retired() or space.volume == null:
+		_reject("target Space is not live")
+		return false
+	if space.volume.in_bounds(cell):
+		return apply_edit_to_cell(space, cell, EditMode.PLACE)
+
+	# Out-of-storage placement is not a mutation yet. The composed consumer asks
+	# the Space owner to perform a bounded storage-frame maintenance transaction;
+	# actual placement happens only after the new mapping is committed.
+	last_rejection = ""
+	storage_expansion_requested.emit(space, cell)
+	return true
 
 
 func apply_edit_to_cell(space: LocalMatterSpace, cell: Vector3i, edit_mode: int) -> bool:
@@ -95,8 +116,8 @@ func apply_edit_to_cell(space: LocalMatterSpace, cell: Vector3i, edit_mode: int)
 		if previous != CellVolume.EMPTY:
 			_reject("place target is occupied")
 			return false
-		# LocalMatterSpace now owns fresh lineage issuance when no explicit token
-		# is supplied. The interaction layer never manufactures logical identity.
+		# LocalMatterSpace owns fresh lineage issuance when no explicit token is
+		# supplied. The interaction layer never manufactures logical identity.
 		changed = space.mutate_cell(cell, CellVolume.SOLID)
 	else:
 		_reject("unsupported edit mode")
@@ -177,9 +198,9 @@ func _update_target_from_camera() -> void:
 	if mode == EditMode.REMOVE:
 		target_valid = target_in_storage and space.volume.get_cell(remove_cell) != CellVolume.EMPTY
 	else:
-		# An out-of-storage placement is shown as a blocked target rather than
-		# silently disappearing. P1's storage challenger will replace this bound.
-		target_valid = target_in_storage and space.volume.get_cell(place_cell) == CellVolume.EMPTY
+		# Placement just beyond the current dense storage edge is actionable: it
+		# requests a bounded rebase before the logical edit is applied.
+		target_valid = not target_in_storage or space.volume.get_cell(place_cell) == CellVolume.EMPTY
 
 	var local_center := Vector3(cell) + Vector3(0.5, 0.5, 0.5)
 	_outline.global_transform = provider.global_transform * Transform3D(Basis.IDENTITY, local_center)
@@ -191,8 +212,8 @@ func _update_target_from_camera() -> void:
 func _refresh_outline() -> void:
 	if _outline == null:
 		return
-	if not target_in_storage:
-		_outline.material_override = _blocked_material
+	if not target_in_storage and mode == EditMode.PLACE:
+		_outline.material_override = _expand_material
 	elif mode == EditMode.REMOVE:
 		_outline.material_override = _remove_material
 	else:
