@@ -41,7 +41,7 @@ func _run() -> void:
 		_finish()
 		return
 
-	var logical_space_id := source.get_instance_id()
+	var logical_space_id: int = source.get_instance_id()
 	_check(source.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "integrated loop starts from static representation")
 	_check(player.grounded and player.support_space == source, "actor starts grounded on authored logical Space")
 	_check(camera_rig.context_target == source.get_active_provider(), "camera starts contextualized to authored Space")
@@ -78,16 +78,16 @@ func _run() -> void:
 	# rebase while the same dynamic Space is moving.
 	_check(interactor.apply_edit_to_cell(source, Vector3i(1, 0, EDGE_Z), P1MatterInteractor.EditMode.PLACE), "moving Space accepts first connected edge placement")
 	_check(interactor.apply_edit_to_cell(source, Vector3i(0, 0, EDGE_Z), P1MatterInteractor.EditMode.PLACE), "moving Space accepts second connected edge placement")
-	var provider_id_before_rebase := source.get_active_provider().get_instance_id()
-	var support_local_before_rebase := player.support_local_center
-	var linear_before_rebase := body.linear_velocity
-	var angular_before_rebase := body.angular_velocity
+	var provider_id_before_rebase: int = source.get_active_provider().get_instance_id()
+	var support_local_before_rebase: Vector3 = player.support_local_center
+	var linear_before_rebase: Vector3 = body.linear_velocity
+	var angular_before_rebase: Vector3 = body.angular_velocity
 	var source_edge_cell := Vector3i(-1, 0, EDGE_Z)
 	_check(interactor.request_place_to_cell(source, source_edge_cell), "out-of-storage connected placement requests maintenance transaction")
 	_check(source.is_storage_rebase_pending(), "storage maintenance is pending before physics boundary")
 	await source.storage_rebase_committed
 	var rebase_report: Dictionary = source.get_last_storage_rebase_report()
-	var local_shift: Vector3i = rebase_report.get("local_shift", Vector3i.ZERO)
+	var local_shift: Vector3i = rebase_report["local_shift"]
 	_check(local_shift != Vector3i.ZERO, "integrated storage pressure forces a real local-frame shift")
 	_check(source.get_instance_id() == logical_space_id, "storage rebase preserves logical Space identity")
 	_check(source.get_active_provider().get_instance_id() == provider_id_before_rebase, "storage rebase preserves provider identity")
@@ -102,8 +102,8 @@ func _run() -> void:
 	_check(source.volume.get_cell(mapped_edge_cell) != CellVolume.EMPTY, "deferred mapped placement commits actual Matter after rebase")
 	_check(source.lineage.get_lineage(mapped_edge_cell) != MatterLineageMap.NONE, "mapped placement receives fresh lineage below UI authority")
 	body = source.get_active_provider() as ConstructBody
-	var linear_rebase_error := body.linear_velocity.distance_to(linear_before_rebase) if body != null else INF
-	var angular_rebase_error := body.angular_velocity.distance_to(angular_before_rebase) if body != null else INF
+	var linear_rebase_error: float = body.linear_velocity.distance_to(linear_before_rebase) if body != null else INF
+	var angular_rebase_error: float = body.angular_velocity.distance_to(angular_before_rebase) if body != null else INF
 	_check(linear_rebase_error < 0.02, "moving storage maintenance preserves solver linear state")
 	_check(angular_rebase_error < 0.02, "moving storage maintenance preserves solver angular state")
 	_check(player.grounded and player.support_space == source, "actor keeps riding after expand-and-place transaction")
@@ -112,7 +112,7 @@ func _run() -> void:
 	# causal seam. Coordinates are mapped through the maintenance shift rather
 	# than assuming storage coordinates are stable identity.
 	var removed := 0
-	var actor_local_before_split := player.support_local_center
+	var actor_local_before_split: Vector3 = player.support_local_center
 	for z in range(2, 14):
 		var mapped_cut_cell := Vector3i(6, 0, z) + local_shift
 		var changed := interactor.apply_edit_to_cell(source, mapped_cut_cell, P1MatterInteractor.EditMode.REMOVE)
@@ -125,10 +125,11 @@ func _run() -> void:
 	_check(source.is_topology_split_pending(), "final integrated cut queues one-to-many topology succession")
 	await source.topology_split_committed
 	var split_result: LocalMatterSplitResult = source.get_last_split_result()
+	var handoff_world_error := INF
 	_check(split_result != null and split_result.size() == 2, "integrated split produces two successor Spaces")
 	if split_result != null:
 		var expected_handoff_world: Vector3 = split_result.source_transform * actor_local_before_split
-		var handoff_world_error: float = player.global_position.distance_to(expected_handoff_world)
+		handoff_world_error = player.global_position.distance_to(expected_handoff_world)
 		_check(handoff_world_error < 0.0001, "actor source-to-successor handoff is world-continuous at split commit")
 	await _advance_frames(POST_SPLIT_FRAMES)
 
@@ -136,7 +137,7 @@ func _run() -> void:
 	_check(source.is_retired(), "integrated source retires after split")
 	_check(active_spaces.size() == 2 and not active_spaces.has(source), "consumer registry exposes two live successors and no retired source")
 	_check(player.grounded and player.support_space != null and active_spaces.has(player.support_space), "actor relation succeeds onto one live successor")
-	var successor := player.support_space
+	var successor: LocalMatterSpace = player.support_space
 	_check(successor != null and successor.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC, "actor-owned successor remains dynamic after succession")
 	if successor == null:
 		p1.free()
@@ -151,8 +152,8 @@ func _run() -> void:
 	_check(bool(p1.call("toggle_focused_space_for_test")), "Owner-facing toggle queues freeze for focused successor")
 	await successor.provider_transition_committed
 	var freeze_report: Dictionary = successor.get_last_transition_report()
-	var freeze_previous: Transform3D = freeze_report.get("previous_transform", Transform3D.IDENTITY)
-	var freeze_current: Transform3D = freeze_report.get("current_transform", Transform3D.IDENTITY)
+	var freeze_previous: Transform3D = freeze_report["previous_transform"]
+	var freeze_current: Transform3D = freeze_report["current_transform"]
 	_check(freeze_previous.origin.distance_to(freeze_current.origin) < 0.0001, "freeze preserves successor world position at transition boundary")
 	_check(_basis_error(freeze_previous.basis, freeze_current.basis) < 0.0001, "freeze preserves successor world orientation at transition boundary")
 	await _advance_frames(POST_FREEZE_FRAMES)
@@ -161,35 +162,19 @@ func _run() -> void:
 	_check(player.support_body == successor.get_active_provider(), "actor refreshes support to new static provider")
 	_check(camera_rig.context_target == successor.get_active_provider(), "camera context follows frozen successor provider")
 
-	var final_provider := successor.get_active_provider()
-	var final_anchor_error := final_provider.to_global(player.support_local_center).distance_to(player.global_position)
+	var final_provider: Node3D = successor.get_active_provider()
+	var final_anchor_error: float = final_provider.to_global(player.support_local_center).distance_to(player.global_position)
 	_check(final_anchor_error < 0.001, "final actor/support anchor remains coherent")
 
-	var split_handoff_error := INF
-	if split_result != null:
-		split_handoff_error = player.global_position.distance_to(player.global_position) # overwritten below only for stable formatting
-		var mapped_at_commit: Dictionary = {}
-		# Report the already-asserted commit error without retaining a retired provider.
-		var expected_commit_world: Vector3 = split_result.source_transform * actor_local_before_split
-		var successor_mapping := _find_successor_mapping(split_result, actor_local_before_split)
-		if not successor_mapping.is_empty():
-			var mapped_space := successor_mapping["space"] as LocalMatterSpace
-			var mapped_local: Vector3 = successor_mapping["local_point"]
-			if mapped_space != null:
-				var mapped_provider := mapped_space.get_active_provider()
-				if mapped_space == successor and mapped_provider != null:
-					# Freeze may have occurred since the commit, so use the result transform
-					# itself for the immutable handoff metric.
-					split_handoff_error = expected_commit_world.distance_to(split_result.source_transform * actor_local_before_split)
-
 	print(
-		"P1_INTEGRATED_CAUSAL_LOOP_METRIC logical_space_id=%d rebase_shift=%s mapped_edge=%s linear_rebase_error=%.8f angular_rebase_error=%.8f successors=%d ride_anchor_error=%.8f final_anchor_error=%.8f"
+		"P1_INTEGRATED_CAUSAL_LOOP_METRIC logical_space_id=%d rebase_shift=%s mapped_edge=%s linear_rebase_error=%.8f angular_rebase_error=%.8f handoff_world_error=%.8f successors=%d ride_anchor_error=%.8f final_anchor_error=%.8f"
 		% [
 			logical_space_id,
 			str(local_shift),
 			str(mapped_edge_cell),
 			linear_rebase_error,
 			angular_rebase_error,
+			handoff_world_error,
 			active_spaces.size(),
 			ride_anchor_error,
 			final_anchor_error,
@@ -198,36 +183,6 @@ func _run() -> void:
 
 	p1.free()
 	_finish()
-
-
-func _find_successor_mapping(result: LocalMatterSplitResult, source_local_center: Vector3) -> Dictionary:
-	var best_cell := Vector3i.ZERO
-	var best_score := INF
-	var found := false
-	for component_variant in result.source_components:
-		var component := component_variant as CellVolume
-		if component == null:
-			continue
-		for z in range(component.size.z):
-			for y in range(component.size.y):
-				for x in range(component.size.x):
-					var cell := Vector3i(x, y, z)
-					if component.get_cell(cell) == CellVolume.EMPTY:
-						continue
-					var top_y := float(cell.y) + 1.0
-					if top_y > source_local_center.y + 0.35:
-						continue
-					var dx := float(cell.x) + 0.5 - source_local_center.x
-					var dz := float(cell.z) + 0.5 - source_local_center.z
-					var vertical_gap := maxf(0.0, source_local_center.y - top_y)
-					var score := dx * dx + dz * dz + vertical_gap * vertical_gap * 0.15
-					if score < best_score:
-						best_score = score
-						best_cell = cell
-						found = true
-	if not found:
-		return {}
-	return result.map_source_local_point_for_cell(best_cell, source_local_center)
 
 
 func _basis_error(a: Basis, b: Basis) -> float:
