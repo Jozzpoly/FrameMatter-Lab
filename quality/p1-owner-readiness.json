@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "campaign_id": "p1-owner-facing-recovery",
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
@@ -23,6 +23,8 @@
   "required_gates": {
     "owner_intent_contract": {
       "status": "PASS",
+      "evidence_type": "campaign_contract",
+      "verified_commit": "",
       "evidence": [
         "docs/p1-owner-facing-recovery-campaign.md",
         "docs/p1-visual-acceptance-contract.md",
@@ -31,54 +33,78 @@
     },
     "mechanical_integrated_runtime": {
       "status": "PASS",
+      "evidence_type": "mechanical_runtime",
+      "verified_commit": "",
       "evidence": [
         "docs/evidence/p1-integrated-owner-candidate.md"
       ]
     },
     "rendered_parity_harness": {
       "status": "PASS",
+      "evidence_type": "rendered_parity",
+      "verified_commit": "",
       "evidence": [
         "docs/evidence/p1-g1-rendered-baseline.md"
       ]
     },
     "form_depth_readability": {
       "status": "PENDING",
+      "evidence_type": "rendered_review",
+      "verified_commit": "",
       "evidence": []
     },
     "matter_granularity": {
       "status": "PENDING",
+      "evidence_type": "rendered_review",
+      "verified_commit": "",
       "evidence": []
     },
     "system_state_semantics": {
       "status": "PENDING",
+      "evidence_type": "rendered_review",
+      "verified_commit": "",
       "evidence": []
     },
     "camera_composition": {
       "status": "PENDING",
+      "evidence_type": "rendered_stress_sequence",
+      "verified_commit": "",
       "evidence": []
     },
     "interaction_hierarchy": {
       "status": "PENDING",
+      "evidence_type": "interactive_rehearsal",
+      "verified_commit": "",
       "evidence": []
     },
     "world_motion_causality": {
       "status": "PENDING",
+      "evidence_type": "rendered_motion_sequence",
+      "verified_commit": "",
       "evidence": []
     },
     "ui_hierarchy": {
       "status": "PENDING",
+      "evidence_type": "rendered_review",
+      "verified_commit": "",
       "evidence": []
     },
     "cross_layer_visible_composition": {
       "status": "PENDING",
+      "evidence_type": "composed_rehearsal",
+      "verified_commit": "",
       "evidence": []
     },
     "adversarial_rehearsal": {
       "status": "PENDING",
+      "evidence_type": "recorded_adversarial_rehearsal",
+      "verified_commit": "",
       "evidence": []
     },
     "final_readiness_audit": {
       "status": "PENDING",
+      "evidence_type": "final_cross_plane_audit",
+      "verified_commit": "",
       "evidence": []
     }
   },
