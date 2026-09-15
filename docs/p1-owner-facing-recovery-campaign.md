@@ -1,6 +1,6 @@
 # P1 Owner-facing recovery campaign
 
-Status: **ACTIVE / G2 + G3 + G3-S BOUNDED PASS / G4 CAMERA NEXT**
+Status: **ACTIVE / G2 + G3 + G3-S + G4 BOUNDED PASS / G5 INTERACTION NEXT**
 
 This campaign exists because the first P1 Owner candidate passed mechanical/integration gates but failed the actual Owner-facing acceptance target: a coherent, physically legible sandbox loop.
 
@@ -176,27 +176,34 @@ Explicit nonclaims remain:
 
 ## G4 — camera as experiment instrument
 
-**ACTIVE NEXT / PENDING**
+**BOUNDED PASS / RELATIONAL + OBSTRUCTION-AWARE CAMERA PROMOTED**
 
-Replace “SpringArm exists” with a rendered framing contract.
+G4 replaced “SpringArm exists” with a rendered framing contract.
 
-Required:
+The promoted policy separates two failure classes:
 
-- actor + relevant Space + useful world reference remain understandable,
-- active Space extent influences framing/distance,
-- standing near Space center must not collapse context pressure toward zero,
-- close obstacle handling avoids long-lived useless close-ups,
-- fall/recovery, provider replacement, storage rebase and split recover coherent composition,
-- immediate post-split framing preserves enough relation to understand what happened,
-- the camera may follow the actor without abandoning the experiment the actor is participating in.
+- local occlusion uses geometry-aware nearby orbit probing rather than accepting catastrophic SpringArm compression,
+- extreme actor↔Space separation remains actor-centric, uses bounded vertical context lift and relational orientation, and keeps a finite ordinary camera-distance ceiling rather than trying to zoom far enough to group-fit the whole world.
 
-The G4 stress sequence must use real authored Matter, the promoted G2/G3/G3-S presentation and real lifecycle events rather than a synthetic neutral fixture.
+Presentation-only automatic yaw is separated from the user-owned camera-relative movement frame, so camera recovery cannot rotate player controls behind the Owner's back.
 
-Gate: scripted/adversarial camera output remains useful enough that an informed reviewer can follow actor↔Space↔world causality without reconstructing off-screen context mentally.
+The final rendered stress sequence uses real authored Matter plus promoted G2/G3/G3-S presentation and covers ordinary center/edge framing, legal minimum zoom, real-Matter obstacle compression, a verified pre-recovery airborne state, recovery, real storage-frame rebase, STATIC→DYNAMIC provider replacement with finite motion, immediate split and post-split succession.
+
+The B4 evidence harness was itself corrected after pixel review discovered that slow software-render timing could let production automatic fall recovery occur before the intended airborne screenshot. B4 now asserts the exact airborne world position and null support state before capture, while B5 separately exercises real recovery. This preserves evidence truth rather than tuning the camera against a false fixture.
+
+Final exact-source Windows D3D12 run `35002417718` on commit `3f1f803e41d78f5fda32c073983d3d0d7001eb51` passed the canonical camera sequence. Same-source P1 rebuild run `35002417336` passed the mechanical suite including actor/camera storage continuity and presentation/control-frame separation.
+
+The added rendered rebase state measured `shift=(4, 0, 0)`, actor world error `0.00000763 m`, Matter world error `0.00000048 m` and camera-context error `0`; the world image remained essentially unchanged apart from tiny render variation.
+
+Evidence: `docs/evidence/p1-g4-camera-composition.md`.
+
+Gate result: **camera composition PASS within the current authored P1 scene, lifecycle set and Windows D3D12 evidence path.**
+
+Explicit nonclaims remain: final game camera feel/cinematography, arbitrary geometry/scales, final smoothing/hysteresis tuning, final UI safe-area design, interaction language, G6 world/motion causality and Owner readiness.
 
 ## G5 — interaction visual hierarchy
 
-**PENDING**
+**ACTIVE NEXT / PENDING**
 
 Rebuild edit feedback as a tool rather than debug drawing.
 
@@ -278,6 +285,6 @@ Only the first answer permits delivery.
 
 ## Current stop condition
 
-**Continue G4 camera as experiment instrument.**
+**Continue G5 interaction visual hierarchy.**
 
-Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2, G3 and G3-S are defended bounded foundations, not a substitute for the remaining camera, interaction, world-causality, UI, rehearsal and assurance gates.
+Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2, G3, G3-S and G4 are defended bounded foundations, not a substitute for the remaining interaction, world-causality, UI, rehearsal and assurance gates.
