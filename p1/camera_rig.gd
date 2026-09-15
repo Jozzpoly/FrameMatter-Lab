@@ -15,6 +15,7 @@ extends Node3D
 
 var target: Node3D
 var context_target: Node3D
+var context_local_point := Vector3.ZERO
 
 var _yaw := default_yaw
 var _pitch := default_pitch
@@ -38,8 +39,9 @@ func set_target(node: Node3D) -> void:
 	target = node
 
 
-func set_context_target(node: Node3D) -> void:
+func set_context_target(node: Node3D, local_point: Vector3 = Vector3.ZERO) -> void:
 	context_target = node
+	context_local_point = local_point
 
 
 func get_camera() -> Camera3D:
@@ -75,7 +77,7 @@ func _process(_delta: float) -> void:
 
 	if context_target != null and is_instance_valid(context_target):
 		var context_transform := context_target.get_global_transform_interpolated()
-		var context_point := context_transform.origin + Vector3.UP * 0.5
+		var context_point := context_transform * context_local_point
 		var separation := focus.distance_to(context_point)
 		var context_t := clampf(
 			(separation - context_blend_start) / max(0.001, context_blend_full - context_blend_start),
