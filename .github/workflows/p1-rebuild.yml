@@ -61,6 +61,9 @@ jobs:
       - name: Run P1 finite Space control probe
         run: bash ci/run_godot_probe.sh res://tests/p1_finite_space_control_probe.gd P1_FINITE_CONTROL_PASS
 
+      - name: Run integrated P1 causal loop pressure gate
+        run: bash ci/run_godot_probe.sh res://tests/p1_integrated_causal_loop_probe.gd P1_INTEGRATED_CAUSAL_LOOP_PASS
+
   p1-windows-scene-diagnostic:
     runs-on: windows-latest
     timeout-minutes: 5
