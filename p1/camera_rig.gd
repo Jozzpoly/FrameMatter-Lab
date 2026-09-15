@@ -30,12 +30,12 @@ const ESCAPE_PITCH_ADDS := [0.0, 0.18, 0.36]
 # G4 adaptive challenger. Local obstruction and extreme actor↔Space separation
 # are deliberately solved as different composition problems. A blocked orbit
 # searches for a nearby clear camera ray. Extreme separation keeps the actor as
-# the hard subject and turns the view along actor→Space instead of attempting an
-# ever larger group-fit zoom through world geometry.
+# the hard subject and turns the presentation view along actor→Space without
+# silently rotating the player's camera-relative control frame.
 @export var emergency_relation_start: float = 18.0
 @export var emergency_relation_full: float = 28.0
-@export var emergency_track_focus_weight: float = 0.15
-@export var emergency_track_pitch: float = 0.32
+@export var emergency_track_focus_weight: float = 0.0
+@export var emergency_track_pitch: float = 0.48
 @export var camera_probe_radius: float = 0.28
 @export var escape_clearance_target: float = 0.78
 @export var escape_orbit_response_speed: float = 20.0
@@ -114,13 +114,18 @@ func get_camera() -> Camera3D:
 
 
 func get_planar_forward() -> Vector3:
-	var forward: Vector3 = -_yaw_pivot.global_transform.basis.z
+	# Player intent follows explicit user camera yaw, not presentation-only
+	# obstruction/relation recovery. Automatic camera recovery must never rotate
+	# the movement frame behind the Owner's back.
+	var basis := Basis(Vector3.UP, _yaw)
+	var forward: Vector3 = -basis.z
 	forward.y = 0.0
 	return forward.normalized() if forward.length_squared() > 0.000001 else Vector3.FORWARD
 
 
 func get_planar_right() -> Vector3:
-	var right: Vector3 = _yaw_pivot.global_transform.basis.x
+	var basis := Basis(Vector3.UP, _yaw)
+	var right: Vector3 = basis.x
 	right.y = 0.0
 	return right.normalized() if right.length_squared() > 0.000001 else Vector3.RIGHT
 
@@ -182,10 +187,6 @@ func _process(delta: float) -> void:
 		else:
 			focus = focus.lerp(context_point, context_weight)
 
-		# Normal research framing can widen with actor↔Space separation, but the
-		# extreme relational mode deliberately stops at the ordinary camera range.
-		# Its job is to look from the actor toward the experiment, not to fit both
-		# endpoints by backing through arbitrary world geometry.
 		desired_distance = clampf(
 			maxf(_distance, separation * 0.72),
 			min_distance,
