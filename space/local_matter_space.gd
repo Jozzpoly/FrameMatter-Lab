@@ -15,6 +15,7 @@ signal topology_split_committed(result)
 
 var volume: CellVolume
 var lineage: MatterLineageMap
+var lineage_issuer: MatterLineageIssuer
 
 var mass_per_cell := 1.0
 var collision_mode := CellCollisionBoxer.Mode.MERGED_CUBOIDS
@@ -90,6 +91,12 @@ func request_connected_component_split() -> bool:
 	return true
 
 
+func allocate_lineage_token() -> int:
+	if _retired or lineage_issuer == null:
+		return MatterLineageMap.NONE
+	return lineage_issuer.allocate()
+
+
 func mutate_cell(cell: Vector3i, material_id: int, created_lineage_token: int = MatterLineageMap.NONE) -> bool:
 	if _retired or volume == null or lineage == null or _active_provider == null:
 		return false
@@ -105,9 +112,12 @@ func mutate_cell(cell: Vector3i, material_id: int, created_lineage_token: int = 
 		volume.set_cell(cell, CellVolume.EMPTY)
 		lineage.clear_lineage(cell)
 	elif previous_material == CellVolume.EMPTY:
-		assert(created_lineage_token != MatterLineageMap.NONE)
+		var lineage_token := created_lineage_token
+		if lineage_token == MatterLineageMap.NONE:
+			lineage_token = allocate_lineage_token()
+		assert(lineage_token != MatterLineageMap.NONE)
 		volume.set_cell(cell, material_id)
-		lineage.set_lineage(cell, created_lineage_token)
+		lineage.set_lineage(cell, lineage_token)
 	else:
 		# Material mutation retains logical Matter lineage.
 		volume.set_cell(cell, material_id)
@@ -140,6 +150,12 @@ func get_last_split_result() -> LocalMatterSplitResult:
 	return _last_split_result
 
 
+func get_content_center_local() -> Vector3:
+	if _retired or volume == null or volume.count_solid() == 0:
+		return Vector3.ZERO
+	return MatterTopology.center_of_mass_local(volume)
+
+
 func is_transition_pending() -> bool:
 	return _pending_provider_kind != ProviderKind.NONE
 
@@ -160,6 +176,9 @@ func _initialize_authority(new_volume: CellVolume, new_lineage: MatterLineageMap
 	assert(new_lineage.size == new_volume.size)
 	volume = new_volume
 	lineage = new_lineage
+	if lineage_issuer == null:
+		lineage_issuer = MatterLineageIssuer.new()
+	lineage_issuer.absorb_existing(lineage)
 
 
 func _connect_physics_boundary() -> void:
@@ -329,6 +348,7 @@ func _compact_lineage(component: CellVolume, source_origin: Vector3i, compact_si
 
 
 func _copy_runtime_configuration_to(successor: LocalMatterSpace) -> void:
+	successor.lineage_issuer = lineage_issuer
 	successor.mass_per_cell = mass_per_cell
 	successor.collision_mode = collision_mode
 	successor.dynamic_gravity_scale = dynamic_gravity_scale
