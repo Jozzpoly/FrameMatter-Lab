@@ -1,10 +1,11 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://p1/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://p1/camera_rig.tscn" id="3_camera"]
 [ext_resource type="Script" path="res://p1/space_registry.gd" id="4_registry"]
 [ext_resource type="PackedScene" path="res://p1/matter_interactor.tscn" id="5_interactor"]
+[ext_resource type="Script" path="res://p1/space_control.gd" id="6_space_control"]
 
 [sub_resource type="Environment" id="Environment_P1"]
 background_mode = 1
@@ -78,6 +79,9 @@ cast_shadow = 0
 [node name="P1SpaceRegistry" type="Node" parent="."]
 script = ExtResource("4_registry")
 
+[node name="P1SpaceControl" type="Node" parent="."]
+script = ExtResource("6_space_control")
+
 [node name="P1Player" parent="." instance=ExtResource("2_player")]
 
 [node name="P1CameraRig" parent="." instance=ExtResource("3_camera")]
@@ -109,7 +113,7 @@ text = "P1 INTERACTIVE FOUNDATION"
 [node name="Hint" type="Label" parent="HUD/Panel/MarginContainer/VBoxContainer"]
 theme_override_colors/font_color = Color(0.75, 0.82, 0.90, 1)
 theme_override_font_sizes/font_size = 13
-text = "WASD move   Space jump   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset"
+text = "WASD move   Space jump   T release/freeze   arrows impulse/torque   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset"
 
 [node name="Reticle" type="Label" parent="HUD"]
 anchors_preset = 8
