@@ -19,6 +19,7 @@ var _last_event := "P1 boot"
 func _ready() -> void:
 	_ensure_input_actions()
 	_registry.provider_changed.connect(_on_registry_provider_changed)
+	_registry.storage_rebased.connect(_on_registry_storage_rebased)
 	_registry.split_committed.connect(_on_registry_split_committed)
 	_registry.active_spaces_changed.connect(_on_active_spaces_changed)
 	_interactor.edit_mode_changed.connect(_on_edit_mode_changed)
@@ -229,6 +230,18 @@ func _on_registry_provider_changed(space: LocalMatterSpace) -> void:
 		_focus_space = space
 		_refresh_camera_context()
 		_last_event = "provider replaced in focused Space"
+
+
+func _on_registry_storage_rebased(space: LocalMatterSpace, report: Dictionary) -> void:
+	var actor_rebased := false
+	if _player.grounded and _player.support_space == space:
+		var local_shift: Vector3i = report["local_shift"]
+		actor_rebased = _player.rebase_support_local_coordinates(Vector3(local_shift))
+
+	if space == _focus_space or _player.support_space == space:
+		_focus_space = space
+		_refresh_camera_context()
+	_last_event = "storage frame rebased%s" % ("; actor mapped" if actor_rebased else "")
 
 
 func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterSplitResult) -> void:
