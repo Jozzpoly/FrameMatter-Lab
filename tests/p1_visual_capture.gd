@@ -11,6 +11,7 @@ const EDGE_Z := 8
 
 var _failures: Array[String] = []
 var _output_dir := ""
+var _visual_variant := "canonical"
 
 
 func _init() -> void:
@@ -23,6 +24,10 @@ func _run() -> void:
 		_output_dir = ProjectSettings.globalize_path("res://artifacts/p1-visual-evidence")
 	DirAccess.make_dir_recursive_absolute(_output_dir)
 
+	_visual_variant = OS.get_environment("P1_VISUAL_VARIANT").strip_edges().to_lower()
+	if _visual_variant.is_empty():
+		_visual_variant = "canonical"
+
 	var packed := load("res://p1/main.tscn") as PackedScene
 	_check(packed != null, "P1 visual capture can load the canonical scene")
 	if packed == null:
@@ -32,6 +37,7 @@ func _run() -> void:
 	var p1 := packed.instantiate()
 	get_root().add_child(p1)
 	await process_frame
+	_apply_visual_variant(p1)
 	await _advance_frames(ACQUIRE_FRAMES)
 
 	var source := p1.call("get_space") as LocalMatterSpace
@@ -44,6 +50,7 @@ func _run() -> void:
 		_finish()
 		return
 
+	print("P1_VISUAL_CAPTURE_VARIANT: %s" % _visual_variant)
 	await _capture("00_initial_static")
 
 	_check(bool(p1.call("toggle_focused_space_for_test")), "visual sequence releases the Space")
@@ -87,6 +94,48 @@ func _run() -> void:
 	_finish()
 
 
+func _apply_visual_variant(p1: Node) -> void:
+	if _visual_variant == "canonical":
+		return
+
+	var world_environment := p1.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	var key := p1.get_node_or_null("DirectionalLight3D") as DirectionalLight3D
+	_check(world_environment != null and world_environment.environment != null, "visual challenger resolves P1 Environment")
+	_check(key != null, "visual challenger resolves P1 key light")
+	if world_environment == null or world_environment.environment == null or key == null:
+		return
+
+	if _visual_variant == "balanced_fill" or _visual_variant == "balanced_fill_ssao":
+		# Bounded G2-B challenger: reduce flat ambient/key energy and add a weak
+		# opposite no-shadow/no-specular fill. This follows Godot's documented
+		# fake-GI pattern without changing canonical runtime until rendered A/B
+		# evidence justifies promotion.
+		var environment := world_environment.environment
+		environment.ambient_light_energy = 0.42
+		key.light_energy = 0.88
+
+		var fill := DirectionalLight3D.new()
+		fill.name = "G2TestFillLight"
+		fill.rotation_degrees = key.rotation_degrees + Vector3(0.0, 180.0, 0.0)
+		fill.light_color = Color(0.72, 0.80, 0.92, 1.0)
+		fill.light_energy = 0.24
+		fill.light_specular = 0.0
+		fill.shadow_enabled = false
+		p1.add_child(fill)
+
+		if _visual_variant == "balanced_fill_ssao":
+			# Bounded G2-C challenger: add moderate contact/cavity depth on top of
+			# the exact same key/fill balance. Kept separate from promotion so its
+			# contribution can be judged directly against balanced_fill.
+			environment.ssao_enabled = true
+			environment.ssao_radius = 1.15
+			environment.ssao_intensity = 1.25
+			environment.ssao_power = 1.35
+		return
+
+	_failures.append("unsupported P1_VISUAL_VARIANT: %s" % _visual_variant)
+
+
 func _capture(label: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
@@ -114,7 +163,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_VISUAL_CAPTURE_PASS: canonical P1 produced rendered evidence for static, dynamic, moving, storage-rebased, split and frozen states.")
+		print("P1_VISUAL_CAPTURE_PASS: variant=%s canonical P1 produced rendered evidence for static, dynamic, moving, storage-rebased, split and frozen states." % _visual_variant)
 		quit(0)
 		return
 	for failure in _failures:
