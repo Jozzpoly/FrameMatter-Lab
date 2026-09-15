@@ -12,148 +12,154 @@ Recurring product pressure:
 
 > walk → dig/build → activate/release a local Space → ride it → edit it while moving → use a simple mechanism → understand/debug the consequences.
 
-That is a pressure test, not a feature roadmap.
+For Owner-facing work, the visible/interactive surface is part of the research instrument. The Owner does not experience thousands of lines of substrate code; the Owner experiences the pixels, controls and causal feedback produced by that substrate.
 
 ## Current live state
 
-The canonical project scene is now **P1**:
+The canonical branch scene is P1:
 
 `res://p1/main.tscn`
 
-P0/P0.5 remain historical Owner/consumer evidence, but they no longer define the current executable front door.
+P1 contains materially stronger mechanical foundations than P0/P0.5, including:
 
-The current defended stack includes:
-
-- logical `CellVolume` Matter as authority with disposable mesh/collision/body representation,
-- logical `LocalMatterSpace` identity separated from current static/dynamic provider identity,
+- logical Matter authority independent of mesh/collision/body representation,
+- logical `LocalMatterSpace` identity independent of static/dynamic provider identity,
 - exact merged-cuboid collision as the current provider default,
-- Matter-derived mass/COM/inertia in the tested rigid cases,
-- a query-based volumetric P1 actor that collides with floors/walls/ceilings without implicit kinematic push authority,
-- actor support as a logical-Space relation through provider replacement,
-- a SpringArm camera that retains actor + Space context,
+- query-based volumetric actor collision without implicit infinite-force rigid push authority,
+- actor support through provider replacement,
 - editable moving Matter,
-- bounded expandable local storage with explicit coordinate-frame rebasing,
-- actor/camera relation maintenance through storage-frame rebase,
-- live one→many topology succession after destructive edits,
-- explicit actor/camera succession to a live topology successor,
+- bounded expandable local storage with explicit coordinate-frame rebase,
+- actor/camera relation maintenance through storage rebase,
+- live one→many topology succession,
+- explicit actor/camera succession to topology successors,
 - zero-launch static→dynamic release,
-- finite solver-owned central/torque impulses rather than hidden perpetual drive,
-- dynamic→static successor freeze at the current solver-owned pose.
+- finite solver-owned central/torque impulses,
+- dynamic→static freeze at the current physical pose.
 
-The strongest current automated pressure is one integrated causal loop:
+The strongest mechanical gate composes one causal loop:
 
-> grounded actor → release → finite motion → ride → edit/build while moving → cross storage edge → rebase + mapped placement → destructive cut → real successor Spaces → actor/camera handoff → freeze successor.
+> grounded actor → release → finite motion → ride → moving edit/build → storage rebase → mapped placement → destructive split → actor/camera succession → freeze successor.
 
-Representative strict metrics:
+Representative strict mechanical errors remain around the micrometre scale in the tested cases.
 
-- storage-frame shift `(3, 0, 0)`,
-- linear/angular state error after rebase `0 / 0`,
-- topology actor handoff error about `0.00000125 m`,
-- moving ride anchor error about `0.00000135 m`,
-- final actor/support anchor error about `0.00000098 m`.
+**Those results are retained. They do not make the first P1 Owner candidate acceptable.**
 
-This is **automated integrated evidence, not playability/product evidence**.
+## First P1 Owner candidate — FAIL
 
-Evidence: [`docs/evidence/p1-integrated-owner-candidate.md`](docs/evidence/p1-integrated-owner-candidate.md).
+The first packaged P1 candidate passed mechanical/integration/delivery automation but failed the actual Owner-facing measurement surface severely.
 
-## Active campaign — P1 Owner interaction
+The Owner recording showed, among other problems:
 
-The destructive P1 rebuild has reached a deliberate stop condition. The next highest-information evidence is direct Owner use of the packaged P1 candidate, not another autonomous feature tranche.
+- large Matter surfaces collapsing toward black,
+- directly lit faces becoming flat pale/white planes,
+- almost no visible cell/edit granularity,
+- through-wall engineering target wire,
+- destructive close camera framing,
+- telemetry-dominated default UI,
+- weak visible STATIC/DYNAMIC and topology semantics.
 
-The question is now:
+A new Windows D3D12 Forward+ rendered-evidence lane reproduced the critical black-surface failure in CI.
 
-> **once the major P0/P0.5 consumer defects are removed, which remaining limitation actually dominates direct use?**
+A bounded G2-A experiment changed only the Environment ambient source from SKY to COLOR and zeroed sky contribution. On the same deterministic Windows rendered scene this changed approximately:
 
-Potential outcomes intentionally remain open. Direct use may point next toward interaction/camera work, edit locality, arbitrary orientation/gravity semantics, finite actor↔construct force exchange, a mechanism/world interaction, or a deeper lifecycle/topology failure. The next campaign should be pulled by that evidence rather than by roadmap inertia.
+- near-black coverage `52.96% → 0.00%`,
+- luminance below `0.08`: `54.70% → 1.74%`,
+- mean luminance `0.142 → 0.366`.
 
-### Current P1 controls
+That proves the most severe black collapse was a project-side rendering configuration failure, not evidence that Godot itself cannot render the intended LAB.
 
-- `WASD` — actor movement,
-- `Space` — jump,
-- `T` — zero-launch release / freeze focused Space,
-- `↑` / `↓` — finite forward/back central impulse pulses,
-- `←` / `→` — finite yaw torque pulses,
-- `E` — toggle REMOVE / PLACE,
-- `LMB` — apply current edit,
-- `MMB + mouse` — orbit camera,
-- mouse wheel — zoom,
-- `Home` — reset camera,
-- `K` — recover actor for test continuity,
-- `R` — reset experiment.
+It also proves the previous quality process was inadequate: a trivial visible defect could survive a long technically green campaign.
 
-In PLACE mode an adjacent target outside the current dense storage can request a bounded storage expansion/rebase instead of silently behaving like an invisible wall.
+Evidence:
 
-## P1 Owner-candidate delivery
+- `docs/evidence/p1-owner-interaction-failure.md`,
+- `docs/evidence/p1-g1-rendered-baseline.md`,
+- `docs/evidence/p1-quality-system-postmortem.md`.
 
-Workflow: **[Deliver P1 Owner Candidate](https://github.com/Jozzpoly/FrameMatter-Lab/actions/workflows/deliver-owner-test.yml)**.
+## Active campaign — Q0 quality-system hardening
 
-Delivery run `#7` / `34964102720` independently passed before packaging:
+**Do not treat current P1 as an Owner-ready candidate. Do not merge P1 to `main`. Do not resume feature expansion.**
 
-- strict project import,
-- P1 dependency graph,
-- canonical startup,
-- volumetric actor,
-- composed scene foundation,
-- multi-Space registry,
-- live topology consumer,
-- storage rebase,
-- actor/camera storage-frame continuity,
-- finite Space control,
-- integrated causal loop,
-- Web export,
-- Windows export.
+Before continuing the visual recovery campaign materially, FrameMatter is hardening the process that decides what "ready" means.
 
-Artifacts:
+The new quality model tracks six independent truth planes:
 
-- `FrameMatter-P1-Windows` — preferred Owner-test candidate,
-- `FrameMatter-P1-Web` — browser export bundle for hosting/HTTP tests.
+1. Owner-intent truth,
+2. substrate truth,
+3. composition truth,
+4. observable truth,
+5. interaction truth,
+6. promotion/delivery truth.
 
-Verified Windows executable:
+A PASS on one plane never implies another.
 
-- PE32+ Windows GUI x86-64,
-- `109740584` bytes,
-- SHA-256 `9a73c77ba3a939a53541670861322ea3c27125e0df9ca20864895a1b458f88ee`,
-- embedded product metadata `FrameMatter P1 Owner Candidate`.
+The durable process contract is:
 
-The Web bundle exports successfully, but no permanent hosted URL is claimed merely because an export artifact exists.
+- `docs/QUALITY-SYSTEM.md` — general Owner-centered quality model,
+- `quality/p1-campaign-contract.json` — versioned statement of what P1 must actually achieve,
+- `quality/p1-owner-readiness.json` — current evidence state against that contract,
+- `ci/verify_owner_readiness.py` — machine enforcement,
+- `.github/workflows/owner-readiness.yml` — ordinary consistency validation.
 
-## Evidence discipline
+Current P1 readiness is explicitly **BLOCKED**.
 
-P1 experienced a deliberate evidence reset after the old harness allowed a false-green path. The current strict wrappers require the expected PASS marker **and** reject engine/script `ERROR:` output even when Godot exits with status 0.
+Owner delivery is manual-only **and** technically hard-blocked. Manual workflow dispatch is not sufficient. Delivery can run only when:
 
-The historical fast-invariant wrapper now uses the same zero-engine-error evidence floor. Validate research harness run `#304` / `34963534245` passed the defended fast-invariant set under that stricter rule.
+- every Campaign Contract gate is `PASS`,
+- every gate has durable repository evidence,
+- every gate has been re-verified on the exact candidate commit,
+- no blockers remain,
+- Owner attention is explicitly authorized,
+- `approved_commit` exactly matches the commit being packaged.
 
-Windows import is also synchronous and verifies the global script-class cache before runtime probes. Canonical startup currently passes on both Linux and Windows Godot 4.7.2.
+This is intentionally stricter than the old delivery pipeline.
 
-## Important current distinctions
+## After Q0
+
+The existing P1 Owner-facing recovery campaign remains the execution plan:
+
+- G1 — real rendered evidence harness: established,
+- G2 — lighting/environment truth,
+- G3 — Matter visual language and cell scale,
+- G4 — camera as an experiment instrument,
+- G5 — interaction hierarchy,
+- G6 — world/motion/topology causality,
+- G7 — evidence-based Godot/host viability checkpoint,
+- G8 — complete adversarial rehearsal + final readiness audit.
+
+The visual acceptance contract is `docs/p1-visual-acceptance-contract.md`.
+
+No new Owner package is allowed before G8 and exact-commit readiness authorization.
+
+## Important distinctions
 
 - **Matter ≠ mesh/collision/body identity.**
-- **Space identity ≠ current representation/provider.**
+- **Space identity ≠ current provider identity.**
 - **Space ≠ simulation domain.**
 - **storage coordinates ≠ Matter identity.**
 - **contact ≠ mechanical constraint ≠ rigid bind.**
 - **freeze/provider transition ≠ canonical-world reintegration ≠ bake/resample.**
 - **dirty/invalidation region ≠ final collider/render/world partition.**
-- **support-frame transport ≠ gravity/orientation/adhesion semantics.**
+- **support transport ≠ gravity/orientation/adhesion semantics.**
 - **finite Space impulse controls ≠ vehicle framework.**
-- **automated integrated PASS ≠ Owner/playability/product PASS.**
+- **mechanical integrated PASS ≠ observable PASS ≠ interaction PASS ≠ Owner readiness.**
 
-## Important open boundaries
+## Important open technical boundaries
 
-P1 deliberately does **not** claim:
+P1 still does not claim:
 
 - arbitrary pitch/roll locomotion or frame-local gravity/adhesion,
-- production character feel,
-- satisfying finite actor↔construct reaction forces,
+- final character feel,
+- final actor↔construct reaction-force model,
 - scalable/infinite world storage,
 - final chunk/streaming architecture,
 - persistence/save-load identity,
 - canonical-world extraction/reintegration,
 - curved/planetary Matter,
 - production vehicle framework,
-- product-quality visuals/UI/performance.
+- final production art/UI.
 
-R2A still provides useful measured evidence if edit latency becomes a real problem: update locality is possible, but dirty regions must not automatically become final collider/world chunks.
+These open boundaries do not excuse broken presentation of the systems already being tested.
 
 ## Stack
 
@@ -166,14 +172,18 @@ R2A still provides useful measured evidence if edit latency becomes a real probl
 
 ## Documentation
 
-- **[ROADMAP.md](ROADMAP.md)** — adaptive decision map and campaign boundaries.
-- **[docs/research-state.md](docs/research-state.md)** — current defended / provisional / falsified / open truth.
-- **[docs/evidence/](docs/evidence/)** — durable campaign evidence and measurements.
-- **[docs/evidence/p1-integrated-owner-candidate.md](docs/evidence/p1-integrated-owner-candidate.md)** — current P1 promotion/delivery evidence.
-- **[docs/archive/](docs/archive/)** — historical direction checkpoints once they stop being live guidance.
+- **`ROADMAP.md`** — adaptive decision map and campaign boundaries.
+- **`docs/research-state.md`** — defended / provisional / falsified / open technical truth.
+- **`docs/QUALITY-SYSTEM.md`** — campaign quality and promotion model.
+- **`docs/p1-owner-facing-recovery-campaign.md`** — P1 recovery execution plan.
+- **`docs/p1-visual-acceptance-contract.md`** — Owner-visible acceptance dimensions.
+- **`docs/evidence/`** — durable evidence, including failures and postmortems.
+- **`quality/`** — machine-readable campaign contract and readiness state.
 
 ## Working rule
 
 Stabilize **intent and defended invariants**, not prematurely class names, APIs, partition schemes or implementation mechanisms.
 
-When evidence and roadmap disagree, evidence wins.
+Explore aggressively. Promote conservatively.
+
+When evidence and roadmap disagree, evidence wins. When hidden correctness and Owner-visible reality disagree, the candidate is not ready.
