@@ -1,25 +1,25 @@
 class_name P1CameraRig
 extends Node3D
 
-@export var focus_height := 0.65
-@export var default_yaw := 0.72
-@export var default_pitch := 0.48
-@export var default_distance := 7.2
-@export var min_distance := 3.0
-@export var max_distance := 13.0
-@export var orbit_sensitivity := 0.007
-@export var zoom_step := 0.65
-@export var context_blend_start := 5.0
-@export var context_blend_full := 14.0
-@export var max_context_weight := 0.42
+@export var focus_height: float = 0.65
+@export var default_yaw: float = 0.72
+@export var default_pitch: float = 0.48
+@export var default_distance: float = 7.2
+@export var min_distance: float = 3.0
+@export var max_distance: float = 13.0
+@export var orbit_sensitivity: float = 0.007
+@export var zoom_step: float = 0.65
+@export var context_blend_start: float = 5.0
+@export var context_blend_full: float = 14.0
+@export var max_context_weight: float = 0.42
 
 var target: Node3D
 var context_target: Node3D
 var context_local_point := Vector3.ZERO
 
-var _yaw := default_yaw
-var _pitch := default_pitch
-var _distance := default_distance
+var _yaw: float = default_yaw
+var _pitch: float = default_pitch
+var _distance: float = default_distance
 var _orbiting := false
 
 @onready var _yaw_pivot: Node3D = $YawPivot
@@ -49,13 +49,13 @@ func get_camera() -> Camera3D:
 
 
 func get_planar_forward() -> Vector3:
-	var forward := -_yaw_pivot.global_transform.basis.z
+	var forward: Vector3 = -_yaw_pivot.global_transform.basis.z
 	forward.y = 0.0
 	return forward.normalized() if forward.length_squared() > 0.000001 else Vector3.FORWARD
 
 
 func get_planar_right() -> Vector3:
-	var right := _yaw_pivot.global_transform.basis.x
+	var right: Vector3 = _yaw_pivot.global_transform.basis.x
 	right.y = 0.0
 	return right.normalized() if right.length_squared() > 0.000001 else Vector3.RIGHT
 
@@ -71,22 +71,23 @@ func _process(_delta: float) -> void:
 	if target == null or not is_instance_valid(target):
 		return
 
-	var target_transform := target.get_global_transform_interpolated()
-	var focus := target_transform.origin + Vector3.UP * focus_height
-	var desired_distance := _distance
+	var target_transform: Transform3D = target.get_global_transform_interpolated()
+	var focus: Vector3 = target_transform.origin + Vector3.UP * focus_height
+	var desired_distance: float = _distance
 
 	if context_target != null and is_instance_valid(context_target):
-		var context_transform := context_target.get_global_transform_interpolated()
-		var context_point := context_transform * context_local_point
-		var separation := focus.distance_to(context_point)
-		var context_t := clampf(
-			(separation - context_blend_start) / max(0.001, context_blend_full - context_blend_start),
+		var context_transform: Transform3D = context_target.get_global_transform_interpolated()
+		var context_point: Vector3 = context_transform * context_local_point
+		var separation: float = focus.distance_to(context_point)
+		var blend_span: float = maxf(0.001, context_blend_full - context_blend_start)
+		var context_t: float = clampf(
+			(separation - context_blend_start) / blend_span,
 			0.0,
 			1.0
 		)
-		var context_weight := context_t * max_context_weight
+		var context_weight: float = context_t * max_context_weight
 		focus = focus.lerp(context_point, context_weight)
-		desired_distance = clampf(max(_distance, separation * 0.72), min_distance, max_distance)
+		desired_distance = clampf(maxf(_distance, separation * 0.72), min_distance, max_distance)
 
 	global_position = focus
 	_spring_arm.spring_length = desired_distance
@@ -107,10 +108,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_orbiting = mouse.pressed
 		return
 	if mouse.pressed and mouse.button_index == MOUSE_BUTTON_WHEEL_UP:
-		_distance = max(min_distance, _distance - zoom_step)
+		_distance = maxf(min_distance, _distance - zoom_step)
 		return
 	if mouse.pressed and mouse.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		_distance = min(max_distance, _distance + zoom_step)
+		_distance = minf(max_distance, _distance + zoom_step)
 
 
 func _apply_orbit() -> void:
