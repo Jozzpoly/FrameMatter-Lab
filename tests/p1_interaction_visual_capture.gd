@@ -77,6 +77,8 @@ func _run() -> void:
 		"G5 production interaction uses pointer acquisition"
 	)
 	_check(_p1.get_node_or_null("HUD/Reticle") == null, "G5 production HUD has no false center reticle")
+	if _interactor != null:
+		_check(_interactor.get_node_or_null("TargetOutline") == null, "G5 retired legacy TargetOutline is absent")
 	if _target_presentation != null and _interactor != null:
 		_check(_target_presentation.interactor == _interactor, "G5 production presenter binds existing interactor authority")
 	if _feedback != null and _interactor != null:
@@ -268,8 +270,6 @@ func _capture_pointer_target(
 func _capture_pixels(label: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
-	var legacy_outline := _interactor.get_node_or_null("TargetOutline") as MeshInstance3D
-	_check(legacy_outline == null or not legacy_outline.visible, "%s suppresses legacy no-depth outline" % label)
 	var image := get_root().get_texture().get_image()
 	_check(image != null and not image.is_empty(), "%s produced rendered pixels" % label)
 	if image == null or image.is_empty():
