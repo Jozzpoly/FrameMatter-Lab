@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [canonical, guarded_context]
+        variant: [canonical, guarded_context, adaptive_relational]
     env:
       P1_CAMERA_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-camera-evidence\${{ matrix.variant }}
       P1_CAMERA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}

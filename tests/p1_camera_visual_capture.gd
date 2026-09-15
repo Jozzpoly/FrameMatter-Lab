@@ -10,6 +10,7 @@ const CENTRAL_IMPULSE := Vector3(0.0, 0.0, -36.0)
 const TORQUE_IMPULSE := Vector3(0.0, 90.0, 0.0)
 const VARIANT_CANONICAL := "canonical"
 const VARIANT_GUARDED_CONTEXT := "guarded_context"
+const VARIANT_ADAPTIVE_RELATIONAL := "adaptive_relational"
 
 var _failures: Array[String] = []
 var _output_dir := ""
@@ -32,7 +33,9 @@ func _run() -> void:
 	if _variant.is_empty():
 		_variant = VARIANT_CANONICAL
 	_check(
-		_variant == VARIANT_CANONICAL or _variant == VARIANT_GUARDED_CONTEXT,
+		_variant == VARIANT_CANONICAL
+		or _variant == VARIANT_GUARDED_CONTEXT
+		or _variant == VARIANT_ADAPTIVE_RELATIONAL,
 		"G4 capture variant is supported: %s" % _variant
 	)
 	if not _failures.is_empty():
@@ -61,7 +64,10 @@ func _run() -> void:
 		_finish()
 		return
 
-	_camera_rig.set_composition_guard_enabled(_variant == VARIANT_GUARDED_CONTEXT)
+	if _variant == VARIANT_ADAPTIVE_RELATIONAL:
+		_camera_rig.set_adaptive_relational_enabled(true)
+	else:
+		_camera_rig.set_composition_guard_enabled(_variant == VARIANT_GUARDED_CONTEXT)
 	_refresh_variant_context()
 
 	# B0 — ordinary centered spawn. This is the case where the current camera's
@@ -86,8 +92,8 @@ func _run() -> void:
 	# B3 — place the actor beside real authored Matter wall geometry and orient
 	# the spring arm through it. This isolates collision compression from good
 	# composition: SpringArm may correctly avoid clipping yet still produce an
-	# unusable frame. Give a guarded challenger enough frames to demonstrate a
-	# stable recovery rather than judging its first transient response.
+	# unusable frame. Give challengers enough frames to demonstrate a stable
+	# recovery rather than judging their first transient response.
 	_camera_rig.reset_view()
 	_move_player_to_space_local(source, WALL_NEAR_LOCAL)
 	await _advance_frames(SETTLE_FRAMES)
@@ -106,7 +112,7 @@ func _run() -> void:
 	# adversarial but still uses the real camera policy rather than a fixture.
 	_camera_rig.reset_view()
 	_move_player_world(FAR_AIRBORNE_WORLD)
-	await _advance_frames(4)
+	await _advance_frames(8)
 	await _capture("04_far_airborne_context")
 
 	# B5 — recovery should return to a coherent experiment frame rather than only
@@ -166,7 +172,10 @@ func _move_player_world(world_position: Vector3) -> void:
 
 
 func _refresh_variant_context() -> void:
-	if _variant != VARIANT_GUARDED_CONTEXT or _p1 == null or _camera_rig == null:
+	if (
+		_variant != VARIANT_GUARDED_CONTEXT
+		and _variant != VARIANT_ADAPTIVE_RELATIONAL
+	) or _p1 == null or _camera_rig == null:
 		return
 	var space := _p1.call("get_space") as LocalMatterSpace
 	if space == null or not is_instance_valid(space) or space.is_retired():
