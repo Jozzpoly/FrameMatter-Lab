@@ -87,7 +87,7 @@ func activate_dynamic_probe_for_test() -> bool:
 		return false
 	if _focus_space.get_provider_kind() != LocalMatterSpace.ProviderKind.STATIC:
 		return false
-	var accepted := _focus_space.request_dynamic(TEST_LINEAR_VELOCITY, TEST_ANGULAR_VELOCITY)
+	var accepted: bool = _focus_space.request_dynamic(TEST_LINEAR_VELOCITY, TEST_ANGULAR_VELOCITY)
 	if accepted:
 		_last_event = "test lifecycle activation queued"
 	return accepted
@@ -98,7 +98,7 @@ func freeze_static_probe_for_test() -> bool:
 		return false
 	if _focus_space.get_provider_kind() != LocalMatterSpace.ProviderKind.DYNAMIC:
 		return false
-	var accepted := _focus_space.request_static()
+	var accepted: bool = _focus_space.request_static()
 	if accepted:
 		_last_event = "test lifecycle freeze queued"
 	return accepted
@@ -153,12 +153,12 @@ func _reset_experiment() -> void:
 
 
 func _recover_player_to_space(reason: String = "recovery") -> void:
-	var target_space := _focus_space if _is_live_space(_focus_space) else _registry.find_nearest_space(_player.global_position)
+	var target_space: LocalMatterSpace = _focus_space if _is_live_space(_focus_space) else _registry.find_nearest_space(_player.global_position)
 	if not _is_live_space(target_space):
 		return
 	_focus_space = target_space
-	var provider := target_space.get_active_provider()
-	var spawn_local := _find_safe_spawn_local(target_space)
+	var provider: Node3D = target_space.get_active_provider()
+	var spawn_local: Vector3 = _find_safe_spawn_local(target_space)
 	_player.global_position = provider.to_global(spawn_local)
 	_player.desired_local_velocity = Vector3.ZERO
 	_player.world_velocity = Vector3.ZERO
@@ -175,9 +175,9 @@ func _recover_player_to_space(reason: String = "recovery") -> void:
 func _find_safe_spawn_local(space: LocalMatterSpace) -> Vector3:
 	if space == null or space.volume == null:
 		return Vector3(0.5, 2.0, 0.5)
-	var center := space.get_content_center_local()
+	var center: Vector3 = space.get_content_center_local()
 	var best_cell := Vector3i.ZERO
-	var best_score := INF
+	var best_score: float = INF
 	var found := false
 	for cell in _occupied_cells(space.volume):
 		# Prefer high exposed cells near the Matter content center. A cell with
@@ -185,8 +185,8 @@ func _find_safe_spawn_local(space: LocalMatterSpace) -> Vector3:
 		var above := cell + Vector3i.UP
 		if space.volume.in_bounds(above) and space.volume.get_cell(above) != CellVolume.EMPTY:
 			continue
-		var horizontal := Vector2(float(cell.x) + 0.5 - center.x, float(cell.z) + 0.5 - center.z).length_squared()
-		var score := horizontal - float(cell.y) * 0.12
+		var horizontal: float = Vector2(float(cell.x) + 0.5 - center.x, float(cell.z) + 0.5 - center.z).length_squared()
+		var score: float = horizontal - float(cell.y) * 0.12
 		if score < best_score:
 			best_score = score
 			best_cell = cell
@@ -197,8 +197,8 @@ func _find_safe_spawn_local(space: LocalMatterSpace) -> Vector3:
 
 
 func _update_player_intent() -> void:
-	var side := Input.get_action_strength("p1_move_right") - Input.get_action_strength("p1_move_left")
-	var forward_amount := Input.get_action_strength("p1_move_forward") - Input.get_action_strength("p1_move_back")
+	var side: float = Input.get_action_strength("p1_move_right") - Input.get_action_strength("p1_move_left")
+	var forward_amount: float = Input.get_action_strength("p1_move_forward") - Input.get_action_strength("p1_move_back")
 	var input_axis := Vector2(side, forward_amount)
 	if input_axis.length_squared() > 1.0:
 		input_axis = input_axis.normalized()
@@ -207,18 +207,18 @@ func _update_player_intent() -> void:
 		_player.desired_local_velocity = Vector3.ZERO
 		return
 
-	var desired_world := (
+	var desired_world: Vector3 = (
 		_camera_rig.get_planar_right() * input_axis.x
 		+ _camera_rig.get_planar_forward() * input_axis.y
 	) * PLAYER_SPEED
 
 	if _player.grounded and _player.support_body != null and is_instance_valid(_player.support_body):
-		var support_basis := _player.support_body.global_transform.basis.orthonormalized()
+		var support_basis: Basis = _player.support_body.global_transform.basis.orthonormalized()
 		_player.desired_local_velocity = support_basis.inverse() * desired_world
 	else:
 		_player.desired_local_velocity = desired_world
 
-	var planar := desired_world
+	var planar: Vector3 = desired_world
 	planar.y = 0.0
 	if planar.length_squared() > 0.000001:
 		_player.rotation.y = atan2(-planar.x, -planar.z)
@@ -234,10 +234,10 @@ func _on_registry_provider_changed(space: LocalMatterSpace) -> void:
 func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterSplitResult) -> void:
 	var transferred := false
 	if _player.grounded and _player.support_space == source:
-		var mapping := _find_actor_successor_mapping(result, _player.support_local_center)
+		var mapping: Dictionary = _find_actor_successor_mapping(result, _player.support_local_center)
 		if not mapping.is_empty():
 			var successor := mapping["space"] as LocalMatterSpace
-			var provider := successor.get_active_provider() if successor != null else null
+			var provider: Node3D = successor.get_active_provider() if successor != null else null
 			if provider != null:
 				transferred = _player.transfer_support_frame(provider, mapping["local_point"])
 				if transferred:
@@ -254,20 +254,20 @@ func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterS
 
 func _find_actor_successor_mapping(result: LocalMatterSplitResult, source_local_center: Vector3) -> Dictionary:
 	var best_cell := Vector3i.ZERO
-	var best_score := INF
+	var best_score: float = INF
 	var found := false
 	for component_variant in result.source_components:
 		var component := component_variant as CellVolume
 		if component == null:
 			continue
 		for cell in _occupied_cells(component):
-			var top_y := float(cell.y) + 1.0
+			var top_y: float = float(cell.y) + 1.0
 			if top_y > source_local_center.y + 0.35:
 				continue
-			var dx := float(cell.x) + 0.5 - source_local_center.x
-			var dz := float(cell.z) + 0.5 - source_local_center.z
-			var vertical_gap := max(0.0, source_local_center.y - top_y)
-			var score := dx * dx + dz * dz + vertical_gap * vertical_gap * 0.15
+			var dx: float = float(cell.x) + 0.5 - source_local_center.x
+			var dz: float = float(cell.z) + 0.5 - source_local_center.z
+			var vertical_gap: float = maxf(0.0, source_local_center.y - top_y)
+			var score: float = dx * dx + dz * dz + vertical_gap * vertical_gap * 0.15
 			if score < best_score:
 				best_score = score
 				best_cell = cell
@@ -290,7 +290,7 @@ func _refresh_focus_from_player() -> void:
 
 
 func _refresh_camera_context() -> void:
-	var context_space := _player.support_space if _is_live_space(_player.support_space) else _focus_space
+	var context_space: LocalMatterSpace = _player.support_space if _is_live_space(_player.support_space) else _focus_space
 	if not _is_live_space(context_space):
 		context_space = _registry.find_nearest_space(_player.global_position)
 	if not _is_live_space(context_space):
