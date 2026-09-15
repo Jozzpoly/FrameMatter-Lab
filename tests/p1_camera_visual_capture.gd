@@ -6,6 +6,8 @@ const SPLIT_SETTLE_FRAMES := 4
 const EDGE_LOCAL := Vector3(13.35, 1.94, 8.5)
 const WALL_NEAR_LOCAL := Vector3(4.65, 1.94, 6.5)
 const FAR_AIRBORNE_WORLD := Vector3(34.5, -7.0, 0.0)
+const TARGET_OLD_FRAME_CELL := Vector3i(-2, 0, 5)
+const STORAGE_PADDING := 2
 const CENTRAL_IMPULSE := Vector3(0.0, 0.0, -36.0)
 const TORQUE_IMPULSE := Vector3(0.0, 90.0, 0.0)
 const USABLE_TOP_NORM := 0.22
@@ -113,7 +115,61 @@ func _run() -> void:
 	await _advance_frames(SETTLE_FRAMES)
 	await _capture("05_post_recovery")
 
+	# Storage rebase is coordinate maintenance, not a world-space event. The
+	# rendered framing contract therefore requires composition continuity through
+	# the real rebase path: same provider, same Matter world location, same actor
+	# world location and same camera context point after local coordinates shift.
 	source = _p1.call("get_space") as LocalMatterSpace
+	var provider_before_rebase := source.get_active_provider()
+	var provider_id_before_rebase := provider_before_rebase.get_instance_id()
+	var actor_world_before_rebase := _player.global_position
+	var content_world_before_rebase := provider_before_rebase.to_global(source.get_content_center_local())
+	var camera_context_world_before_rebase := _camera_rig.context_target.to_global(_camera_rig.context_local_point)
+	_check(
+		camera_context_world_before_rebase.distance_to(content_world_before_rebase) < 0.0001,
+		"G4 storage state camera context represents Matter center before rebase"
+	)
+	_check(
+		source.request_storage_rebase(TARGET_OLD_FRAME_CELL, STORAGE_PADDING),
+		"G4 sequence queues real storage-frame rebase"
+	)
+	await source.storage_rebase_committed
+	var rebase_report := source.get_last_storage_rebase_report()
+	_check(not rebase_report.is_empty(), "G4 storage rebase publishes mapping report")
+	var storage_shift := Vector3i.ZERO
+	if not rebase_report.is_empty():
+		storage_shift = rebase_report["local_shift"]
+	await _advance_frames(2)
+	var provider_after_rebase := source.get_active_provider()
+	var content_world_after_rebase := provider_after_rebase.to_global(source.get_content_center_local())
+	var camera_context_world_after_rebase := _camera_rig.context_target.to_global(_camera_rig.context_local_point)
+	var actor_world_after_rebase := _player.global_position
+	_check(
+		provider_after_rebase.get_instance_id() == provider_id_before_rebase,
+		"G4 storage rebase preserves provider identity"
+	)
+	_check(
+		content_world_after_rebase.distance_to(content_world_before_rebase) < 0.0001,
+		"G4 storage rebase preserves Matter world position"
+	)
+	_check(
+		actor_world_after_rebase.distance_to(actor_world_before_rebase) < 0.01,
+		"G4 storage rebase preserves actor world position"
+	)
+	_check(
+		camera_context_world_after_rebase.distance_to(content_world_after_rebase) < 0.0001,
+		"G4 storage rebase refreshes camera context without world-space drift"
+	)
+	print(
+		"P1_CAMERA_REBASE_STATE shift=%s actor_world_error=%.8f content_world_error=%.8f camera_context_error=%.8f" % [
+			str(storage_shift),
+			actor_world_after_rebase.distance_to(actor_world_before_rebase),
+			content_world_after_rebase.distance_to(content_world_before_rebase),
+			camera_context_world_after_rebase.distance_to(content_world_after_rebase),
+		]
+	)
+	await _capture("05b_storage_rebase_continuity")
+
 	_check(bool(_p1.call("toggle_focused_space_for_test")), "G4 sequence releases focused Space")
 	await source.provider_transition_committed
 	await _advance_frames(3)
@@ -122,11 +178,13 @@ func _run() -> void:
 	await _advance_frames(14)
 	await _capture("06_dynamic_motion")
 
+	# Storage rebase changed only local coordinates. Map the authored cut through
+	# its reported shift so topology stress still targets the same world Matter.
 	for z in range(2, 14):
-		var cut_cell := Vector3i(6, 0, z)
+		var cut_cell := Vector3i(6, 0, z) + storage_shift
 		_check(
 			_interactor.apply_edit_to_cell(source, cut_cell, P1MatterInteractor.EditMode.REMOVE),
-			"G4 split removes %s" % str(cut_cell)
+			"G4 split removes mapped %s" % str(cut_cell)
 		)
 	if source.is_topology_split_pending():
 		await source.topology_split_committed
@@ -309,7 +367,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_CAMERA_CAPTURE_PASS: canonical camera preserved center, edge, legal minimum zoom, real-Matter obstacle handling, airborne context, recovery, dynamic motion and topology succession.")
+		print("P1_CAMERA_CAPTURE_PASS: canonical camera preserved center, edge, legal minimum zoom, real-Matter obstacle handling, airborne context, recovery, storage rebase continuity, dynamic motion and topology succession.")
 		quit(0)
 		return
 	for failure in _failures:
