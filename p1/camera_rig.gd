@@ -29,12 +29,14 @@ const ESCAPE_PITCH_ADDS := [0.0, 0.18, 0.36]
 
 # G4 adaptive challenger. Local obstruction and extreme actor↔Space separation
 # are deliberately solved as different composition problems. A blocked orbit
-# searches for a nearby clear camera ray. Extreme separation keeps the actor as
-# the hard subject and turns the presentation view along actor→Space without
-# silently rotating the player's camera-relative control frame.
+# searches for a nearby clear camera ray. Extreme separation keeps actor X/Z as
+# the hard anchor, may lift the presentation focus toward a higher context, and
+# turns the view along actor→Space without rotating the player's control frame.
 @export var emergency_relation_start: float = 18.0
 @export var emergency_relation_full: float = 28.0
 @export var emergency_track_focus_weight: float = 0.0
+@export var emergency_vertical_lift_weight: float = 0.55
+@export var emergency_vertical_lift_cap: float = 4.5
 @export var emergency_track_pitch: float = 0.48
 @export var camera_probe_radius: float = 0.28
 @export var escape_clearance_target: float = 0.78
@@ -182,6 +184,12 @@ func _process(delta: float) -> void:
 				)
 				var track_shift := (context_point - actor_focus) * emergency_track_focus_weight
 				focus = actor_focus + bounded_shift.lerp(track_shift, emergency_relation_t)
+				var upward_gap := maxf(0.0, context_point.y - actor_focus.y)
+				var vertical_lift := minf(
+					emergency_vertical_lift_cap,
+					upward_gap * emergency_vertical_lift_weight
+				) * emergency_relation_t
+				focus.y += vertical_lift
 			else:
 				focus += bounded_shift
 		else:
