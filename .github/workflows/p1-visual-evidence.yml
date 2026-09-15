@@ -20,11 +20,16 @@ concurrency:
 
 jobs:
   rendered-baseline:
+    name: rendered-baseline-${{ matrix.renderer }}
+    strategy:
+      fail-fast: false
+      matrix:
+        renderer: [gl_compatibility, forward_plus]
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     env:
       LIBGL_ALWAYS_SOFTWARE: "1"
-      P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/p1-visual-evidence
+      P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/p1-visual-evidence/${{ matrix.renderer }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -41,22 +46,24 @@ jobs:
 
       - name: Capture rendered P1 evidence under Xvfb
         shell: bash
+        env:
+          P1_RENDERER: ${{ matrix.renderer }}
         run: |
           set -euo pipefail
           mkdir -p "$P1_VISUAL_EVIDENCE_DIR"
           set +e
-          xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/p1_visual_capture.gd 2>&1 | tee /tmp/p1_visual_capture.log
+          xvfb-run -a godot --path . --audio-driver Dummy --rendering-method "$P1_RENDERER" --script res://tests/p1_visual_capture.gd 2>&1 | tee "/tmp/p1_visual_capture_${P1_RENDERER}.log"
           status=${PIPESTATUS[0]}
           set -e
           if [ "$status" -ne 0 ]; then
             echo "Rendered capture process failed with exit code $status"
             exit "$status"
           fi
-          if grep -Eq 'SCRIPT ERROR:|ERROR:' /tmp/p1_visual_capture.log; then
+          if grep -Eq 'SCRIPT ERROR:|ERROR:' "/tmp/p1_visual_capture_${P1_RENDERER}.log"; then
             echo "Rendered capture emitted engine/script ERROR output"
             exit 1
           fi
-          if ! grep -q 'P1_VISUAL_CAPTURE_PASS' /tmp/p1_visual_capture.log; then
+          if ! grep -q 'P1_VISUAL_CAPTURE_PASS' "/tmp/p1_visual_capture_${P1_RENDERER}.log"; then
             echo "Rendered capture did not emit the expected PASS marker"
             exit 1
           fi
@@ -66,12 +73,14 @@ jobs:
 
       - name: Record rendered evidence provenance
         shell: bash
+        env:
+          P1_RENDERER: ${{ matrix.renderer }}
         run: |
           {
             echo "FrameMatter P1 rendered visual evidence"
             echo "workflow_run=${GITHUB_RUN_ID}"
             echo "commit=${GITHUB_SHA}"
-            echo "renderer=Godot 4.7.2 gl_compatibility under Xvfb / software Mesa"
+            echo "renderer=Godot 4.7.2 ${P1_RENDERER} under Xvfb / software runner"
             echo "audio_driver=Dummy"
             echo "source_scene=res://p1/main.tscn"
             echo "capture_script=res://tests/p1_visual_capture.gd"
@@ -80,6 +89,6 @@ jobs:
       - name: Upload rendered visual evidence
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P1-Rendered-Evidence
-          path: artifacts/p1-visual-evidence
+          name: FrameMatter-P1-Rendered-Evidence-${{ matrix.renderer }}
+          path: artifacts/p1-visual-evidence/${{ matrix.renderer }}
           retention-days: 30
