@@ -1,6 +1,6 @@
 # P1 Owner-facing recovery campaign
 
-Status: **ACTIVE / G2 + G3 + G3-S + G4 + G5 BOUNDED PASS / G6 CAUSALITY NEXT**
+Status: **ACTIVE / G2 + G3 + G3-S + G4 + G5 + G6 BOUNDED PASS / G7 HOST CHECKPOINT PASS / UI HIERARCHY NEXT**
 
 This campaign exists because the first P1 Owner candidate passed mechanical/integration gates but failed the actual Owner-facing acceptance target: a coherent, physically legible sandbox loop.
 
@@ -233,29 +233,51 @@ Explicit nonclaims remain: final interaction feel, controller/touch/VR input, fi
 
 ## G6 — world/motion/topology causality
 
-**PENDING / NEXT**
+**BOUNDED PASS / COARSE WORLD DATUM PROMOTED**
 
-Reference environment and state cues must make real physical state readable.
+G6 challenged a scene in which the physical motion was real but the stable reference world was visually too uniform. The winning mechanism is a restrained, presentation-only world datum attached to the real `WorldReference`: 4 m spacing, a stronger line every 8 m, normal depth testing and no ownership of physics or simulation state.
 
-- world provides subdued scale/motion/parallax reference,
-- release reads as state change rather than unexplained launch,
-- finite translation/yaw are perceivable relative to stable reference,
-- split successors read as related but independent Spaces,
-- freeze reads as current pose becoming static rather than visual reset.
+The exact-source A/B uses the same production scene/presenter and differs only by whether that datum is visible. Pixel review showed materially stronger scale/parallax for real translation and yaw without turning the world into a debug grid or competing with the one-cell Matter grid.
 
-Do not fake physics with effects; explain actual physics visually.
+The final real sequence covers zero-launch STATIC→DYNAMIC release, finite translation+yaw, destructive topology split, sibling-only finite drive, freeze-at-current-pose and continued motion of the still-DYNAMIC sibling.
+
+The first G6 run also caught a fixture error: request-time pose had been compared to post-commit pose for asynchronous freeze. Existing lifecycle evidence already separates legal final solver phase advance from synchronous provider-transition continuity. The harness was corrected rather than loosening a threshold or changing runtime behavior. On the final run, request→commit phase advance was `0.01125639`, while actual provider transition jump and frozen drift were both `0`.
+
+Final exact-source Windows D3D12 run `35018041141` on runtime `5a4f9bbc57742e6bb4561a199ec5d95761e72ef9` passed baseline and promoted coarse-grid lanes. The sibling-only post-split drive produced `2.0500 m` additional relative separation; after the actor successor froze with zero drift, the dynamic sibling moved another `7.8291 m`.
+
+Same-source full foundation, G4, G5, Windows/Linux rendered evidence, readiness validation and research-harness validation all passed after canonical promotion.
+
+Evidence: `docs/evidence/p1-g6-world-motion-causality.md`.
+
+Gate result: **world / motion / topology causality PASS within the current authored P1 scene, finite-control sequence and Windows D3D12 evidence path.**
+
+Explicit nonclaims remain: final world art, arbitrary scales/environments, final motion design, final UI hierarchy, combined moving-edit+storage-rebase scenario, cross-layer rehearsal and Owner readiness.
 
 ## G7 — renderer / host viability checkpoint
 
-**PENDING**
+**PASS / GODOT REMAINS THE P1 HOST / REFERENCE-HOST TRIGGER NOT MET**
 
-Godot is judged only after competent G2–G6 work.
+Godot was deliberately judged only after competent G2–G6 work.
 
-If a deliberately simple FrameMatter scene still cannot reach professional readability with ordinary Godot rendering/material/camera facilities at reasonable complexity, build a tiny equivalent reference in the strongest familiar web stack and compare the same authored geometry/camera target.
+The predeclared trigger for building a tiny equivalent web reference was that a deliberately simple FrameMatter scene still could not reach professional causal readability with ordinary Godot rendering/material/camera facilities at reasonable complexity. That condition is not demonstrated.
 
-Host-switch discussion is evidence-triggered, not frustration-triggered.
+G2–G6 reached bounded readability using ordinary separable Godot presentation mechanisms while the full substrate stayed green. The final G6 runtime also passed Windows D3D12 Forward+, Linux Compatibility, G4, G5 and the mechanical suite. The original black-surface failure has already been traced to project-side environment configuration rather than a host limitation.
 
-The first black-surface recording is not evidence against Godot because a concrete project-side ambient configuration failure has already been reproduced and corrected in a bounded A/B.
+Therefore building another host now would be migration work without an evidence trigger. Godot remains the P1 host. This decision can be reopened if a concrete renderer/platform blocker is demonstrated later.
+
+Evidence: `docs/evidence/p1-g7-renderer-host-viability.md`.
+
+This is not a permanent engine commitment for future planetary-scale requirements and does not claim that large-world precision, streaming, compute or custom rendering are solved.
+
+## UI hierarchy — remaining V-G gate
+
+**PENDING / ACTIVE NEXT**
+
+The default broad engineering HUD remains the clearest unresolved visual-contract failure after G2–G7.
+
+The world must dominate the normal view. Default UI must be compact and action-oriented; engineering telemetry must be hidden or secondary; persistent instructions must not occupy a large top strip; labels must complement world cues rather than replace them.
+
+This gate is currently being challenged separately rather than hidden inside G8.
 
 ## G8 — adversarial preflight / Owner package
 
@@ -301,6 +323,6 @@ Only the first answer permits delivery.
 
 ## Current stop condition
 
-**Continue G6 world / motion / topology causality.**
+**Continue default UI hierarchy work.**
 
-Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2, G3, G3-S, G4 and G5 are defended bounded foundations, not a substitute for the remaining world-causality, UI, rehearsal and assurance gates.
+Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2, G3, G3-S, G4, G5, G6 and the G7 host checkpoint are defended bounded foundations, not a substitute for the remaining UI, composed rehearsal and assurance gates.
