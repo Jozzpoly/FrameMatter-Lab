@@ -25,9 +25,21 @@ jobs:
     timeout-minutes: 10
     env:
       P1_CAMERA_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-camera-evidence\windows-canonical
+      P1_CAMERA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
-      - name: Checkout
+      - name: Checkout exact source commit
         uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_CAMERA_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          if ($checkedOut -ne $env:P1_CAMERA_SOURCE_SHA) {
+            throw "G4 evidence checkout mismatch: expected $env:P1_CAMERA_SOURCE_SHA, got $checkedOut"
+          }
+          "G4 exact source checkout: $checkedOut"
 
       - name: Setup Godot 4.7.2
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -47,10 +59,13 @@ jobs:
       - name: Record G4 evidence provenance
         shell: pwsh
         run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
           @"
           FrameMatter P1 G4 camera evidence
           workflow_run=$env:GITHUB_RUN_ID
-          commit=$env:GITHUB_SHA
+          source_commit=$env:P1_CAMERA_SOURCE_SHA
+          checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
           platform=windows-latest
           renderer=Godot 4.7.2 Forward+ / D3D12
           source_scene=res://p1/main.tscn
