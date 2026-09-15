@@ -1,6 +1,6 @@
 # P1 Owner-facing recovery campaign
 
-Status: **ACTIVE / G2 + G3 + G3-S + G4 + G5 + G6 BOUNDED PASS / G7 HOST CHECKPOINT PASS / UI HIERARCHY NEXT**
+Status: **ACTIVE / FROZEN CANDIDATE + G8 + INDEPENDENT ASSURANCE PASS / FINAL READINESS AUDIT ACTIVE**
 
 This campaign exists because the first P1 Owner candidate passed mechanical/integration gates but failed the actual Owner-facing acceptance target: a coherent, physically legible sandbox loop.
 
@@ -269,38 +269,38 @@ Evidence: `docs/evidence/p1-g7-renderer-host-viability.md`.
 
 This is not a permanent engine commitment for future planetary-scale requirements and does not claim that large-world precision, streaming, compute or custom rendering are solved.
 
-## UI hierarchy — remaining V-G gate
+## UI hierarchy — V-G gate
 
-**PENDING / ACTIVE NEXT**
+**PASS / COMPACT OWNER-FACING HIERARCHY PROMOTED**
 
-The default broad engineering HUD remains the clearest unresolved visual-contract failure after G2–G7.
+The former broad engineering HUD was replaced with the compact canonical hierarchy verified on the frozen candidate. The world dominates the normal view; engineering telemetry is not the default presentation; the small HUD region owns pointer exclusion only inside its actual bounds; persistent labels complement rather than replace world-space state and interaction cues.
 
-The world must dominate the normal view. Default UI must be compact and action-oriented; engineering telemetry must be hidden or secondary; persistent instructions must not occupy a large top strip; labels must complement world cues rather than replace them.
-
-This gate is currently being challenged separately rather than hidden inside G8.
+Evidence: `docs/evidence/p1-ui-hierarchy.md` and `docs/evidence/p1-g8-candidate-freeze-revalidation.md`.
 
 ## G8 — adversarial preflight / Owner package
 
-**BLOCKED**
+**PASS / FROZEN CANDIDATE SURVIVED RECORDED ADVERSARIAL REHEARSAL**
 
-Before another Owner executable:
+Frozen runtime: `b5050b669ec4101226095183929f5790f0a034fc`.
 
-- complete mechanical suite green,
-- parity rendered lane green,
-- all visual acceptance dimensions V-A through V-G have current evidence and no material FAIL,
-- Campaign Contract required gates all PASS,
-- every gate re-verified on the exact frozen candidate commit,
-- representative scenario coverage re-earned on that exact runtime,
-- autonomous real-time rehearsal includes close camera, rapid edits, motion, rebase, split, freeze, fall/recovery,
-- rehearsal recording inspected frame-by-frame,
-- result clearly superior to P0.5 and failed P1 as an observable research instrument,
-- remaining defects documented before packaging,
-- zero open blockers,
-- Owner attention explicitly authorized,
-- `approved_runtime_commit` exactly bound in readiness manifest,
-- independent assurance passed.
+Candidate-wide exact-SHA revalidation re-earned the required mechanical, rendered, interaction, UI and representative-scenario claims on the frozen runtime. The subsequent recorded adversarial session kept one canonical runtime alive through close-Matter camera pressure, rapid edits, zero-launch release, finite motion, moving edit and non-zero storage rebase, topology succession, independent successor motion, mixed STATIC/DYNAMIC successor state and production automatic fall recovery.
 
-The final question is:
+The first G8 attempt was rejected when one legal sibling pulse failed the existing material-independence criterion. Acceptance was not relaxed; the accepted retry strengthened only the legal user-available stimulus and bounded observation window while preserving the same frozen runtime and threshold.
+
+The accepted continuous movie and checkpoints were manually reviewed, including the test-only relocation close-up and recovery-boundary weak-context frames. Those remain documented bounded residual risks rather than hidden evidence.
+
+Independent read-only falsification review subsequently returned **PASS with zero material findings** on the exact frozen runtime and raw candidate-native/G8 evidence.
+
+Evidence:
+
+- `docs/evidence/p1-g8-candidate-freeze-revalidation.md`
+- `docs/evidence/p1-g8-adversarial-rehearsal.md`
+- `docs/evidence/p1-independent-assurance.md`
+- `quality/assurance/p1-independent-review.json`
+
+G8 and independent assurance do **not** independently authorize Owner delivery. Final cross-plane readiness audit and explicit promotion authorization remain separate governance steps.
+
+The final question remains:
 
 > **would this build honestly demonstrate the system we claim to be researching, or would the Owner still need to mentally reconstruct it from broken/debug pixels?**
 
@@ -323,6 +323,6 @@ Only the first answer permits delivery.
 
 ## Current stop condition
 
-**Continue default UI hierarchy work.**
+**Final cross-plane readiness audit on the exact frozen candidate.**
 
-Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2, G3, G3-S, G4, G5, G6 and the G7 host checkpoint are defended bounded foundations, not a substitute for the remaining UI, composed rehearsal and assurance gates.
+Do not merge P1 to `main`. Do not mutate the frozen runtime. G2–G8, the UI hierarchy, candidate-wide revalidation and independent assurance are now defended evidence. The only remaining promotion question is whether the final audit finds any cross-plane contradiction, stale blocker, provenance gap or material residual that prevents explicit `READY_FOR_OWNER` authorization.
