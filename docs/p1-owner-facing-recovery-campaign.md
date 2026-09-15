@@ -1,6 +1,6 @@
 # P1 Owner-facing recovery campaign
 
-Status: **ACTIVE / G2 + G3 BOUNDED PASS / SYSTEM-STATE SEMANTICS NEXT**
+Status: **ACTIVE / G2 + G3 + G3-S BOUNDED PASS / G4 CAMERA NEXT**
 
 This campaign exists because the first P1 Owner candidate passed mechanical/integration gates but failed the actual Owner-facing acceptance target: a coherent, physically legible sandbox loop.
 
@@ -10,9 +10,7 @@ The goal is not to add “graphics polish” after the real work. The rendered/i
 
 P1 previously optimized for hidden correctness and treated rendered quality as a secondary nonclaim. That is rejected.
 
-The current rule is stronger:
-
-> **a candidate is not Owner-ready unless every contracted quality plane has direct evidence on the exact frozen candidate commit.**
+> **A candidate is not Owner-ready unless every contracted quality plane has direct evidence on the exact frozen candidate commit.**
 
 During the OPEN campaign, bounded gates may earn PASS with durable evidence while `verified_runtime_commit` remains empty. Exact-commit binding is re-earned only after one runtime candidate is frozen for final promotion.
 
@@ -28,19 +26,7 @@ The P1-specific machine-readable authorities are:
 
 **PASS / GOVERNANCE FOUNDATION**
 
-Q0 was introduced because the first P1 failure exposed a process defect larger than one renderer bug. The project needed to distinguish technically sophisticated work in progress from observable quality and from an actually promotable Owner candidate.
-
-The campaign now has:
-
-1. a versioned Campaign Contract,
-2. a machine-readable Readiness Manifest,
-3. CI validation that contract and readiness cannot silently drift apart,
-4. delivery rejection while readiness is BLOCKED,
-5. exact-commit verification requirements for final promotion,
-6. synchronized quality/process authority,
-7. a durable failure/postmortem evidence chain,
-8. no automatic Owner artifact production while blocked,
-9. adversarial verifier self-tests.
+Q0 was introduced because the first P1 failure exposed a process defect larger than one renderer bug. The campaign now has a versioned contract, machine-readable readiness, CI drift validation, delivery rejection while BLOCKED, exact-commit final-promotion requirements, adversarial verifier self-tests and a durable failure/evidence chain.
 
 Q0 no longer blocks ordinary recovery work. It remains a protected governance foundation and will be exercised again at G8.
 
@@ -96,16 +82,7 @@ Evidence: `docs/evidence/p1-owner-interaction-failure.md`.
 
 **PASS AS INSTRUMENTATION / NEGATIVE BASELINE PRESERVED**
 
-The project captures real rendered pixels from deterministic P1 states:
-
-1. initial static,
-2. released dynamic,
-3. dynamic motion,
-4. storage-rebased/build state,
-5. split successors,
-6. frozen successor,
-7. lighting azimuth stress,
-8. near/mid/far granularity stress.
+The project captures real rendered pixels from deterministic P1 states: initial static, release, dynamic motion, storage rebase/build, split successors, frozen successor, lighting azimuth stress and near/mid/far granularity stress.
 
 Windows D3D12 Forward+ remains the acceptance-relevant parity lane. Linux Compatibility remains a secondary renderer/backend guardrail.
 
@@ -115,7 +92,7 @@ Evidence: `docs/evidence/p1-g1-rendered-baseline.md`.
 
 **BOUNDED PASS / BALANCED FILL PROMOTED**
 
-The catastrophic black-surface failure was first isolated to project-side Environment configuration, then the surviving flat/over-bright form problem was challenged across eight controlled camera azimuths.
+The catastrophic black-surface failure was isolated to project-side Environment configuration, then the surviving flat/over-bright form problem was challenged across eight controlled camera azimuths.
 
 Promoted canonical lighting:
 
@@ -133,65 +110,73 @@ Evidence: `docs/evidence/p1-g2-lighting-form.md`.
 
 Gate result: **form/depth readability PASS within the current authored P1 scene and tested representative orientations.**
 
-Nonclaims remain: this is not final art direction, not state semantics, not camera quality and not Owner readiness.
+Nonclaims remain: this is not final art direction, camera quality, interaction quality or Owner readiness.
 
 ## G3 — Matter granularity / edit scale
 
 **BOUNDED PASS / CLEAN SURFACE GRID 0.14 PROMOTED**
 
-G3 independently compared two visual languages:
+G3 independently compared exposed-surface cell boundaries with per-cell surface tonal modulation. Surface modulation was rejected because it primarily read as a material/checker pattern rather than editable cell boundaries.
 
-- exposed-surface cell boundaries,
-- per-cell surface tonal modulation.
+The grid direction was refined through softer intensity and an audit that found duplicate same-plane shared-edge emission. A deduplicated implementation was challenged at clean alpha `0.14` and `0.18`; clean `0.14` won because it retained near/mid/far granularity while preserving broad form more quietly.
 
-Surface modulation was rejected because it primarily read as a material/checker pattern rather than editable cell boundaries.
-
-The surface-grid direction was refined rather than immediately promoted:
-
-- initial alpha `0.16` was too visually present,
-- softer alpha retained scale information,
-- audit then found duplicate same-plane shared-edge emission,
-- a deduplicated implementation was challenged at clean alpha `0.14` and `0.18`,
-- clean `0.14` won because it retained near/mid/far granularity while preserving broad form more quietly.
-
-Production promotion is a separate `P1MatterSurfaceGrid` presentation consumer. It does not own Matter, lineage, collision, topology or provider identity. `p1/main.gd` does not know that the surface grid exists.
-
-An executable production probe defends exact coplanar deduplication and follows edit, storage rebase, provider replacement and topology succession. Rendered production output was compared against an honest test-only clean-0.14 reference lane with production presentation disabled first.
+Production promotion is a separate `P1MatterSurfaceGrid` presentation consumer. It does not own Matter, lineage, collision, topology or provider identity. An executable probe follows edit, storage rebase, provider replacement and topology succession. Rendered production output was compared against an honest test-only reference lane with production presentation disabled first.
 
 Evidence: `docs/evidence/p1-g3-matter-granularity.md`.
 
 Gate result: **Matter granularity PASS within the current P1 visual scale and scenario set.**
 
-Nonclaims remain: no very-large-volume scale proof, no final renderer, no chunk architecture, no STATIC/DYNAMIC/focus/successor semantic language and no Owner readiness.
+Nonclaims remain: no very-large-volume scale proof, final renderer, chunk architecture or Owner readiness.
 
 ## G3-S — system-state semantics
 
-**ACTIVE NEXT / PENDING**
+**BOUNDED PASS / SOFT STATE CONTOUR + NEUTRAL FOCUS CROWN PROMOTED**
 
-Granularity now has one clear semantic channel: restrained exposed cell boundaries. Do not overload it with several unrelated meanings.
+G3-S deliberately kept physical state separate from G3 cell granularity and from Matter material identity.
 
-The next campaign must challenge how the world itself communicates at least:
+Two materially different families were challenged:
 
-- STATIC vs DYNAMIC Space,
-- normal vs focused/edited Space,
-- source relationship vs independent topology successors after split.
+1. whole-material STATIC/DYNAMIC tint,
+2. derived exposed-surface state contour.
 
-REMOVE / PLACE / EXPAND remains interaction-language work and should not be silently folded into the physical Space-state cue.
+The material family was rejected even after refinement. It was readable, but it made simulation state alter the perceived substance of Matter. That would collide with future authored material identities such as wood, metal or earth.
 
-Principles:
+The contour family preserved base material identity and won architecturally. Its first version was too strong/debug-like, while the first AABB focus brackets reduced under occlusion to disconnected floating marks. AABB brackets were rejected.
 
-- do not recolor the whole object merely because state needs “a color”,
-- prefer localized/peripheral/material cues that remain readable during motion and under G2 lighting,
-- focus/selection must remain conceptually different from physical provider state,
-- successor independence must not be faked by artificial separation impulses or unrelated random colors,
-- test at least two materially different semantic languages before promotion,
-- judge static, moving, split and frozen states on the same rendered sequence.
+Focus was replaced with a separate crown derived from the perimeter of actual exposed top Matter surfaces. A pale-blue crown still competed with the cyan STATIC contour, so the final focus cue became neutral-white.
 
-Gate: without relying on the engineering HUD, a reviewer can distinguish physical Space state and understand that split pieces are related successors which are now independently simulated.
+The final bounded state language is:
+
+- STATIC: restrained cyan-family surface contour, alpha `0.32`,
+- DYNAMIC: restrained amber-family surface contour, alpha `0.36`,
+- focused Space: independent neutral-white top-surface crown, alpha `0.62`.
+
+The final soft-contour profile beat the stronger `0.42/0.46` profile because it remained readable through near/mid/far, split and freeze states while competing less with the G3 cell grid.
+
+Production implementation is the sibling consumer `P1MatterStatePresentation`. It owns no Matter/provider/topology/focus authority and does not recolor the provider-owned base material. Provider/edit/rebase/split changes are event-driven through existing consumer contracts; current focus is observed from the existing P1 current-focus accessor rather than creating a second selection authority.
+
+The production lifecycle probe passed edit, storage rebase, STATIC→DYNAMIC provider replacement, one→many topology succession and freeze. Its final split/freeze state simultaneously contains one focused STATIC successor and one independent DYNAMIC sibling with exactly two state overlays and one focus crown.
+
+Same-commit Windows D3D12 promotion equivalence on workflow run `34992731545`, commit `860dbe6789ff6acc6eb6f4c78a691d217f0d7695`, reproduced the accepted challenger essentially exactly on deterministic states: initial and most turntable/far captures were pixel-identical; the remaining deterministic differences were only a handful of pixels at very small channel deltas. Moving/rebase/split/freeze screenshots are not abused as pixel-equivalence evidence because independent jobs have solver/render timing variation; those lifecycle states are defended by the executable production probe.
+
+Evidence: `docs/evidence/p1-g3s-system-state-semantics.md`.
+
+Gate result: **system-state semantics PASS within the current authored P1 scene and tested scenario/render path.**
+
+Explicit nonclaims remain:
+
+- final colors or art direction,
+- broad color-vision accessibility proof,
+- REMOVE / PLACE / EXPAND interaction language,
+- adequate camera composition,
+- world/motion causality,
+- default UI hierarchy,
+- final focus architecture,
+- Owner readiness.
 
 ## G4 — camera as experiment instrument
 
-**PENDING**
+**ACTIVE NEXT / PENDING**
 
 Replace “SpringArm exists” with a rendered framing contract.
 
@@ -199,11 +184,15 @@ Required:
 
 - actor + relevant Space + useful world reference remain understandable,
 - active Space extent influences framing/distance,
+- standing near Space center must not collapse context pressure toward zero,
 - close obstacle handling avoids long-lived useless close-ups,
 - fall/recovery, provider replacement, storage rebase and split recover coherent composition,
-- immediate post-split framing preserves enough relation to understand what happened.
+- immediate post-split framing preserves enough relation to understand what happened,
+- the camera may follow the actor without abandoning the experiment the actor is participating in.
 
-Gate: scripted/adversarial camera sequence is reviewed from rendered output using real Matter and real presentation, not a synthetic neutral fixture.
+The G4 stress sequence must use real authored Matter, the promoted G2/G3/G3-S presentation and real lifecycle events rather than a synthetic neutral fixture.
+
+Gate: scripted/adversarial camera output remains useful enough that an informed reviewer can follow actor↔Space↔world causality without reconstructing off-screen context mentally.
 
 ## G5 — interaction visual hierarchy
 
@@ -289,6 +278,6 @@ Only the first answer permits delivery.
 
 ## Current stop condition
 
-**Continue G3-S system-state semantics.**
+**Continue G4 camera as experiment instrument.**
 
-Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2 and G3 are defended bounded foundations, not a substitute for the remaining visual, interaction, rehearsal and assurance gates.
+Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2, G3 and G3-S are defended bounded foundations, not a substitute for the remaining camera, interaction, world-causality, UI, rehearsal and assurance gates.
