@@ -8,9 +8,12 @@ const WALL_NEAR_LOCAL := Vector3(4.65, 1.94, 6.5)
 const FAR_AIRBORNE_WORLD := Vector3(34.5, -7.0, 0.0)
 const CENTRAL_IMPULSE := Vector3(0.0, 0.0, -36.0)
 const TORQUE_IMPULSE := Vector3(0.0, 90.0, 0.0)
+const VARIANT_CANONICAL := "canonical"
+const VARIANT_GUARDED_CONTEXT := "guarded_context"
 
 var _failures: Array[String] = []
 var _output_dir := ""
+var _variant := VARIANT_CANONICAL
 var _p1: Node
 var _player: SpaceQueryCharacter
 var _camera_rig: P1CameraRig
@@ -25,6 +28,16 @@ func _run() -> void:
 	_output_dir = OS.get_environment("P1_CAMERA_EVIDENCE_DIR")
 	if _output_dir.is_empty():
 		_output_dir = ProjectSettings.globalize_path("res://artifacts/p1-camera-evidence")
+	_variant = OS.get_environment("P1_CAMERA_VARIANT").strip_edges()
+	if _variant.is_empty():
+		_variant = VARIANT_CANONICAL
+	_check(
+		_variant == VARIANT_CANONICAL or _variant == VARIANT_GUARDED_CONTEXT,
+		"G4 capture variant is supported: %s" % _variant
+	)
+	if not _failures.is_empty():
+		_finish()
+		return
 	DirAccess.make_dir_recursive_absolute(_output_dir)
 
 	var packed := load("res://p1/main.tscn") as PackedScene
@@ -48,6 +61,9 @@ func _run() -> void:
 		_finish()
 		return
 
+	_camera_rig.set_composition_guard_enabled(_variant == VARIANT_GUARDED_CONTEXT)
+	_refresh_variant_context()
+
 	# B0 — ordinary centered spawn. This is the case where the current camera's
 	# actor↔content-center separation approaches zero and therefore exposes
 	# whether Space extent has any independent framing influence.
@@ -70,7 +86,8 @@ func _run() -> void:
 	# B3 — place the actor beside real authored Matter wall geometry and orient
 	# the spring arm through it. This isolates collision compression from good
 	# composition: SpringArm may correctly avoid clipping yet still produce an
-	# unusable frame.
+	# unusable frame. Give a guarded challenger enough frames to demonstrate a
+	# stable recovery rather than judging its first transient response.
 	_camera_rig.reset_view()
 	_move_player_to_space_local(source, WALL_NEAR_LOCAL)
 	await _advance_frames(SETTLE_FRAMES)
@@ -81,7 +98,7 @@ func _run() -> void:
 	if to_wall.length_squared() > 0.000001:
 		_camera_rig.set("_yaw", atan2(to_wall.x, to_wall.z))
 		_camera_rig.call("_apply_orbit")
-	await _advance_frames(3)
+	await _advance_frames(SETTLE_FRAMES)
 	await _capture("03_close_obstacle_compression")
 
 	# B4 — actor far outside the world reference and below the Space while the
@@ -148,6 +165,38 @@ func _move_player_world(world_position: Vector3) -> void:
 	_player.reset_physics_interpolation()
 
 
+func _refresh_variant_context() -> void:
+	if _variant != VARIANT_GUARDED_CONTEXT or _p1 == null or _camera_rig == null:
+		return
+	var space := _p1.call("get_space") as LocalMatterSpace
+	if space == null or not is_instance_valid(space) or space.is_retired():
+		return
+	var provider := space.get_active_provider()
+	if provider == null:
+		return
+	_camera_rig.set_context_target(
+		provider,
+		space.get_content_center_local(),
+		_space_planar_radius(space)
+	)
+
+
+func _space_planar_radius(space: LocalMatterSpace) -> float:
+	if space == null or space.volume == null or space.volume.count_solid() == 0:
+		return 0.0
+	var center: Vector3 = space.get_content_center_local()
+	var radius := 0.0
+	for z in range(space.volume.size.z):
+		for y in range(space.volume.size.y):
+			for x in range(space.volume.size.x):
+				var cell := Vector3i(x, y, z)
+				if space.volume.get_cell(cell) == CellVolume.EMPTY:
+					continue
+				var offset := Vector2(float(x) + 0.5 - center.x, float(z) + 0.5 - center.z)
+				radius = maxf(radius, offset.length() + 0.70710678)
+	return radius
+
+
 func _capture(label: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
@@ -179,15 +228,19 @@ func _print_composition_metric(label: String, viewport_size: Vector2) -> void:
 		max_norm = Vector2(max_screen.x / viewport_size.x, max_screen.y / viewport_size.y)
 		coverage = max_norm - min_norm
 	var actual_arm := camera.global_position.distance_to(spring_arm.global_position)
+	var desired_arm := spring_arm.spring_length
+	var arm_ratio := actual_arm / desired_arm if desired_arm > 0.001 else 0.0
 	print(
-		"P1_CAMERA_METRIC label=%s actor_norm=(%.3f,%.3f) spaces_min=(%.3f,%.3f) spaces_max=(%.3f,%.3f) spaces_coverage=(%.3f,%.3f) desired_arm=%.3f actual_arm=%.3f active_spaces=%d" % [
+		"P1_CAMERA_METRIC variant=%s label=%s actor_norm=(%.3f,%.3f) spaces_min=(%.3f,%.3f) spaces_max=(%.3f,%.3f) spaces_coverage=(%.3f,%.3f) desired_arm=%.3f actual_arm=%.3f arm_ratio=%.3f active_spaces=%d" % [
+			_variant,
 			label,
 			actor_norm.x, actor_norm.y,
 			min_norm.x, min_norm.y,
 			max_norm.x, max_norm.y,
 			coverage.x, coverage.y,
-			spring_arm.spring_length,
+			desired_arm,
 			actual_arm,
+			arm_ratio,
 			(_p1.call("get_active_spaces") as Array[LocalMatterSpace]).size(),
 		]
 	)
@@ -245,6 +298,7 @@ func _occupied_bounds(volume: CellVolume) -> Dictionary:
 
 func _advance_frames(count: int) -> void:
 	for _frame in range(count):
+		_refresh_variant_context()
 		await physics_frame
 		await process_frame
 
@@ -256,7 +310,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_CAMERA_CAPTURE_PASS: canonical G4 baseline captured center, edge, legal minimum zoom, real-Matter obstacle compression, airborne context, recovery, dynamic motion and topology succession.")
+		print("P1_CAMERA_CAPTURE_PASS: variant=%s captured center, edge, legal minimum zoom, real-Matter obstacle compression, airborne context, recovery, dynamic motion and topology succession." % _variant)
 		quit(0)
 		return
 	for failure in _failures:

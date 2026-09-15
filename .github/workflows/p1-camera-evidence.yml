@@ -23,9 +23,14 @@ jobs:
   windows-forward-plus-camera:
     runs-on: windows-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [canonical, guarded_context]
     env:
-      P1_CAMERA_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-camera-evidence\windows-canonical
+      P1_CAMERA_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-camera-evidence\${{ matrix.variant }}
       P1_CAMERA_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      P1_CAMERA_VARIANT: ${{ matrix.variant }}
     steps:
       - name: Checkout exact source commit
         uses: actions/checkout@v6
@@ -52,7 +57,7 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_import.ps1
 
-      - name: Capture canonical G4 camera stress sequence
+      - name: Capture G4 camera stress sequence
         shell: pwsh
         run: ./ci/run_godot_camera_capture.ps1 -OutputDir $env:P1_CAMERA_EVIDENCE_DIR
 
@@ -70,12 +75,12 @@ jobs:
           renderer=Godot 4.7.2 Forward+ / D3D12
           source_scene=res://p1/main.tscn
           capture_script=res://tests/p1_camera_visual_capture.gd
-          camera_policy=canonical baseline
+          camera_policy=$env:P1_CAMERA_VARIANT
           "@ | Set-Content -Path (Join-Path $env:P1_CAMERA_EVIDENCE_DIR "CAMERA-EVIDENCE-INFO.txt")
 
       - name: Upload G4 camera evidence
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P1-G4-Camera-Evidence-Windows-Canonical
-          path: artifacts/p1-camera-evidence/windows-canonical
+          name: FrameMatter-P1-G4-Camera-Evidence-Windows-${{ matrix.variant }}
+          path: artifacts/p1-camera-evidence/${{ matrix.variant }}
           retention-days: 30
