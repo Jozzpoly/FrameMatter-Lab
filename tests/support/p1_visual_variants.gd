@@ -39,6 +39,18 @@ static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_CLEAN_STRONG_ALPHA, true)
 		return
 
+	if variant == "surface_cells_clean_reference":
+		# G3 promotion equivalence lane: remove the production presenter, then
+		# render the accepted test-only clean 0.14 challenger on the same scene.
+		# This prevents a false grid+grid comparison after canonical promotion.
+		var presenter := p1.get_node_or_null("P1MatterSurfaceGrid") as P1MatterSurfaceGrid
+		if presenter == null:
+			failures.append("clean reference cannot resolve production P1MatterSurfaceGrid")
+			return
+		presenter.set_enabled(false)
+		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_CLEAN_ALPHA, true)
+		return
+
 	if variant == "surface_modulation":
 		_refresh_surface_modulation(p1, failures)
 		return
