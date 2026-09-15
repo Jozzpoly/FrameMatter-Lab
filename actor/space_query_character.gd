@@ -291,15 +291,15 @@ func _refresh_support_provider_from_space() -> void:
 func _resolve_support_frame(collider: Node3D) -> Node3D:
 	if collider == null:
 		return null
+	var first_physics_body: Node3D = null
 	var current: Node = collider
 	while current != null:
 		if current is ConstructBody or current is MatterRepresentation:
 			return current as Node3D
-		if current is PhysicsBody3D:
-			# Ordinary static-world geometry can itself be the support frame.
-			return current as Node3D
+		if first_physics_body == null and current is PhysicsBody3D:
+			first_physics_body = current as Node3D
 		current = current.get_parent()
-	return collider
+	return first_physics_body if first_physics_body != null else collider
 
 
 func _resolve_support_space(frame: Node3D) -> LocalMatterSpace:
@@ -309,9 +309,7 @@ func _resolve_support_space(frame: Node3D) -> LocalMatterSpace:
 	while current != null:
 		if current is LocalMatterSpace:
 			var space := current as LocalMatterSpace
-			if space.get_active_provider() == frame or frame.is_ancestor_of(space.get_active_provider()):
-				return space
-			return space
+			return space if space.get_active_provider() == frame else null
 		current = current.get_parent()
 	return null
 
