@@ -64,10 +64,13 @@ func _run() -> void:
 		_finish()
 		return
 
-	if _variant == VARIANT_ADAPTIVE_RELATIONAL:
+	# Canonical is intentionally untouched: it must exercise production defaults.
+	# The two other variants remain temporary A/B lanes until promotion
+	# equivalence is recorded and the rejected challenger code can be removed.
+	if _variant == VARIANT_GUARDED_CONTEXT:
+		_camera_rig.set_composition_guard_enabled(true)
+	elif _variant == VARIANT_ADAPTIVE_RELATIONAL:
 		_camera_rig.set_adaptive_relational_enabled(true)
-	else:
-		_camera_rig.set_composition_guard_enabled(_variant == VARIANT_GUARDED_CONTEXT)
 	_refresh_variant_context()
 
 	# B0 — ordinary centered spawn. This is the case where the current camera's
