@@ -1,6 +1,6 @@
 # P1 Owner-facing recovery campaign
 
-Status: **P1 REOPENED / EXECUTION PAUSED AT Q0 QUALITY HARDENING**
+Status: **ACTIVE / G2 + G3 BOUNDED PASS / SYSTEM-STATE SEMANTICS NEXT**
 
 This campaign exists because the first P1 Owner candidate passed mechanical/integration gates but failed the actual Owner-facing acceptance target: a coherent, physically legible sandbox loop.
 
@@ -12,43 +12,37 @@ P1 previously optimized for hidden correctness and treated rendered quality as a
 
 The current rule is stronger:
 
-> **a candidate is not Owner-ready unless every contracted quality plane has direct evidence on the exact candidate commit.**
+> **a candidate is not Owner-ready unless every contracted quality plane has direct evidence on the exact frozen candidate commit.**
+
+During the OPEN campaign, bounded gates may earn PASS with durable evidence while `verified_runtime_commit` remains empty. Exact-commit binding is re-earned only after one runtime candidate is frozen for final promotion.
 
 The general process authority is `docs/QUALITY-SYSTEM.md`.
 
 The P1-specific machine-readable authorities are:
 
-- `quality/p1-campaign-contract.json`,
+- `quality/contracts/p1-owner-facing-recovery.v3.json`,
 - `quality/p1-owner-readiness.json`,
 - `ci/verify_owner_readiness.py`.
 
-## Q0 — quality-system hardening before ordinary recovery continues
+## Q0 — quality-system hardening
 
-**ACTIVE / HARD STOP**
+**PASS / GOVERNANCE FOUNDATION**
 
-The visual recovery campaign is intentionally paused at Q0 because the first P1 failure exposed a process defect larger than one renderer bug.
+Q0 was introduced because the first P1 failure exposed a process defect larger than one renderer bug. The project needed to distinguish technically sophisticated work in progress from observable quality and from an actually promotable Owner candidate.
 
-Q0 must prove that the project itself can distinguish:
-
-- technically sophisticated work in progress,
-- observable/interaction quality,
-- an actually promotable Owner candidate.
-
-Q0 requires:
+The campaign now has:
 
 1. a versioned Campaign Contract,
 2. a machine-readable Readiness Manifest,
 3. CI validation that contract and readiness cannot silently drift apart,
 4. delivery rejection while readiness is BLOCKED,
-5. exact-commit verification for every required gate before delivery,
-6. synchronized README / ROADMAP / research-state truth,
-7. a durable process postmortem,
+5. exact-commit verification requirements for final promotion,
+6. synchronized quality/process authority,
+7. a durable failure/postmortem evidence chain,
 8. no automatic Owner artifact production while blocked,
-9. adversarial self-tests proving the readiness guard rejects malformed/stale states and can accept a synthetically valid exact-commit READY state.
+9. adversarial verifier self-tests.
 
-No ordinary G2/G3/G4 implementation tranche should be promoted until Q0 passes.
-
-Already-running rendered challengers may remain as unpromoted data; they do not advance campaign status by themselves.
+Q0 no longer blocks ordinary recovery work. It remains a protected governance foundation and will be exercised again at G8.
 
 ## Frozen evidence, not frozen implementation
 
@@ -64,7 +58,7 @@ Preserve these currently defended semantics unless new evidence falsifies them:
 - exact merged-cuboid collision as current default,
 - strict zero-engine-error evidence floor.
 
-Do **not** protect the current P1 Environment, materials, mesh appearance, camera policy, HUD, target outline or scene composition merely because they already exist.
+Do **not** protect the current Environment, materials, presentation language, camera policy, HUD, target outline or scene composition merely because they already exist. Promoted visual mechanisms remain replaceable if later evidence finds a better language.
 
 ## Definition of done for the next Owner candidate
 
@@ -85,7 +79,7 @@ This remains a research LAB, not final game art. **Professional and legible is r
 
 ---
 
-# Recovery sequence after Q0
+# Recovery sequence
 
 ## G0 — failed baseline / mechanical freeze
 
@@ -100,62 +94,100 @@ Evidence: `docs/evidence/p1-owner-interaction-failure.md`.
 
 ## G1 — rendered evidence harness
 
-**PASS AS INSTRUMENTATION / CURRENT VISUAL BASELINE FAILS**
+**PASS AS INSTRUMENTATION / NEGATIVE BASELINE PRESERVED**
 
-The project now captures real rendered pixels from deterministic P1 states:
+The project captures real rendered pixels from deterministic P1 states:
 
 1. initial static,
 2. released dynamic,
 3. dynamic motion,
 4. storage-rebased/build state,
 5. split successors,
-6. frozen successor.
+6. frozen successor,
+7. lighting azimuth stress,
+8. near/mid/far granularity stress.
 
-Windows D3D12 Forward+ is the current acceptance-relevant parity lane and reproduces the Owner-class black-surface failure. Linux Compatibility remains a secondary backend guardrail.
+Windows D3D12 Forward+ remains the acceptance-relevant parity lane. Linux Compatibility remains a secondary renderer/backend guardrail.
 
 Evidence: `docs/evidence/p1-g1-rendered-baseline.md`.
 
 ## G2 — lighting/environment truth
 
-**PARTIAL BOUNDED FINDING / PROMOTION PAUSED BY Q0**
+**BOUNDED PASS / BALANCED FILL PROMOTED**
 
-G2-A changed only the Environment ambient source SKY→COLOR and set sky contribution to `0.0`.
+The catastrophic black-surface failure was first isolated to project-side Environment configuration, then the surviving flat/over-bright form problem was challenged across eight controlled camera azimuths.
 
-On the same deterministic Windows D3D12 initial state it changed approximately:
+Promoted canonical lighting:
 
-- near-black coverage `52.96% → 0.00%`,
-- luminance below `0.08`: `54.70% → 1.74%`,
-- mean luminance `0.142 → 0.366`.
+- ambient energy `0.42`,
+- primary shadowed key energy `0.88`,
+- opposite fill energy `0.24`,
+- fill specular `0`,
+- fill shadows disabled.
 
-This strongly supports that the catastrophic black collapse came from project configuration.
+The tested SSAO configuration was not promoted because it added broad darkening/gradients without enough additional authored-form information.
 
-It **does not** complete G2. Remaining form/depth presentation is still weak and flat.
+Promotion was re-rendered against the accepted challenger and the mechanical suite remained green.
 
-After Q0:
+Evidence: `docs/evidence/p1-g2-lighting-form.md`.
 
-- compare canonical, balanced key/fill and restrained SSAO/contact-depth challengers on the same parity states,
-- inspect all representative camera azimuths,
-- promote only the bounded winner,
-- record regressions on both Windows D3D12 and Compatibility.
+Gate result: **form/depth readability PASS within the current authored P1 scene and tested representative orientations.**
 
-Gate: authored Matter remains readable from representative orientations without black-face or clipped-white collapse and without destroying shape through flat over-lighting.
+Nonclaims remain: this is not final art direction, not state semantics, not camera quality and not Owner readiness.
 
-## G3 — Matter visual language
+## G3 — Matter granularity / edit scale
 
-**PENDING**
+**BOUNDED PASS / CLEAN SURFACE GRID 0.14 PROMOTED**
 
-Challenge at least two approaches independently enough to understand their contribution, for example:
+G3 independently compared two visual languages:
 
-- restrained derived cell-edge/grid treatment,
-- procedural/local-coordinate/vertex material treatment.
+- exposed-surface cell boundaries,
+- per-cell surface tonal modulation.
 
-A later hybrid is allowed only after causal comparison.
+Surface modulation was rejected because it primarily read as a material/checker pattern rather than editable cell boundaries.
 
-Chosen language must preserve coherent broad form at distance while exposing one-cell edit granularity near interaction distance. Avoid noisy every-cube wire aesthetics.
+The surface-grid direction was refined rather than immediately promoted:
 
-Static/dynamic/focused/successor states require coherent, restrained visual semantics.
+- initial alpha `0.16` was too visually present,
+- softer alpha retained scale information,
+- audit then found duplicate same-plane shared-edge emission,
+- a deduplicated implementation was challenged at clean alpha `0.14` and `0.18`,
+- clean `0.14` won because it retained near/mid/far granularity while preserving broad form more quietly.
 
-Gate: without HUD text, reviewer can read Matter form, cell scale and important state changes.
+Production promotion is a separate `P1MatterSurfaceGrid` presentation consumer. It does not own Matter, lineage, collision, topology or provider identity. `p1/main.gd` does not know that the surface grid exists.
+
+An executable production probe defends exact coplanar deduplication and follows edit, storage rebase, provider replacement and topology succession. Rendered production output was compared against an honest test-only clean-0.14 reference lane with production presentation disabled first.
+
+Evidence: `docs/evidence/p1-g3-matter-granularity.md`.
+
+Gate result: **Matter granularity PASS within the current P1 visual scale and scenario set.**
+
+Nonclaims remain: no very-large-volume scale proof, no final renderer, no chunk architecture, no STATIC/DYNAMIC/focus/successor semantic language and no Owner readiness.
+
+## G3-S — system-state semantics
+
+**ACTIVE NEXT / PENDING**
+
+Granularity now has one clear semantic channel: restrained exposed cell boundaries. Do not overload it with several unrelated meanings.
+
+The next campaign must challenge how the world itself communicates at least:
+
+- STATIC vs DYNAMIC Space,
+- normal vs focused/edited Space,
+- source relationship vs independent topology successors after split.
+
+REMOVE / PLACE / EXPAND remains interaction-language work and should not be silently folded into the physical Space-state cue.
+
+Principles:
+
+- do not recolor the whole object merely because state needs “a color”,
+- prefer localized/peripheral/material cues that remain readable during motion and under G2 lighting,
+- focus/selection must remain conceptually different from physical provider state,
+- successor independence must not be faked by artificial separation impulses or unrelated random colors,
+- test at least two materially different semantic languages before promotion,
+- judge static, moving, split and frozen states on the same rendered sequence.
+
+Gate: without relying on the engineering HUD, a reviewer can distinguish physical Space state and understand that split pieces are related successors which are now independently simulated.
 
 ## G4 — camera as experiment instrument
 
@@ -223,14 +255,16 @@ Before another Owner executable:
 - parity rendered lane green,
 - all visual acceptance dimensions V-A through V-G have current evidence and no material FAIL,
 - Campaign Contract required gates all PASS,
-- every gate re-verified on the exact candidate commit,
+- every gate re-verified on the exact frozen candidate commit,
+- representative scenario coverage re-earned on that exact runtime,
 - autonomous real-time rehearsal includes close camera, rapid edits, motion, rebase, split, freeze, fall/recovery,
 - rehearsal recording inspected frame-by-frame,
 - result clearly superior to P0.5 and failed P1 as an observable research instrument,
 - remaining defects documented before packaging,
 - zero open blockers,
 - Owner attention explicitly authorized,
-- `approved_commit` exactly bound in readiness manifest.
+- `approved_runtime_commit` exactly bound in readiness manifest,
+- independent assurance passed.
 
 The final question is:
 
@@ -249,11 +283,12 @@ Only the first answer permits delivery.
 - Every material visual tranche preserves baseline, states one bounded hypothesis, captures equivalent after-state and records regressions.
 - One pretty screenshot never outweighs causal/system readability across the representative scenario set.
 - Owner tests are scarce high-information events, not first-line obvious-defect QA.
-- Evidence from an older commit does not certify a changed candidate at promotion time.
+- Evidence from an older commit does not certify a changed frozen candidate at promotion time.
 - A lot of accumulated work does not create readiness.
+- Resolved challenger lanes should leave active CI once promotion equivalence is recorded; preserve evidence, not permanent runner cost.
 
 ## Current stop condition
 
-**Q0 first.**
+**Continue G3-S system-state semantics.**
 
-Do not merge P1 to `main`. Do not send another Owner candidate. Do not resume normal feature expansion. Do not promote further G2/G3/G4 work until the new quality system itself is validated.
+Do not merge P1 to `main`. Do not send another Owner candidate. Do not freeze a G8 candidate yet. G2 and G3 are defended bounded foundations, not a substitute for the remaining visual, interaction, rehearsal and assurance gates.
