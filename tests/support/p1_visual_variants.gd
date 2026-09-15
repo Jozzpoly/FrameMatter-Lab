@@ -6,6 +6,8 @@ extends RefCounted
 const SURFACE_GRID_OFFSET := 0.006
 const SURFACE_GRID_ALPHA := 0.16
 const SURFACE_GRID_SOFT_ALPHA := 0.10
+const SURFACE_GRID_CLEAN_ALPHA := 0.14
+const SURFACE_GRID_CLEAN_STRONG_ALPHA := 0.18
 const MODULATION_LOW := 0.93
 const MODULATION_HIGH := 1.0
 const META_BASE_COLOR := &"g3_original_base_color"
@@ -22,11 +24,19 @@ static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 		return
 
 	if variant == "surface_cells":
-		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_ALPHA)
+		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_ALPHA, false)
 		return
 
 	if variant == "surface_cells_soft":
-		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_SOFT_ALPHA)
+		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_SOFT_ALPHA, false)
+		return
+
+	if variant == "surface_cells_clean":
+		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_CLEAN_ALPHA, true)
+		return
+
+	if variant == "surface_cells_clean_strong":
+		_refresh_surface_cell_overlays(p1, failures, SURFACE_GRID_CLEAN_STRONG_ALPHA, true)
 		return
 
 	if variant == "surface_modulation":
@@ -48,7 +58,12 @@ static func _apply_ssao(p1: Node, failures: Array[String]) -> void:
 	environment.ssao_power = 1.35
 
 
-static func _refresh_surface_cell_overlays(p1: Node, failures: Array[String], alpha: float) -> void:
+static func _refresh_surface_cell_overlays(
+	p1: Node,
+	failures: Array[String],
+	alpha: float,
+	deduplicate_coplanar: bool
+) -> void:
 	var spaces: Array[LocalMatterSpace] = p1.call("get_active_spaces")
 	if spaces.is_empty():
 		failures.append("surface_cells challenger found no active Spaces")
@@ -67,7 +82,7 @@ static func _refresh_surface_cell_overlays(p1: Node, failures: Array[String], al
 
 		var overlay := MeshInstance3D.new()
 		overlay.name = "G3SurfaceCellOverlay"
-		overlay.mesh = _build_exposed_surface_grid(space.volume)
+		overlay.mesh = _build_exposed_surface_grid(space.volume, deduplicate_coplanar)
 		overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 		var material := StandardMaterial3D.new()
@@ -123,13 +138,14 @@ static func _refresh_surface_modulation(p1: Node, failures: Array[String]) -> vo
 		derived_mesh.material_override = material
 
 
-static func _build_exposed_surface_grid(volume: CellVolume) -> ArrayMesh:
+static func _build_exposed_surface_grid(volume: CellVolume, deduplicate_coplanar: bool) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	if volume.count_solid() == 0:
 		return mesh
 
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_LINES)
+	var seen_segments: Dictionary = {}
 
 	for z in range(volume.size.z):
 		for y in range(volume.size.y):
@@ -144,17 +160,49 @@ static func _build_exposed_surface_grid(volume: CellVolume) -> ArrayMesh:
 					var face_vertices: Array = CellMesher.FACE_VERTICES[face_index]
 					var normal: Vector3 = CellMesher.FACE_NORMALS[face_index]
 					var offset := normal * SURFACE_GRID_OFFSET
-					var corners := [
-						origin + face_vertices[0] + offset,
-						origin + face_vertices[1] + offset,
-						origin + face_vertices[2] + offset,
-						origin + face_vertices[5] + offset,
+					var raw_corners := [
+						origin + face_vertices[0],
+						origin + face_vertices[1],
+						origin + face_vertices[2],
+						origin + face_vertices[5],
 					]
 					for edge_index in range(4):
-						surface.add_vertex(corners[edge_index])
-						surface.add_vertex(corners[(edge_index + 1) % 4])
+						var raw_a: Vector3 = raw_corners[edge_index]
+						var raw_b: Vector3 = raw_corners[(edge_index + 1) % 4]
+						if deduplicate_coplanar:
+							var segment_key := _coplanar_segment_key(face_index, raw_a, raw_b)
+							if seen_segments.has(segment_key):
+								continue
+							seen_segments[segment_key] = true
+						surface.add_vertex(raw_a + offset)
+						surface.add_vertex(raw_b + offset)
 
 	return surface.commit(mesh)
+
+
+static func _coplanar_segment_key(face_index: int, a: Vector3, b: Vector3) -> String:
+	var ai := Vector3i(int(a.x), int(a.y), int(a.z))
+	var bi := Vector3i(int(b.x), int(b.y), int(b.z))
+	if _vector3i_less(bi, ai):
+		var swap := ai
+		ai = bi
+		bi = swap
+	# `face_index` deliberately remains part of the key. Coplanar same-normal
+	# duplicates collapse, while perpendicular crease lines remain separate and
+	# keep their own small normal offsets for shape readability.
+	return "%d|%d,%d,%d|%d,%d,%d" % [
+		face_index,
+		ai.x, ai.y, ai.z,
+		bi.x, bi.y, bi.z,
+	]
+
+
+static func _vector3i_less(a: Vector3i, b: Vector3i) -> bool:
+	if a.x != b.x:
+		return a.x < b.x
+	if a.y != b.y:
+		return a.y < b.y
+	return a.z < b.z
 
 
 static func _build_modulated_surface(volume: CellVolume, base_color: Color) -> ArrayMesh:
