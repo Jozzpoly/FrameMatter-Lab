@@ -10,6 +10,7 @@ on:
       - "actor/**"
       - "space/**"
       - "tests/p1_interaction_visual_capture.gd"
+      - "tests/p1_interaction_expand_diagnostic.gd"
       - "ci/run_godot_interaction_capture.ps1"
       - "project.godot"
       - ".github/workflows/p1-interaction-evidence.yml"
@@ -51,6 +52,14 @@ jobs:
       - name: Strict synchronous project import
         shell: pwsh
         run: ./ci/run_godot_import.ps1
+
+      - name: Diagnose canonical EXPAND targetability
+        shell: pwsh
+        run: |
+          $output = & godot --path . --audio-driver Dummy --rendering-method forward_plus --rendering-driver d3d12 --script res://tests/p1_interaction_expand_diagnostic.gd 2>&1
+          $output | ForEach-Object { Write-Host $_ }
+          if ($LASTEXITCODE -ne 0) { throw "G5 EXPAND diagnostic exited with status $LASTEXITCODE" }
+          if (($output -join "`n") -notmatch "P1_INTERACTION_EXPAND_DIAGNOSTIC_PASS") { throw "G5 EXPAND diagnostic PASS marker missing" }
 
       - name: Capture canonical G5 interaction baseline
         shell: pwsh
