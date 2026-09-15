@@ -7,6 +7,8 @@ const EXPAND_ACTOR_LOCAL := Vector3(6.5, 1.95, 8.5)
 const EXPAND_REMOVE := Vector3i(8, 5, 8)
 const EXPAND_PLACE := Vector3i(8, 6, 8)
 const USABLE_TOP_NORM := 0.22
+const PRESENTATION_LEGACY := "legacy"
+const PRESENTATION_FACE_LED := "face_led"
 const SCAN_YAWS := [
 	0.72,
 	0.0,
@@ -34,11 +36,13 @@ const EXPAND_ORBITS := [
 
 var _failures: Array[String] = []
 var _output_dir := ""
+var _presentation_variant := PRESENTATION_LEGACY
 var _p1: Node
 var _space: LocalMatterSpace
 var _player: SpaceQueryCharacter
 var _camera_rig: P1CameraRig
 var _interactor: P1MatterInteractor
+var _target_presentation: P1MatterTargetPresentation
 
 
 func _init() -> void:
@@ -50,6 +54,17 @@ func _run() -> void:
 	if _output_dir.is_empty():
 		_output_dir = ProjectSettings.globalize_path("res://artifacts/p1-interaction-evidence")
 	DirAccess.make_dir_recursive_absolute(_output_dir)
+
+	var requested_variant := OS.get_environment("P1_TARGET_PRESENTATION_VARIANT").strip_edges().to_lower()
+	if not requested_variant.is_empty():
+		_presentation_variant = requested_variant
+	_check(
+		_presentation_variant == PRESENTATION_LEGACY or _presentation_variant == PRESENTATION_FACE_LED,
+		"G5 capture presentation variant is supported"
+	)
+	if _presentation_variant != PRESENTATION_LEGACY and _presentation_variant != PRESENTATION_FACE_LED:
+		_finish()
+		return
 
 	var packed := load("res://p1/main.tscn") as PackedScene
 	_check(packed != null, "G5 capture loads canonical P1 scene")
@@ -74,6 +89,16 @@ func _run() -> void:
 		_p1.free()
 		_finish()
 		return
+
+	if _presentation_variant == PRESENTATION_FACE_LED:
+		_target_presentation = P1MatterTargetPresentation.new()
+		_target_presentation.name = "P1MatterTargetPresentationEvidence"
+		_p1.add_child(_target_presentation)
+		_target_presentation.set_interactor(_interactor)
+		_target_presentation.suppress_legacy_outline = true
+		_target_presentation.refresh_now()
+
+	print("P1_INTERACTION_PRESENTATION_VARIANT: %s" % _presentation_variant)
 
 	# Target semantics, not player locomotion, are under test here. Hold the actor
 	# at exact authored positions while the real interactor performs real physics
@@ -230,9 +255,10 @@ func _capture_center_target(label: String, semantic_name: String) -> void:
 	var face := _interactor.place_cell - _interactor.remove_cell
 	_check(abs(face.x) + abs(face.y) + abs(face.z) == 1, "%s resolves one exact hit face" % label)
 	print(
-		"P1_INTERACTION_TRUTH label=%s semantic=%s target_cell=%s remove=%s place=%s face=%s in_storage=%s valid=%s" % [
+		"P1_INTERACTION_TRUTH label=%s semantic=%s presentation=%s target_cell=%s remove=%s place=%s face=%s in_storage=%s valid=%s" % [
 			label,
 			semantic_name,
+			_presentation_variant,
 			str(_interactor.get_target_cell()),
 			str(_interactor.remove_cell),
 			str(_interactor.place_cell),
@@ -267,7 +293,8 @@ func _capture_expand_ab(ab_state: Dictionary) -> void:
 		"center-reticle baseline does not silently target the off-center EXPAND face"
 	)
 	print(
-		"P1_INTERACTION_TRUTH label=02_expand_center_reticle_miss semantic=CENTER_MISS visible_expand_screen_norm=(%.3f,%.3f) center_remove=%s center_place=%s center_valid=%s center_in_storage=%s" % [
+		"P1_INTERACTION_TRUTH label=02_expand_center_reticle_miss semantic=CENTER_MISS presentation=%s visible_expand_screen_norm=(%.3f,%.3f) center_remove=%s center_place=%s center_valid=%s center_in_storage=%s" % [
+			_presentation_variant,
 			norm.x,
 			norm.y,
 			str(center_remove),
@@ -288,7 +315,8 @@ func _capture_expand_ab(ab_state: Dictionary) -> void:
 	var face := _interactor.place_cell - _interactor.remove_cell
 	_check(face == Vector3i.UP, "pointer A/B preserves exact +Y hit face")
 	print(
-		"P1_INTERACTION_TRUTH label=03_expand_pointer_hit semantic=EXPAND screen=(%.1f,%.1f) norm=(%.3f,%.3f) remove=%s place=%s face=%s" % [
+		"P1_INTERACTION_TRUTH label=03_expand_pointer_hit semantic=EXPAND presentation=%s screen=(%.1f,%.1f) norm=(%.3f,%.3f) remove=%s place=%s face=%s" % [
+			_presentation_variant,
 			screen.x,
 			screen.y,
 			norm.x,
@@ -302,6 +330,8 @@ func _capture_expand_ab(ab_state: Dictionary) -> void:
 
 
 func _capture_pixels(label: String) -> void:
+	if _target_presentation != null:
+		_target_presentation.refresh_now()
 	await process_frame
 	await RenderingServer.frame_post_draw
 	var image := get_root().get_texture().get_image()
@@ -340,7 +370,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_INTERACTION_CAPTURE_PASS: D3D12 evidence captured canonical REMOVE/PLACE plus same-frame visible EXPAND center-miss versus explicit-screen-ray hit.")
+		print("P1_INTERACTION_CAPTURE_PASS: D3D12 evidence captured %s REMOVE/PLACE plus same-frame visible EXPAND center-miss versus explicit-screen-ray hit." % _presentation_variant)
 		quit(0)
 		return
 	for failure in _failures:
