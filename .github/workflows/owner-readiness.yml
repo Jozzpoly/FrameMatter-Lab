@@ -28,6 +28,33 @@ jobs:
       - name: Validate readiness manifest and evidence references
         run: python ci/verify_owner_readiness.py --mode validate
 
+      - name: Prove BLOCKED state cannot pass delivery enforcement
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
+          print(data["status"])
+          PY
+          )
+          if [ "$status" = "BLOCKED" ]; then
+            set +e
+            python ci/verify_owner_readiness.py --mode delivery --commit "$GITHUB_SHA" > /tmp/readiness-negative.log 2>&1
+            result=$?
+            set -e
+            cat /tmp/readiness-negative.log
+            if [ "$result" -eq 0 ]; then
+              echo "OWNER_READINESS_NEGATIVE_CONTROL_FAIL: BLOCKED campaign unexpectedly passed delivery enforcement"
+              exit 1
+            fi
+            grep -q 'OWNER_READINESS_ERROR:' /tmp/readiness-negative.log
+            echo "OWNER_READINESS_NEGATIVE_CONTROL_PASS: BLOCKED campaign is rejected by delivery enforcement"
+          else
+            echo "Campaign is not BLOCKED; negative control is intentionally skipped."
+          fi
+
       - name: Show current promotion state
         run: |
           python - <<'PY'
@@ -35,11 +62,16 @@ jobs:
           from pathlib import Path
           data = json.loads(Path("quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
           print("campaign:", data["campaign_id"])
+          print("contract:", data["campaign_contract"])
+          print("contract_version:", data["campaign_contract_version"])
           print("status:", data["status"])
           print("promotion_authorized:", data["promotion_authorized"])
           print("approved_commit:", data["approved_commit"] or "<none>")
           print("owner_attention_allowed:", data["owner_attention_event"]["allowed"])
           print("open_blockers:", len(data["open_blockers"]))
           for name, gate in data["required_gates"].items():
-              print(f"{name}: {gate['status']} evidence={len(gate['evidence'])}")
+              print(
+                  f"{name}: {gate['status']} type={gate['evidence_type']} "
+                  f"verified_commit={gate['verified_commit'] or '<none>'} evidence={len(gate['evidence'])}"
+              )
           PY
