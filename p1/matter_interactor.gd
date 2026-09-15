@@ -22,6 +22,7 @@ signal edit_rejected(reason: String)
 
 var camera: Camera3D
 var registry: P1SpaceRegistry
+var pointer_blocker: Control
 var mode := EditMode.REMOVE
 var targeting_mode := TargetingMode.POINTER
 var target_space: LocalMatterSpace
@@ -44,6 +45,7 @@ func _ready() -> void:
 	_place_material = _make_line_material(Color(0.20, 1.0, 0.55, 1.0))
 	_expand_material = _make_line_material(Color(0.18, 0.82, 1.0, 1.0))
 	_outline.visible = false
+	call_deferred("_bind_pointer_blocker_from_scene")
 
 
 func set_camera(value: Camera3D) -> void:
@@ -52,6 +54,10 @@ func set_camera(value: Camera3D) -> void:
 
 func set_registry(value: P1SpaceRegistry) -> void:
 	registry = value
+
+
+func set_pointer_blocker(value: Control) -> void:
+	pointer_blocker = value
 
 
 func set_mode(value: int) -> void:
@@ -161,13 +167,7 @@ func _process(_delta: float) -> void:
 		_clear_target()
 		return
 	if targeting_mode == TargetingMode.POINTER:
-		# UI owns the pointer while hovered. Never raycast through HUD controls and
-		# accidentally mutate Matter hidden behind presentation/UI.
-		var hovered_control := viewport.gui_get_hovered_control()
-		if hovered_control != null and hovered_control.is_visible_in_tree():
-			_clear_target()
-			return
-		_update_target_from_screen_position(viewport.get_mouse_position())
+		update_target_from_pointer_position(viewport.get_mouse_position())
 	else:
 		_update_target_from_screen_position(viewport.get_visible_rect().size * 0.5)
 
@@ -180,11 +180,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		apply_current_edit()
 
 
+func update_target_from_pointer_position(screen_position: Vector2) -> void:
+	# Pointer ownership is resolved before world targeting. The P1 HUD panel is a
+	# concrete blocker, while gui_get_hovered_control covers any future visible UI
+	# that owns the live mouse. Both routes clear stale world targets.
+	if _screen_position_is_ui_owned(screen_position):
+		_clear_target()
+		return
+	_update_target_from_screen_position(screen_position)
+
+
 func update_target_from_screen_position(screen_position: Vector2) -> void:
-	# Public interaction-surface primitive: resolve the same physical raycast and
-	# Matter/face semantics from an explicit viewport point. Production pointer
-	# targeting and deterministic evidence share this path without inventing a
-	# second target authority.
+	# Raw interaction-surface primitive used by bounded diagnostic/reference work.
+	# Production pointer input uses update_target_from_pointer_position so UI
+	# ownership is enforced before the same physical ray/cell resolver.
 	_update_target_from_screen_position(screen_position)
 
 
@@ -198,6 +207,28 @@ func _update_target_from_camera() -> void:
 		_clear_target()
 		return
 	_update_target_from_screen_position(viewport.get_visible_rect().size * 0.5)
+
+
+func _screen_position_is_ui_owned(screen_position: Vector2) -> bool:
+	if pointer_blocker != null and is_instance_valid(pointer_blocker) and pointer_blocker.is_visible_in_tree():
+		if pointer_blocker.get_global_rect().has_point(screen_position):
+			return true
+	if camera == null or not is_instance_valid(camera):
+		return false
+	var viewport := camera.get_viewport()
+	if viewport == null:
+		return false
+	var hovered_control := viewport.gui_get_hovered_control()
+	return hovered_control != null and hovered_control.is_visible_in_tree()
+
+
+func _bind_pointer_blocker_from_scene() -> void:
+	if pointer_blocker != null and is_instance_valid(pointer_blocker):
+		return
+	var scene_root := get_parent()
+	if scene_root == null:
+		return
+	pointer_blocker = scene_root.get_node_or_null("HUD/Panel") as Control
 
 
 func _update_target_from_screen_position(screen_position: Vector2) -> void:
