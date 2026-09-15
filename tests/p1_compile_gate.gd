@@ -1,5 +1,17 @@
 extends SceneTree
 
+# This gate intentionally loads through the normal project resource cache.
+# `class_name` dependencies are part of one Godot project graph; forcing every
+# file through CACHE_MODE_IGNORE compiles them as artificial islands and is not
+# representative of how the project resolves global script classes.
+
+const SCENE_PATHS: PackedStringArray = [
+	"res://p1/player.tscn",
+	"res://p1/camera_rig.tscn",
+	"res://p1/matter_interactor.tscn",
+	"res://p1/main.tscn",
+]
+
 const SCRIPT_PATHS: PackedStringArray = [
 	"res://matter/cell_volume.gd",
 	"res://matter/matter_lineage_map.gd",
@@ -25,13 +37,6 @@ const SCRIPT_PATHS: PackedStringArray = [
 	"res://tests/p1_finite_space_control_probe.gd",
 ]
 
-const SCENE_PATHS: PackedStringArray = [
-	"res://p1/player.tscn",
-	"res://p1/camera_rig.tscn",
-	"res://p1/matter_interactor.tscn",
-	"res://p1/main.tscn",
-]
-
 var _failures: Array[String] = []
 
 
@@ -40,8 +45,15 @@ func _init() -> void:
 
 
 func _run() -> void:
+	# Load composed scenes first. This exercises the same class/dependency graph
+	# the Owner-facing project uses, rather than an isolated-script fiction.
+	for path in SCENE_PATHS:
+		var resource: Resource = ResourceLoader.load(path)
+		if resource == null or not resource is PackedScene:
+			_failures.append("scene failed to load: %s" % path)
+
 	for path in SCRIPT_PATHS:
-		var resource: Resource = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
+		var resource: Resource = ResourceLoader.load(path)
 		if resource == null:
 			_failures.append("script failed to load: %s" % path)
 			continue
@@ -50,15 +62,10 @@ func _run() -> void:
 			continue
 		var script := resource as Script
 		if not script.can_instantiate():
-			_failures.append("script cannot instantiate after compile: %s" % path)
-
-	for path in SCENE_PATHS:
-		var resource: Resource = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
-		if resource == null or not resource is PackedScene:
-			_failures.append("scene failed to load: %s" % path)
+			_failures.append("script cannot instantiate after project compile: %s" % path)
 
 	if _failures.is_empty():
-		print("P1_COMPILE_GATE_PASS: all P1 runtime, substrate, probe scripts and composed scenes load as valid resources.")
+		print("P1_COMPILE_GATE_PASS: P1 runtime, substrate, probes and composed scenes resolve through the real Godot project class graph.")
 		quit(0)
 		return
 
