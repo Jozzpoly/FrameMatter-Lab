@@ -78,10 +78,12 @@
       ]
     },
     "camera_composition": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "rendered_stress_sequence",
-      "verified_runtime_commit": "",
-      "evidence": []
+      "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51",
+      "evidence": [
+        "docs/evidence/p1-g4-camera-composition.md"
+      ]
     },
     "interaction_hierarchy": {
       "status": "PENDING",
@@ -134,12 +136,11 @@
     "moving_edit_and_storage_rebase": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
     "topology_split_and_successor_relations": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
     "freeze_at_current_pose": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
-    "close_camera_obstacle_stress": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
-    "actor_near_space_edge": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
-    "fall_and_recovery": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []}
+    "close_camera_obstacle_stress": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]},
+    "actor_near_space_edge": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]},
+    "fall_and_recovery": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]}
   },
   "open_blockers": [
-    "G4 camera composition not yet defended",
     "G5 interaction hierarchy not yet defended",
     "G6 world/motion/topology causality not yet defended",
     "Default UI hierarchy not yet defended",
