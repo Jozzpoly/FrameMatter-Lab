@@ -6,6 +6,11 @@ enum EditMode {
 	PLACE,
 }
 
+enum TargetingMode {
+	CENTER_RETICLE,
+	POINTER,
+}
+
 signal edit_mode_changed(mode: int)
 signal edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, topology_split_queued: bool)
 signal storage_expansion_requested(space: LocalMatterSpace, source_cell: Vector3i)
@@ -18,6 +23,7 @@ signal edit_rejected(reason: String)
 var camera: Camera3D
 var registry: P1SpaceRegistry
 var mode := EditMode.REMOVE
+var targeting_mode := TargetingMode.CENTER_RETICLE
 var target_space: LocalMatterSpace
 var remove_cell := Vector3i.ZERO
 var place_cell := Vector3i.ZERO
@@ -56,6 +62,12 @@ func set_mode(value: int) -> void:
 	mode = value
 	edit_mode_changed.emit(mode)
 	_refresh_outline()
+
+
+func set_targeting_mode(value: int) -> void:
+	if value != TargetingMode.CENTER_RETICLE and value != TargetingMode.POINTER:
+		return
+	targeting_mode = value
 
 
 func toggle_mode() -> void:
@@ -138,7 +150,17 @@ func apply_edit_to_cell(space: LocalMatterSpace, cell: Vector3i, edit_mode: int)
 
 
 func _process(_delta: float) -> void:
-	_update_target_from_camera()
+	if camera == null or not is_instance_valid(camera):
+		_clear_target()
+		return
+	var viewport := camera.get_viewport()
+	if viewport == null:
+		_clear_target()
+		return
+	if targeting_mode == TargetingMode.POINTER:
+		_update_target_from_screen_position(viewport.get_mouse_position())
+	else:
+		_update_target_from_screen_position(viewport.get_visible_rect().size * 0.5)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -149,20 +171,40 @@ func _unhandled_input(event: InputEvent) -> void:
 		apply_current_edit()
 
 
+func update_target_from_screen_position(screen_position: Vector2) -> void:
+	# Public interaction-surface primitive: resolve the same physical raycast and
+	# Matter/face semantics from an explicit viewport point. Production pointer
+	# targeting and deterministic evidence can share this path without inventing
+	# test-only target authority.
+	_update_target_from_screen_position(screen_position)
+
+
 func _update_target_from_camera() -> void:
-	target_valid = false
-	target_in_storage = false
-	target_space = null
-	_outline.visible = false
+	# Compatibility path retained for existing probes and the bounded canonical
+	# center-reticle baseline. It delegates to the same screen-ray resolver.
+	if camera == null or not is_instance_valid(camera):
+		_clear_target()
+		return
+	var viewport := camera.get_viewport()
+	if viewport == null:
+		_clear_target()
+		return
+	_update_target_from_screen_position(viewport.get_visible_rect().size * 0.5)
+
+
+func _update_target_from_screen_position(screen_position: Vector2) -> void:
+	_clear_target()
 	if camera == null or registry == null or not is_instance_valid(camera):
 		return
-
 	var viewport := camera.get_viewport()
 	if viewport == null:
 		return
-	var screen_center := viewport.get_visible_rect().size * 0.5
-	var ray_origin := camera.project_ray_origin(screen_center)
-	var ray_direction := camera.project_ray_normal(screen_center).normalized()
+	var visible_rect := viewport.get_visible_rect()
+	if not visible_rect.has_point(screen_position):
+		return
+
+	var ray_origin := camera.project_ray_origin(screen_position)
+	var ray_direction := camera.project_ray_normal(screen_position).normalized()
 	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_origin + ray_direction * max_distance, collision_mask)
 	query.collide_with_areas = false
 	query.collide_with_bodies = true
@@ -207,6 +249,14 @@ func _update_target_from_camera() -> void:
 	_outline.scale = Vector3.ONE * outline_scale
 	_refresh_outline()
 	_outline.visible = true
+
+
+func _clear_target() -> void:
+	target_valid = false
+	target_in_storage = false
+	target_space = null
+	if _outline != null:
+		_outline.visible = false
 
 
 func _refresh_outline() -> void:
