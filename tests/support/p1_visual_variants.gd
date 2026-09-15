@@ -21,7 +21,14 @@ static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 	if variant == "canonical" or variant == "balanced_fill":
 		return
 
-	if variant in ["state_material", "state_contour", "state_material_refined", "state_contour_refined"]:
+	if variant in [
+		"state_material",
+		"state_contour",
+		"state_material_refined",
+		"state_contour_refined",
+		"state_contour_neutral_focus",
+		"state_contour_soft_neutral_focus",
+	]:
 		StateSemanticsVariants.refresh(p1, variant, failures)
 		return
 
