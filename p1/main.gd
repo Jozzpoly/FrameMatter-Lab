@@ -19,8 +19,6 @@ var _pending_storage_place_source_cell := Vector3i.ZERO
 @onready var _player: SpaceQueryCharacter = $P1Player
 @onready var _camera_rig: P1CameraRig = $P1CameraRig
 @onready var _interactor: P1MatterInteractor = $P1MatterInteractor
-@onready var _status_label: Label = $HUD/Panel/MarginContainer/VBoxContainer/Status
-@onready var _hint_label: Label = $HUD/Panel/MarginContainer/VBoxContainer/Hint
 
 
 func _ready() -> void:
@@ -39,7 +37,6 @@ func _ready() -> void:
 	_interactor.set_registry(_registry)
 	_refresh_camera_context()
 	_recover_player_to_space("initial spawn")
-	_update_hud()
 
 
 func _physics_process(_delta: float) -> void:
@@ -50,7 +47,6 @@ func _physics_process(_delta: float) -> void:
 
 func _process(_delta: float) -> void:
 	_refresh_focus_from_player()
-	_update_hud()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -474,39 +470,6 @@ func _on_edit_rejected(reason: String) -> void:
 
 func _is_live_space(space: LocalMatterSpace) -> bool:
 	return space != null and is_instance_valid(space) and not space.is_retired() and space.get_active_provider() != null
-
-
-func _update_hud() -> void:
-	if not _is_live_space(_focus_space):
-		_status_label.text = "P1 rebuild — no active Space"
-		return
-	var kind := "STATIC" if _focus_space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC else "DYNAMIC"
-	var support := "world"
-	if _player.support_space != null and _is_live_space(_player.support_space):
-		support = "local Space"
-	elif not _player.grounded:
-		support = "airborne"
-	var target := "none"
-	if _interactor.target_space != null:
-		target = "%s%s" % [
-			str(_interactor.get_target_cell()),
-			"" if _interactor.target_in_storage else " [expand]",
-		]
-	var motion := ""
-	var provider: Node3D = _focus_space.get_active_provider()
-	if provider is RigidBody3D:
-		var rigid := provider as RigidBody3D
-		motion = "   •   v %.2f   •   ω %.2f" % [rigid.linear_velocity.length(), rigid.angular_velocity.length()]
-	_status_label.text = "P1   •   %s   •   actor %s   •   support %s   •   Spaces %d   •   EDIT %s   •   target %s%s" % [
-		kind,
-		"grounded" if _player.grounded else "airborne",
-		support,
-		_registry.get_active_count(),
-		_interactor.get_mode_name(),
-		target,
-		motion,
-	]
-	_hint_label.text = "WASD move   Space jump   T release/freeze   ↑↓ impulse   ←→ torque   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset\n%s" % _last_event
 
 
 func _ensure_input_actions() -> void:
