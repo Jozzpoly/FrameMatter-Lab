@@ -18,7 +18,6 @@ signal edit_rejected(reason: String)
 
 @export var max_distance := 14.0
 @export_flags_3d_physics var collision_mask := 1
-@export var outline_scale := 1.018
 
 var camera: Camera3D
 var registry: P1SpaceRegistry
@@ -32,19 +31,8 @@ var target_valid := false
 var target_in_storage := false
 var last_rejection := ""
 
-@onready var _outline: MeshInstance3D = $TargetOutline
-
-var _remove_material: StandardMaterial3D
-var _place_material: StandardMaterial3D
-var _expand_material: StandardMaterial3D
-
 
 func _ready() -> void:
-	_build_outline_mesh()
-	_remove_material = _make_line_material(Color(1.0, 0.24, 0.16, 1.0))
-	_place_material = _make_line_material(Color(0.20, 1.0, 0.55, 1.0))
-	_expand_material = _make_line_material(Color(0.18, 0.82, 1.0, 1.0))
-	_outline.visible = false
 	call_deferred("_bind_pointer_blocker_from_scene")
 
 
@@ -67,7 +55,6 @@ func set_mode(value: int) -> void:
 		return
 	mode = value
 	edit_mode_changed.emit(mode)
-	_refresh_outline()
 
 
 func set_targeting_mode(value: int) -> void:
@@ -283,60 +270,11 @@ func _update_target_from_screen_position(screen_position: Vector2) -> void:
 		# requests a bounded rebase before the logical edit is applied.
 		target_valid = not target_in_storage or space.volume.get_cell(place_cell) == CellVolume.EMPTY
 
-	var local_center := Vector3(cell) + Vector3(0.5, 0.5, 0.5)
-	_outline.global_transform = provider.global_transform * Transform3D(Basis.IDENTITY, local_center)
-	_outline.scale = Vector3.ONE * outline_scale
-	_refresh_outline()
-	_outline.visible = true
-
 
 func _clear_target() -> void:
 	target_valid = false
 	target_in_storage = false
 	target_space = null
-	if _outline != null:
-		_outline.visible = false
-
-
-func _refresh_outline() -> void:
-	if _outline == null:
-		return
-	if not target_in_storage and mode == EditMode.PLACE:
-		_outline.material_override = _expand_material
-	elif mode == EditMode.REMOVE:
-		_outline.material_override = _remove_material
-	else:
-		_outline.material_override = _place_material
-
-
-func _build_outline_mesh() -> void:
-	var mesh := ImmediateMesh.new()
-	mesh.surface_begin(Mesh.PRIMITIVE_LINES)
-	var corners := [
-		Vector3(-0.5, -0.5, -0.5), Vector3(0.5, -0.5, -0.5),
-		Vector3(0.5, -0.5, 0.5), Vector3(-0.5, -0.5, 0.5),
-		Vector3(-0.5, 0.5, -0.5), Vector3(0.5, 0.5, -0.5),
-		Vector3(0.5, 0.5, 0.5), Vector3(-0.5, 0.5, 0.5),
-	]
-	var edges := [
-		[0, 1], [1, 2], [2, 3], [3, 0],
-		[4, 5], [5, 6], [6, 7], [7, 4],
-		[0, 4], [1, 5], [2, 6], [3, 7],
-	]
-	for edge in edges:
-		mesh.surface_add_vertex(corners[edge[0]])
-		mesh.surface_add_vertex(corners[edge[1]])
-	mesh.surface_end()
-	_outline.mesh = mesh
-
-
-func _make_line_material(color: Color) -> StandardMaterial3D:
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = color
-	material.vertex_color_use_as_albedo = false
-	material.no_depth_test = true
-	return material
 
 
 func _reject(reason: String) -> void:
