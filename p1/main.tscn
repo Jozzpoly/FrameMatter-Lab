@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://p1/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://p1/matter_state_presentation.gd" id="8_state_presentation"]
 [ext_resource type="Script" path="res://p1/matter_target_presentation.gd" id="9_target_presentation"]
 [ext_resource type="Script" path="res://p1/interaction_feedback.gd" id="10_interaction_feedback"]
+[ext_resource type="Script" path="res://p1/world_reference_presentation.gd" id="11_world_reference_presentation"]
 
 [sub_resource type="Environment" id="Environment_P1"]
 background_mode = 1
@@ -79,6 +80,9 @@ material_override = SubResource("GroundMaterial")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="WorldReference"]
 shape = SubResource("GroundShape")
+
+[node name="P1WorldReferencePresentation" type="Node3D" parent="WorldReference"]
+script = ExtResource("11_world_reference_presentation")
 
 [node name="WorldOriginMarker" type="MeshInstance3D" parent="."]
 position = Vector3(-7.25, 0, -7.25)
