@@ -77,8 +77,13 @@ def main() -> None:
     check(any("new_required_plane" in error for error in errors),
           "new contract requirement cannot be silently ignored by readiness")
 
+    # Parse the real contract once for promotion controls. A parse failure here is
+    # itself a self-test failure; never silently turn it into an empty gate set.
+    contract_gates, contract_gate_errors = guard.parse_contract_gates(contract)
+    check(not contract_gate_errors, "campaign contract gate parsing succeeds: %s" % contract_gate_errors)
+    check(bool(contract_gates), "campaign contract exposes a non-empty promotion gate set")
+
     # Control: the real BLOCKED state must not be deliverable.
-    _, contract_gates = guard.parse_contract_gates(contract)
     errors = guard.enforce_delivery(manifest, contract_gates, "deadbeef")
     check(bool(errors), "real BLOCKED state is rejected by delivery enforcement")
     check(any("not READY_FOR_OWNER" in error for error in errors),
