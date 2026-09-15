@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  p1-volumetric-actor:
+  p1-foundation:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,3 +33,6 @@ jobs:
 
       - name: Run P1 volumetric actor challenger
         run: godot --headless --path . --script res://tests/p1_volumetric_actor_challenger.gd
+
+      - name: Run P1 composed scene foundation smoke
+        run: godot --headless --path . --script res://tests/p1_scene_foundation_smoke.gd
