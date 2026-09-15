@@ -4,6 +4,8 @@ extends Node
 # Experimental integrated lifecycle substrate. This is intentionally a local
 # single-Space owner, not a general Space manager or final persistence model.
 
+const MAX_EXPANDED_STORAGE_CELLS := 262144
+
 enum ProviderKind {
 	NONE,
 	STATIC,
@@ -12,6 +14,7 @@ enum ProviderKind {
 
 signal provider_transition_committed(previous_provider_id: int, current_provider_id: int, provider_kind: int)
 signal topology_split_committed(result)
+signal storage_rebased(local_shift: Vector3i, previous_size: Vector3i, current_size: Vector3i)
 
 var volume: CellVolume
 var lineage: MatterLineageMap
@@ -95,6 +98,93 @@ func allocate_lineage_token() -> int:
 	if _retired or lineage_issuer == null:
 		return MatterLineageMap.NONE
 	return lineage_issuer.allocate()
+
+
+func ensure_storage_contains(local_cell: Vector3i, padding: int = 2) -> Dictionary:
+	if _retired or volume == null or lineage == null or _active_provider == null:
+		return {}
+	if volume.in_bounds(local_cell):
+		return {
+			"expanded": false,
+			"cell": local_cell,
+			"local_shift": Vector3i.ZERO,
+			"previous_size": volume.size,
+			"current_size": volume.size,
+		}
+	if _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split:
+		return {}
+
+	var grow := max(0, padding)
+	var min_coord := Vector3i(
+		min(0, local_cell.x - grow),
+		min(0, local_cell.y - grow),
+		min(0, local_cell.z - grow)
+	)
+	var max_exclusive := Vector3i(
+		max(volume.size.x, local_cell.x + 1 + grow),
+		max(volume.size.y, local_cell.y + 1 + grow),
+		max(volume.size.z, local_cell.z + 1 + grow)
+	)
+	var new_size := max_exclusive - min_coord
+	var new_cell_count := new_size.x * new_size.y * new_size.z
+	if new_cell_count <= 0 or new_cell_count > MAX_EXPANDED_STORAGE_CELLS:
+		return {}
+
+	var local_shift := -min_coord
+	var previous_size := volume.size
+	var previous_volume := volume
+	var previous_lineage := lineage
+	var previous_revision := previous_volume.revision
+	var new_volume := CellVolume.new(new_size)
+	var new_lineage := MatterLineageMap.new(new_size)
+
+	for z in range(previous_size.z):
+		for y in range(previous_size.y):
+			for x in range(previous_size.x):
+				var old_cell := Vector3i(x, y, z)
+				var material_id := previous_volume.get_cell(old_cell)
+				if material_id == CellVolume.EMPTY:
+					continue
+				var mapped_cell := old_cell + local_shift
+				new_volume.set_cell(mapped_cell, material_id)
+				var token := previous_lineage.get_lineage(old_cell)
+				assert(token != MatterLineageMap.NONE)
+				new_lineage.set_lineage(mapped_cell, token)
+	# Storage rebasing is not a logical Matter edit. Preserve the source revision
+	# so the subsequent actual placement is the revision-changing operation.
+	new_volume.revision = previous_revision
+
+	var provider := _active_provider
+	var previous_transform := provider.global_transform
+	var rebased_transform := previous_transform * Transform3D(Basis.IDENTITY, -Vector3(local_shift))
+	var preserved_linear := Vector3.ZERO
+	var preserved_angular := Vector3.ZERO
+	if provider is ConstructBody:
+		preserved_linear = provider.linear_velocity
+		preserved_angular = provider.angular_velocity
+
+	volume = new_volume
+	lineage = new_lineage
+	provider.global_transform = rebased_transform
+	if provider is MatterRepresentation:
+		(provider as MatterRepresentation).set_volume(new_volume)
+	elif provider is ConstructBody:
+		var body := provider as ConstructBody
+		body.set_volume(new_volume)
+		body.linear_velocity = preserved_linear
+		body.angular_velocity = preserved_angular
+	else:
+		assert(false, "Unsupported active Matter provider")
+	provider.reset_physics_interpolation()
+
+	storage_rebased.emit(local_shift, previous_size, new_size)
+	return {
+		"expanded": true,
+		"cell": local_cell + local_shift,
+		"local_shift": local_shift,
+		"previous_size": previous_size,
+		"current_size": new_size,
+	}
 
 
 func mutate_cell(cell: Vector3i, material_id: int, created_lineage_token: int = MatterLineageMap.NONE) -> bool:
