@@ -35,20 +35,20 @@ func freeze_space(space: LocalMatterSpace) -> bool:
 
 
 func apply_local_central_impulse(space: LocalMatterSpace, local_impulse: Vector3) -> bool:
-	var body := _get_dynamic_body(space)
+	var body: ConstructBody = _get_dynamic_body(space)
 	if body == null:
 		return _reject("central impulse requires a live dynamic Space")
-	var world_impulse := body.global_transform.basis.orthonormalized() * local_impulse
+	var world_impulse: Vector3 = body.global_transform.basis.orthonormalized() * local_impulse
 	body.apply_central_impulse(world_impulse)
 	impulse_applied.emit(space, world_impulse)
 	return true
 
 
 func apply_local_torque_impulse(space: LocalMatterSpace, local_impulse: Vector3) -> bool:
-	var body := _get_dynamic_body(space)
+	var body: ConstructBody = _get_dynamic_body(space)
 	if body == null:
 		return _reject("torque impulse requires a live dynamic Space")
-	var world_impulse := body.global_transform.basis.orthonormalized() * local_impulse
+	var world_impulse: Vector3 = body.global_transform.basis.orthonormalized() * local_impulse
 	body.apply_torque_impulse(world_impulse)
 	torque_impulse_applied.emit(space, world_impulse)
 	return true
