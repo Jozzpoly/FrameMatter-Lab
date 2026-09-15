@@ -2,91 +2,158 @@
 
 Research lab for an editable systemic-world substrate where local Matter can become static or dynamic physical space **without logical identity collapsing into engine representation**.
 
-This repository is intentionally **not** a Minecraft clone, vehicle game, portal demo, or final engine architecture. It exists to produce falsifiable evidence for the smallest substrate that could later support those directions.
+This repository is intentionally **not** a Minecraft clone, vehicle game, portal demo or final engine architecture. It exists to produce falsifiable evidence for the smallest substrate that could later support those directions.
 
 ## North star
 
 > Build an editable systemic-world substrate where local Matter, moving/static frames, actors and mechanisms can compose without logical identity being defined by render/physics objects.
 
-Long-term product pressure remains deliberately simple:
+Recurring product pressure:
 
-> walk → dig/build → activate a local Space → ride it → edit it while moving → use one simple mechanism → inspect/debug the consequences.
+> walk → dig/build → activate/release a local Space → ride it → edit it while moving → use a simple mechanism → understand/debug the consequences.
 
-That is a recurring pressure test, not a promise to build those features in sequence.
+That is a pressure test, not a feature roadmap.
 
 ## Current live state
 
-The repository now has defended evidence across several layers:
+The canonical project scene is now **P1**:
 
-- logical `CellVolume` Matter regenerates disposable mesh/collision representation,
-- the same logical Matter can be hosted by static or dynamic providers while logical `LocalMatterSpace` identity remains stable,
-- moving constructs survive live occupancy edits with Matter-derived mass/COM/inertia refresh,
-- actor support can remain a logical-Space relation through static↔dynamic provider replacement,
-- one logical moving Space can retire into compact topology successors with retained Matter lineage/world/velocity-field continuity,
-- independent frames can remain distinct while mechanically constrained; bounded joint state can survive split/partition/contraction cases,
-- exact merged-cuboid collision removed the demonstrated one-shape-per-cell scale bottleneck in dense/shell cases,
-- post-R1 profiling shows full mesh/cuboid/COM derivation—not installing a handful of merged shapes—now dominates representative full rebuilds,
-- bounded derived-region experiments prove strong edit locality is possible without making regions logical identity, but naive fixed regions can badly inflate final collider partitions,
-- the real LAB composes an embodied actor, direct selected-cell Matter remove/place, static→dynamic ride/walk, moving edit and freeze through the shared runtime,
-- the first direct Owner run confirmed that this loop can be exercised but exposed severe prototype interaction/readability friction rather than a demonstrated substrate failure,
-- P0.5 now wraps the same defended consumer with a closer orbit/zoom camera, explicit remove/place previews, Matter grid context, compact/debug HUD split and non-destructive test recovery.
+`res://p1/main.tscn`
 
-These are not production architecture, world-scale or product-quality claims.
+P0/P0.5 remain historical Owner/consumer evidence, but they no longer define the current executable front door.
 
-## Current active campaign
+The current defended stack includes:
 
-The project deliberately stopped representation optimization before it became architecture by inertia.
+- logical `CellVolume` Matter as authority with disposable mesh/collision/body representation,
+- logical `LocalMatterSpace` identity separated from current static/dynamic provider identity,
+- exact merged-cuboid collision as the current provider default,
+- Matter-derived mass/COM/inertia in the tested rigid cases,
+- a query-based volumetric P1 actor that collides with floors/walls/ceilings without implicit kinematic push authority,
+- actor support as a logical-Space relation through provider replacement,
+- a SpringArm camera that retains actor + Space context,
+- editable moving Matter,
+- bounded expandable local storage with explicit coordinate-frame rebasing,
+- actor/camera relation maintenance through storage-frame rebase,
+- live one→many topology succession after destructive edits,
+- explicit actor/camera succession to a live topology successor,
+- zero-launch static→dynamic release,
+- finite solver-owned central/torque impulses rather than hidden perpetual drive,
+- dynamic→static successor freeze at the current solver-owned pose.
 
-Active pressure is **P0.5 — direct Owner interaction through a less contaminated measurement surface**:
+The strongest current automated pressure is one integrated causal loop:
 
-> walk on/around Matter → point at a clearly previewed local cell → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect/debug only when useful.
+> grounded actor → release → finite motion → ride → edit/build while moving → cross storage edge → rebase + mapped placement → destructive cut → real successor Spaces → actor/camera handoff → freeze successor.
 
-The defended P0 composition gate remains **PASS in a bounded translation+yaw scope**. P0.5 adds a separate structural interaction-surface gate and does not replace the underlying Matter/lifecycle test. The green P0.5 delivery run `#6` / `34915675303` passed both gates and exported Windows + Web packages.
+Representative strict metrics:
 
-The first pitch/roll P0 challenger also exposed a useful boundary: the current actor transports support in frame coordinates but validates/snaps with a world-down single ray. It remained grounded but drifted locally on tilted support. Arbitrary pitch/roll therefore remains an explicit actor/gravity/orientation frontier rather than being hidden by a LAB-specific adhesion hack.
+- storage-frame shift `(3, 0, 0)`,
+- linear/angular state error after rebase `0 / 0`,
+- topology actor handoff error about `0.00000125 m`,
+- moving ride anchor error about `0.00000135 m`,
+- final actor/support anchor error about `0.00000098 m`.
 
-The next material evidence must again come from direct Owner use. P0.5 exists specifically so camera/movement feel, pointer targeting, remove/place clarity, perceived edit latency and the underlying moving-Matter loop can be judged with less prototype friction.
+This is **automated integrated evidence, not playability/product evidence**.
 
-If edit latency becomes limiting, R2A already provides measured locality evidence. If actor geometry/orientation dominates, the actor frontier should move next. If lifecycle/topology semantics fail under interaction, those exact invariants should be reopened instead of hidden behind consumer glue. If interaction is still the dominant problem, improve only the highest-value obstacle instead of turning P0.5 into an endless polish campaign.
+Evidence: [`docs/evidence/p1-integrated-owner-candidate.md`](docs/evidence/p1-integrated-owner-candidate.md).
 
-### Current P0.5 controls
+## Active campaign — P1 Owner interaction
 
-- `WASD` — move relative to the current view/support,
+The destructive P1 rebuild has reached a deliberate stop condition. The next highest-information evidence is direct Owner use of the packaged P1 candidate, not another autonomous feature tranche.
+
+The question is now:
+
+> **once the major P0/P0.5 consumer defects are removed, which remaining limitation actually dominates direct use?**
+
+Potential outcomes intentionally remain open. Direct use may point next toward interaction/camera work, edit locality, arbitrary orientation/gravity semantics, finite actor↔construct force exchange, a mechanism/world interaction, or a deeper lifecycle/topology failure. The next campaign should be pulled by that evidence rather than by roadmap inertia.
+
+### Current P1 controls
+
+- `WASD` — actor movement,
 - `Space` — jump,
-- `T` — activate static Space / freeze dynamic Space,
-- `LMB` — remove the previewed occupied Matter cell,
-- `RMB` — place Matter in the previewed adjacent empty in-bounds cell,
+- `T` — zero-launch release / freeze focused Space,
+- `↑` / `↓` — finite forward/back central impulse pulses,
+- `←` / `→` — finite yaw torque pulses,
+- `E` — toggle REMOVE / PLACE,
+- `LMB` — apply current edit,
 - `MMB + mouse` — orbit camera,
 - mouse wheel — zoom,
-- `Home` — reset camera view,
-- `K` — recover actor onto the current active Space for test continuity,
-- `F1` — compact Owner HUD / full engineering telemetry,
-- `R` — reset LAB,
-- `M`, `C`, `F` — retained legacy instrumentation probes.
+- `Home` — reset camera,
+- `K` — recover actor for test continuity,
+- `R` — reset experiment.
 
-### Owner-test builds
+In PLACE mode an adjacent target outside the current dense storage can request a bounded storage expansion/rebase instead of silently behaving like an invisible wall.
 
-P0.5 has a dedicated gated delivery workflow: **[Deliver P0.5 Owner Test](https://github.com/Jozzpoly/FrameMatter-Lab/actions/workflows/deliver-owner-test.yml)**.
+## P1 Owner-candidate delivery
 
-Every delivery run first executes the defended P0 smoke and the P0.5 interaction-baseline smoke. Packaging only proceeds when both pass. A successful run publishes two 30-day downloadable artifacts:
+Workflow: **[Deliver P1 Owner Candidate](https://github.com/Jozzpoly/FrameMatter-Lab/actions/workflows/deliver-owner-test.yml)**.
 
-- `FrameMatter-P05-Windows` — standalone Windows x86-64 executable with embedded PCK; this is the preferred Owner-test build,
-- `FrameMatter-P05-Web` — browser export bundle for hosting/HTTP testing.
+Delivery run `#7` / `34964102720` independently passed before packaging:
 
-The web bundle itself exports successfully with Godot 4.7.2 + built-in Jolt. A permanent GitHub Pages URL is intentionally not claimed until Pages is enabled in repository settings; delivery artifacts do not depend on that setting.
+- strict project import,
+- P1 dependency graph,
+- canonical startup,
+- volumetric actor,
+- composed scene foundation,
+- multi-Space registry,
+- live topology consumer,
+- storage rebase,
+- actor/camera storage-frame continuity,
+- finite Space control,
+- integrated causal loop,
+- Web export,
+- Windows export.
+
+Artifacts:
+
+- `FrameMatter-P1-Windows` — preferred Owner-test candidate,
+- `FrameMatter-P1-Web` — browser export bundle for hosting/HTTP tests.
+
+Verified Windows executable:
+
+- PE32+ Windows GUI x86-64,
+- `109740584` bytes,
+- SHA-256 `9a73c77ba3a939a53541670861322ea3c27125e0df9ca20864895a1b458f88ee`,
+- embedded product metadata `FrameMatter P1 Owner Candidate`.
+
+The Web bundle exports successfully, but no permanent hosted URL is claimed merely because an export artifact exists.
+
+## Evidence discipline
+
+P1 experienced a deliberate evidence reset after the old harness allowed a false-green path. The current strict wrappers require the expected PASS marker **and** reject engine/script `ERROR:` output even when Godot exits with status 0.
+
+The historical fast-invariant wrapper now uses the same zero-engine-error evidence floor. Validate research harness run `#304` / `34963534245` passed the defended fast-invariant set under that stricter rule.
+
+Windows import is also synchronous and verifies the global script-class cache before runtime probes. Canonical startup currently passes on both Linux and Windows Godot 4.7.2.
 
 ## Important current distinctions
 
 - **Matter ≠ mesh/collision/body identity.**
-- **Space/frame identity ≠ current representation/provider.**
+- **Space identity ≠ current representation/provider.**
 - **Space ≠ simulation domain.**
+- **storage coordinates ≠ Matter identity.**
 - **contact ≠ mechanical constraint ≠ rigid bind.**
-- **freeze/static transition ≠ canonical-world reintegration ≠ bake/resample.**
-- **dirty/invalidation region ≠ final physical representation partition.**
+- **freeze/provider transition ≠ canonical-world reintegration ≠ bake/resample.**
+- **dirty/invalidation region ≠ final collider/render/world partition.**
 - **support-frame transport ≠ gravity/orientation/adhesion semantics.**
-- **P0.5 presentation grid ≠ world/chunk/physics partition.**
-- **test recovery ≠ gameplay recovery design.**
-- **bounded/integrated automated PASS ≠ playability/product proof.**
+- **finite Space impulse controls ≠ vehicle framework.**
+- **automated integrated PASS ≠ Owner/playability/product PASS.**
+
+## Important open boundaries
+
+P1 deliberately does **not** claim:
+
+- arbitrary pitch/roll locomotion or frame-local gravity/adhesion,
+- production character feel,
+- satisfying finite actor↔construct reaction forces,
+- scalable/infinite world storage,
+- final chunk/streaming architecture,
+- persistence/save-load identity,
+- canonical-world extraction/reintegration,
+- curved/planetary Matter,
+- production vehicle framework,
+- product-quality visuals/UI/performance.
+
+R2A still provides useful measured evidence if edit latency becomes a real problem: update locality is possible, but dirty regions must not automatically become final collider/world chunks.
 
 ## Stack
 
@@ -94,30 +161,19 @@ The web bundle itself exports successfully with Godot 4.7.2 + built-in Jolt. A p
 - built-in Jolt Physics
 - GDScript for rapid falsification
 - standard float precision + local coordinates
-- minimal custom integer-grid Matter model
+- integer-grid logical Matter
 - exact merged-cuboid collision as current provider default
-- intentionally simple truth/reference visuals and interaction surfaces
-
-`PER_CELL` collision remains as a historical/reference control, not a scalability candidate.
 
 ## Documentation
 
-- **[ROADMAP.md](ROADMAP.md)** — living adaptive decision map: active campaign, stop conditions and future frontiers.
+- **[ROADMAP.md](ROADMAP.md)** — adaptive decision map and campaign boundaries.
 - **[docs/research-state.md](docs/research-state.md)** — current defended / provisional / falsified / open truth.
 - **[docs/evidence/](docs/evidence/)** — durable campaign evidence and measurements.
+- **[docs/evidence/p1-integrated-owner-candidate.md](docs/evidence/p1-integrated-owner-candidate.md)** — current P1 promotion/delivery evidence.
 - **[docs/archive/](docs/archive/)** — historical direction checkpoints once they stop being live guidance.
-- **[docs/roadmap-readiness-audit.md](docs/roadmap-readiness-audit.md)** — audit that motivated the current roadmap/documentation model; transitional historical material.
-
-## Evidence standard
-
-A gate is not a PASS because it looks correct once. We seek explicit correctness, stability and performance evidence, and we distinguish:
-
-**Hypothesis → bounded evidence → integrated evidence → reusable-substrate evidence → scale evidence → playability/product evidence.**
-
-A failure is useful evidence. Representations, controllers, execution mechanisms and even the host engine remain replaceable if stronger consumers falsify current assumptions.
 
 ## Working rule
 
-The project should stabilize **intent and defended invariants**, not prematurely stabilize class names, API layouts or implementation mechanisms.
+Stabilize **intent and defended invariants**, not prematurely class names, APIs, partition schemes or implementation mechanisms.
 
-When evidence and roadmap disagree, update the roadmap.
+When evidence and roadmap disagree, evidence wins.
