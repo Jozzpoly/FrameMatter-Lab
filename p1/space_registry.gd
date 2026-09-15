@@ -8,21 +8,15 @@ extends Node
 
 signal active_spaces_changed
 signal provider_changed(space: LocalMatterSpace)
+signal storage_rebased(space: LocalMatterSpace, report: Dictionary)
 signal split_committed(source: LocalMatterSpace, result: LocalMatterSplitResult)
 
 var _active_spaces: Array[LocalMatterSpace] = []
 
 
 func register_space(space: LocalMatterSpace) -> void:
-	if space == null or space.is_retired() or _active_spaces.has(space):
+	if not _register_space_internal(space):
 		return
-	_active_spaces.append(space)
-	var provider_callback := Callable(self, "_on_provider_transition_committed").bind(space)
-	if not space.provider_transition_committed.is_connected(provider_callback):
-		space.provider_transition_committed.connect(provider_callback)
-	var split_callback := Callable(self, "_on_topology_split_committed").bind(space)
-	if not space.topology_split_committed.is_connected(split_callback):
-		space.topology_split_committed.connect(split_callback)
 	active_spaces_changed.emit()
 
 
@@ -34,6 +28,8 @@ func unregister_space(space: LocalMatterSpace) -> void:
 
 
 func clear() -> void:
+	if _active_spaces.is_empty():
+		return
 	_active_spaces.clear()
 	active_spaces_changed.emit()
 
@@ -82,6 +78,22 @@ func find_nearest_space(world_point: Vector3) -> LocalMatterSpace:
 	return best
 
 
+func _register_space_internal(space: LocalMatterSpace) -> bool:
+	if space == null or space.is_retired() or _active_spaces.has(space):
+		return false
+	_active_spaces.append(space)
+	var provider_callback := Callable(self, "_on_provider_transition_committed").bind(space)
+	if not space.provider_transition_committed.is_connected(provider_callback):
+		space.provider_transition_committed.connect(provider_callback)
+	var storage_callback := Callable(self, "_on_storage_rebase_committed").bind(space)
+	if not space.storage_rebase_committed.is_connected(storage_callback):
+		space.storage_rebase_committed.connect(storage_callback)
+	var split_callback := Callable(self, "_on_topology_split_committed").bind(space)
+	if not space.topology_split_committed.is_connected(split_callback):
+		space.topology_split_committed.connect(split_callback)
+	return true
+
+
 func _on_provider_transition_committed(
 	_previous_provider_id: int,
 	_current_provider_id: int,
@@ -92,12 +104,17 @@ func _on_provider_transition_committed(
 		provider_changed.emit(space)
 
 
+func _on_storage_rebase_committed(report: Dictionary, space: LocalMatterSpace) -> void:
+	if _active_spaces.has(space) and not space.is_retired():
+		storage_rebased.emit(space, report.duplicate(true))
+
+
 func _on_topology_split_committed(result: LocalMatterSplitResult, source: LocalMatterSpace) -> void:
 	_active_spaces.erase(source)
 	for successor_variant in result.successors:
 		var successor := successor_variant as LocalMatterSpace
 		if successor != null:
-			register_space(successor)
+			_register_space_internal(successor)
 	split_committed.emit(source, result)
 	active_spaces_changed.emit()
 
