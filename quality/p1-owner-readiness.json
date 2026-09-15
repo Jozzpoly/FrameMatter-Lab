@@ -86,10 +86,12 @@
       ]
     },
     "interaction_hierarchy": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "interactive_rehearsal",
-      "verified_runtime_commit": "",
-      "evidence": []
+      "verified_runtime_commit": "8e6431d7a64c9f80f0c70b81d4d486e066d8496e",
+      "evidence": [
+        "docs/evidence/p1-g5-interaction-hierarchy.md"
+      ]
     },
     "world_motion_causality": {
       "status": "PENDING",
@@ -130,7 +132,7 @@
   },
   "scenario_coverage": {
     "default_static_matter": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
-    "edit_target_remove_place_expand": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
+    "edit_target_remove_place_expand": {"status": "PASS", "verified_runtime_commit": "8e6431d7a64c9f80f0c70b81d4d486e066d8496e", "evidence": ["docs/evidence/p1-g5-interaction-hierarchy.md"]},
     "zero_launch_release": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
     "dynamic_translation_and_yaw": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
     "moving_edit_and_storage_rebase": {"status": "PENDING", "verified_runtime_commit": "", "evidence": []},
@@ -141,7 +143,6 @@
     "fall_and_recovery": {"status": "PASS", "verified_runtime_commit": "3f1f803e41d78f5fda32c073983d3d0d7001eb51", "evidence": ["docs/evidence/p1-g4-camera-composition.md"]}
   },
   "open_blockers": [
-    "G5 interaction hierarchy not yet defended",
     "G6 world/motion/topology causality not yet defended",
     "Default UI hierarchy not yet defended",
     "No frozen G8 runtime candidate has been selected",
