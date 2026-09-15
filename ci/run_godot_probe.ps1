@@ -32,8 +32,11 @@ try {
         exit 1
     }
 
-    if ($content -match 'SCRIPT ERROR:|ERROR: Failed to load script|Parse Error:|Compile Error:|P1_[A-Z0-9_]+_(FAIL|TIMEOUT)') {
-        Write-Error "Probe emitted a script/load/failure error despite process exit 0."
+    # Strict P1 evidence contract: a PASS marker cannot coexist with an
+    # engine/script error. Warnings remain visible, but every ERROR must be
+    # investigated rather than silently accepted as green.
+    if ($content -match '(?m)^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|P1_[A-Z0-9_]+_(FAIL|TIMEOUT)') {
+        Write-Error "Probe emitted an engine/script/failure error despite process exit 0."
         exit 1
     }
 
