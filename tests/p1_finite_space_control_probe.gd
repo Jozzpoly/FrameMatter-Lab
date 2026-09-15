@@ -17,12 +17,12 @@ func _run() -> void:
 	var control := P1SpaceControl.new()
 	host.add_child(control)
 
-	var light := _make_space(host, "LightSpace", 1.0, Vector3(-6.0, 0.0, 0.0))
-	var heavy := _make_space(host, "HeavySpace", 2.0, Vector3(6.0, 0.0, 0.0))
+	var light: LocalMatterSpace = _make_space(host, "LightSpace", 1.0, Vector3(-6.0, 0.0, 0.0))
+	var heavy: LocalMatterSpace = _make_space(host, "HeavySpace", 2.0, Vector3(6.0, 0.0, 0.0))
 	await process_frame
 
-	var light_static_transform := light.get_active_provider().global_transform
-	var heavy_static_transform := heavy.get_active_provider().global_transform
+	var light_static_transform: Transform3D = light.get_active_provider().global_transform
+	var heavy_static_transform: Transform3D = heavy.get_active_provider().global_transform
 	_check(control.release_space(light), "finite control releases light Space with zero launch request")
 	await light.provider_transition_committed
 	_check(control.release_space(heavy), "finite control releases heavy Space with zero launch request")
@@ -44,17 +44,17 @@ func _run() -> void:
 	_check(light_body.angular_velocity.length() < 0.0001 and heavy_body.angular_velocity.length() < 0.0001, "release itself creates no hidden angular launch")
 	_check(absf(heavy_body.mass - light_body.mass * 2.0) < 0.0001, "mass_per_cell produces the intended 2x mass challenger")
 
-	var expected_light_world_impulse := light_body.global_transform.basis.orthonormalized() * IMPULSE
-	var expected_heavy_world_impulse := heavy_body.global_transform.basis.orthonormalized() * IMPULSE
+	var expected_light_world_impulse: Vector3 = light_body.global_transform.basis.orthonormalized() * IMPULSE
+	var expected_heavy_world_impulse: Vector3 = heavy_body.global_transform.basis.orthonormalized() * IMPULSE
 	_check(control.apply_local_central_impulse(light, IMPULSE), "light Space accepts explicit finite central impulse")
 	_check(control.apply_local_central_impulse(heavy, IMPULSE), "heavy Space accepts identical explicit finite central impulse")
 	await physics_frame
 	await process_frame
 
-	var light_speed := light_body.linear_velocity.length()
-	var heavy_speed := heavy_body.linear_velocity.length()
+	var light_speed: float = light_body.linear_velocity.length()
+	var heavy_speed: float = heavy_body.linear_velocity.length()
 	_check(light_speed > 0.01 and heavy_speed > 0.01, "finite impulses produce actual rigid motion")
-	var speed_ratio := light_speed / max(heavy_speed, 0.000001)
+	var speed_ratio: float = light_speed / maxf(heavy_speed, 0.000001)
 	_check(absf(speed_ratio - 2.0) < 0.05, "same impulse produces inverse-mass velocity response instead of hard-coded speed")
 	_check(light_body.linear_velocity.normalized().dot(expected_light_world_impulse.normalized()) > 0.999, "local light impulse is transformed through current provider frame")
 	_check(heavy_body.linear_velocity.normalized().dot(expected_heavy_world_impulse.normalized()) > 0.999, "local heavy impulse is transformed through current provider frame")
