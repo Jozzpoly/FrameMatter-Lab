@@ -1,5 +1,7 @@
 extends SceneTree
 
+const VisualVariants = preload("res://tests/support/p1_visual_variants.gd")
+
 const ACQUIRE_FRAMES := 18
 const MOTION_FRAMES := 14
 const POST_REBASE_FRAMES := 5
@@ -13,6 +15,7 @@ const LIGHTING_AZIMUTHS_DEG := [0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315
 var _failures: Array[String] = []
 var _output_dir := ""
 var _visual_variant := "canonical"
+var _p1: Node
 
 
 func _init() -> void:
@@ -35,35 +38,36 @@ func _run() -> void:
 		_finish()
 		return
 
-	var p1 := packed.instantiate()
-	get_root().add_child(p1)
+	_p1 = packed.instantiate()
+	get_root().add_child(_p1)
 	await process_frame
-	_apply_visual_variant(p1)
+	VisualVariants.refresh(_p1, _visual_variant, _failures)
 	await _advance_frames(ACQUIRE_FRAMES)
 
-	var source := p1.call("get_space") as LocalMatterSpace
-	var player := p1.call("get_player") as SpaceQueryCharacter
-	var camera_rig := p1.call("get_camera_rig") as P1CameraRig
-	var interactor := p1.call("get_interactor") as P1MatterInteractor
+	var source := _p1.call("get_space") as LocalMatterSpace
+	var player := _p1.call("get_player") as SpaceQueryCharacter
+	var camera_rig := _p1.call("get_camera_rig") as P1CameraRig
+	var interactor := _p1.call("get_interactor") as P1MatterInteractor
 	_check(source != null and player != null and camera_rig != null and interactor != null, "P1 visual capture resolves composed roles")
 	if source == null or player == null or camera_rig == null or interactor == null:
-		p1.free()
+		_p1.free()
 		_finish()
 		return
 
 	print("P1_VISUAL_CAPTURE_VARIANT: %s" % _visual_variant)
 	await _capture("00_initial_static")
 	await _capture_lighting_turntable(camera_rig)
+	await _capture_granularity_distances(camera_rig)
 	camera_rig.reset_view()
 	await _advance_frames(2)
 
-	_check(bool(p1.call("toggle_focused_space_for_test")), "visual sequence releases the Space")
+	_check(bool(_p1.call("toggle_focused_space_for_test")), "visual sequence releases the Space")
 	await source.provider_transition_committed
 	await _advance_frames(3)
 	await _capture("01_released_dynamic")
 
-	_check(bool(p1.call("apply_focused_central_impulse_for_test", CENTRAL_IMPULSE)), "visual sequence applies finite translation")
-	_check(bool(p1.call("apply_focused_torque_impulse_for_test", TORQUE_IMPULSE)), "visual sequence applies finite yaw")
+	_check(bool(_p1.call("apply_focused_central_impulse_for_test", CENTRAL_IMPULSE)), "visual sequence applies finite translation")
+	_check(bool(_p1.call("apply_focused_torque_impulse_for_test", TORQUE_IMPULSE)), "visual sequence applies finite yaw")
 	await _advance_frames(MOTION_FRAMES)
 	await _capture("02_dynamic_motion")
 
@@ -89,19 +93,18 @@ func _run() -> void:
 	var successor := player.support_space as LocalMatterSpace
 	_check(successor != null and not successor.is_retired(), "visual sequence resolves actor-owned successor")
 	if successor != null and not successor.is_retired():
-		_check(bool(p1.call("toggle_focused_space_for_test")), "visual sequence freezes the actor-owned successor")
+		_check(bool(_p1.call("toggle_focused_space_for_test")), "visual sequence freezes the actor-owned successor")
 		await successor.provider_transition_committed
 		await _advance_frames(POST_FREEZE_FRAMES)
 		await _capture("05_frozen_successor")
 
-	p1.free()
+	_p1.free()
 	_finish()
 
 
 func _capture_lighting_turntable(camera_rig: P1CameraRig) -> void:
-	# G2 evidence only: hold the same authored static state/pitch/distance and orbit
-	# through every octant. This is deliberately test-only so lighting challengers
-	# must survive orientation changes before any variant is promoted to runtime.
+	# G2 evidence: hold the same authored static state/pitch/distance and orbit
+	# through every octant. Retained as a regression surface after G2 promotion.
 	for azimuth_deg: float in LIGHTING_AZIMUTHS_DEG:
 		camera_rig.set("_yaw", deg_to_rad(azimuth_deg))
 		camera_rig.set("_pitch", 0.48)
@@ -111,31 +114,26 @@ func _capture_lighting_turntable(camera_rig: P1CameraRig) -> void:
 		await _capture("10_light_az%03d" % int(azimuth_deg))
 
 
-func _apply_visual_variant(p1: Node) -> void:
-	if _visual_variant == "canonical" or _visual_variant == "balanced_fill":
-		# G2-B balanced fill is now canonical. `balanced_fill` intentionally
-		# remains as a no-op equivalence control for one promotion-validation run.
-		return
-
-	var world_environment := p1.get_node_or_null("WorldEnvironment") as WorldEnvironment
-	_check(world_environment != null and world_environment.environment != null, "visual challenger resolves P1 Environment")
-	if world_environment == null or world_environment.environment == null:
-		return
-
-	if _visual_variant == "balanced_fill_ssao":
-		# Post-promotion G2-C challenger: add only moderate SSAO on top of the
-		# promoted canonical key/fill balance so its contribution remains causal.
-		var environment := world_environment.environment
-		environment.ssao_enabled = true
-		environment.ssao_radius = 1.15
-		environment.ssao_intensity = 1.25
-		environment.ssao_power = 1.35
-		return
-
-	_failures.append("unsupported P1_VISUAL_VARIANT: %s" % _visual_variant)
+func _capture_granularity_distances(camera_rig: P1CameraRig) -> void:
+	# G3 evidence: same static Matter, same yaw/pitch, three observation scales.
+	# Near should expose one-cell editing scale; far should still read as coherent
+	# broad form rather than a noisy wire cage or checkerboard.
+	camera_rig.set("_yaw", 0.72)
+	camera_rig.set("_pitch", 0.48)
+	for entry in [
+		["20_granularity_near", 4.8],
+		["21_granularity_mid", 7.2],
+		["22_granularity_far", 12.0],
+	]:
+		camera_rig.set("_distance", float(entry[1]))
+		camera_rig.call("_apply_orbit")
+		await _advance_frames(2)
+		await _capture(String(entry[0]))
 
 
 func _capture(label: String) -> void:
+	if _p1 != null and is_instance_valid(_p1):
+		VisualVariants.refresh(_p1, _visual_variant, _failures)
 	await process_frame
 	await RenderingServer.frame_post_draw
 	var image: Image = get_root().get_texture().get_image()
@@ -162,7 +160,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_VISUAL_CAPTURE_PASS: variant=%s canonical P1 produced rendered evidence for static, lighting azimuth stress, dynamic, moving, storage-rebased, split and frozen states." % _visual_variant)
+		print("P1_VISUAL_CAPTURE_PASS: variant=%s canonical P1 produced rendered evidence for static, lighting azimuth stress, granularity distance stress, dynamic, moving, storage-rebased, split and frozen states." % _visual_variant)
 		quit(0)
 		return
 	for failure in _failures:
