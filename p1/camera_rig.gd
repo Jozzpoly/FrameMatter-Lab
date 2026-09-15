@@ -15,18 +15,10 @@ const ESCAPE_PITCH_ADDS := [0.0, 0.18, 0.36]
 @export var context_blend_start: float = 5.0
 @export var context_blend_full: float = 14.0
 @export var max_context_weight: float = 0.42
-
-# Rejected G4 challenger controls retained only until same-commit promotion
-# equivalence is recorded. Canonical runtime starts in adaptive relational mode.
 @export var max_context_focus_shift: float = 3.2
 @export var context_extent_distance_scale: float = 0.95
-@export var compression_trigger_ratio: float = 0.72
-@export var compression_full_ratio: float = 0.20
-@export var compression_pitch_bias: float = 0.55
-@export var compression_focus_lift: float = 0.90
-@export var compression_response_speed: float = 18.0
 
-# Promoted G4 policy. Local obstruction and extreme actor↔Space separation are
+# G4 camera policy. Local obstruction and extreme actor↔Space separation are
 # different composition problems. Blocked orbits search nearby collision-clear
 # rays. Extreme separation keeps actor X/Z as the hard anchor, lifts only the
 # presentation focus toward higher context when needed, and turns the rendered
@@ -49,10 +41,6 @@ var _yaw: float = default_yaw
 var _pitch: float = default_pitch
 var _distance: float = default_distance
 var _orbiting := false
-var _composition_guard_enabled := true
-var _adaptive_relational_enabled := true
-var _compression_amount := 0.0
-var _last_desired_distance := 0.0
 var _runtime_yaw: float = default_yaw
 var _runtime_pitch: float = default_pitch
 var _probe_shape: SphereShape3D
@@ -71,7 +59,7 @@ func _ready() -> void:
 	_runtime_pitch = _pitch
 	_probe_shape = SphereShape3D.new()
 	_probe_shape.radius = camera_probe_radius
-	_apply_orbit()
+	_apply_user_orbit_immediately()
 
 
 func set_target(node: Node3D) -> void:
@@ -88,36 +76,13 @@ func set_context_target(
 	context_planar_radius = maxf(0.0, planar_radius)
 
 
-# Temporary A/B hooks. They are not production authority and will be removed
-# after canonical↔challenger promotion equivalence is recorded.
-func set_composition_guard_enabled(enabled: bool) -> void:
-	_composition_guard_enabled = enabled
-	_adaptive_relational_enabled = false
-	_compression_amount = 0.0
-	_last_desired_distance = 0.0
-	_runtime_yaw = _yaw
-	_runtime_pitch = _pitch
-	_apply_orbit()
-
-
-func set_adaptive_relational_enabled(enabled: bool) -> void:
-	_adaptive_relational_enabled = enabled
-	_composition_guard_enabled = enabled
-	_compression_amount = 0.0
-	_last_desired_distance = 0.0
-	_runtime_yaw = _yaw
-	_runtime_pitch = _pitch
-	_apply_orbit()
-
-
 func get_camera() -> Camera3D:
 	return _camera
 
 
 func get_planar_forward() -> Vector3:
-	# Player intent follows explicit user camera yaw, not presentation-only
-	# obstruction/relation recovery. Automatic camera recovery must never rotate
-	# the movement frame behind the Owner's back.
+	# Movement follows explicit user yaw, not presentation-only obstacle/relation
+	# recovery. Automatic camera work must never rotate controls behind the Owner.
 	var basis := Basis(Vector3.UP, _yaw)
 	var forward: Vector3 = -basis.z
 	forward.y = 0.0
@@ -135,19 +100,14 @@ func reset_view() -> void:
 	_yaw = default_yaw
 	_pitch = default_pitch
 	_distance = default_distance
-	_compression_amount = 0.0
-	_last_desired_distance = 0.0
 	_runtime_yaw = _yaw
 	_runtime_pitch = _pitch
-	_apply_orbit()
+	_apply_user_orbit_immediately()
 
 
 func _process(delta: float) -> void:
 	if target == null or not is_instance_valid(target):
 		return
-
-	if _composition_guard_enabled and not _adaptive_relational_enabled:
-		_update_compression_recovery(delta)
 
 	var target_transform: Transform3D = target.get_global_transform_interpolated()
 	var actor_focus: Vector3 = target_transform.origin + Vector3.UP * focus_height
@@ -168,33 +128,28 @@ func _process(delta: float) -> void:
 			1.0
 		)
 		var context_weight: float = context_t * max_context_weight
+		var bounded_shift: Vector3 = (context_point - actor_focus) * context_weight
+		if bounded_shift.length() > max_context_focus_shift:
+			bounded_shift = bounded_shift.normalized() * max_context_focus_shift
 
-		if _composition_guard_enabled:
-			var bounded_shift: Vector3 = (context_point - actor_focus) * context_weight
-			if bounded_shift.length() > max_context_focus_shift:
-				bounded_shift = bounded_shift.normalized() * max_context_focus_shift
-
-			if _adaptive_relational_enabled and separation > emergency_relation_start:
-				var emergency_span := maxf(0.001, emergency_relation_full - emergency_relation_start)
-				emergency_relation_t = smoothstep(
-					0.0,
-					1.0,
-					clampf((separation - emergency_relation_start) / emergency_span, 0.0, 1.0)
-				)
-				# Extreme relation keeps actor X/Z authoritative. Only vertical focus
-				# may rise toward a higher context so opaque world geometry does not
-				# force the camera to pretend it can see through the reference plane.
-				focus = actor_focus
-				var upward_gap := maxf(0.0, context_point.y - actor_focus.y)
-				var vertical_lift := minf(
-					emergency_vertical_lift_cap,
-					upward_gap * emergency_vertical_lift_weight
-				) * emergency_relation_t
-				focus.y += vertical_lift
-			else:
-				focus += bounded_shift
+		if separation > emergency_relation_start:
+			var emergency_span := maxf(0.001, emergency_relation_full - emergency_relation_start)
+			emergency_relation_t = smoothstep(
+				0.0,
+				1.0,
+				clampf((separation - emergency_relation_start) / emergency_span, 0.0, 1.0)
+			)
+			# Extreme relation keeps actor X/Z authoritative. Only vertical focus
+			# may rise toward a higher context so opaque world geometry does not
+			# force the camera to pretend it can see through the reference plane.
+			focus = actor_focus
+			var upward_gap := maxf(0.0, context_point.y - actor_focus.y)
+			focus.y += minf(
+				emergency_vertical_lift_cap,
+				upward_gap * emergency_vertical_lift_weight
+			) * emergency_relation_t
 		else:
-			focus = focus.lerp(context_point, context_weight)
+			focus += bounded_shift
 
 		desired_distance = clampf(
 			maxf(_distance, separation * 0.72),
@@ -205,8 +160,7 @@ func _process(delta: float) -> void:
 		# Matter extent is soft composition pressure, not a demand to show every
 		# occupied cell. Explicit close zoom remains available to the Owner.
 		if (
-			_composition_guard_enabled
-			and context_planar_radius > 0.0
+			context_planar_radius > 0.0
 			and _distance >= default_distance - 0.001
 			and emergency_relation_t < 0.001
 		):
@@ -215,40 +169,19 @@ func _process(delta: float) -> void:
 				minf(max_distance, context_planar_radius * context_extent_distance_scale)
 			)
 
-	if _adaptive_relational_enabled:
-		_update_adaptive_orbit(
-			focus,
-			desired_distance,
-			delta,
-			actor_focus,
-			context_point,
-			emergency_relation_t
-		)
-	elif _composition_guard_enabled:
-		focus += Vector3.UP * (_compression_amount * compression_focus_lift)
-		_apply_guarded_pitch()
-
+	_update_presentation_orbit(
+		focus,
+		desired_distance,
+		delta,
+		actor_focus,
+		context_point,
+		emergency_relation_t
+	)
 	global_position = focus
 	_spring_arm.spring_length = desired_distance
-	_last_desired_distance = desired_distance
 
 
-func _update_compression_recovery(delta: float) -> void:
-	if _last_desired_distance <= 0.001:
-		return
-	var actual_distance: float = _camera.global_position.distance_to(_spring_arm.global_position)
-	var ratio: float = clampf(actual_distance / _last_desired_distance, 0.0, 1.0)
-	var denominator: float = maxf(0.001, compression_trigger_ratio - compression_full_ratio)
-	var target_amount: float = clampf(
-		(compression_trigger_ratio - ratio) / denominator,
-		0.0,
-		1.0
-	)
-	var response: float = 1.0 - exp(-compression_response_speed * maxf(0.0, delta))
-	_compression_amount = lerpf(_compression_amount, target_amount, response)
-
-
-func _update_adaptive_orbit(
+func _update_presentation_orbit(
 	focus: Vector3,
 	desired_distance: float,
 	delta: float,
@@ -334,8 +267,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		var motion := event as InputEventMouseMotion
 		_yaw -= motion.relative.x * orbit_sensitivity
 		_pitch = clampf(_pitch - motion.relative.y * orbit_sensitivity, 0.12, 1.15)
-		if not _adaptive_relational_enabled:
-			_apply_orbit()
 		return
 
 	if not (event is InputEventMouseButton):
@@ -351,26 +282,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_distance = minf(max_distance, _distance + zoom_step)
 
 
-func _apply_guarded_pitch() -> void:
-	var runtime_pitch: float = clampf(
-		_pitch + _compression_amount * compression_pitch_bias,
-		0.12,
-		1.35
-	)
-	_pitch_pivot.rotation = Vector3(-runtime_pitch, 0.0, 0.0)
-
-
-func _apply_orbit() -> void:
+func _apply_user_orbit_immediately() -> void:
 	if not is_node_ready():
 		return
-	if _adaptive_relational_enabled:
-		_runtime_yaw = _yaw
-		_runtime_pitch = _pitch
-		_yaw_pivot.rotation = Vector3(0.0, _runtime_yaw, 0.0)
-		_pitch_pivot.rotation = Vector3(-_runtime_pitch, 0.0, 0.0)
-		return
-	_yaw_pivot.rotation = Vector3(0.0, _yaw, 0.0)
-	if _composition_guard_enabled:
-		_apply_guarded_pitch()
-	else:
-		_pitch_pivot.rotation = Vector3(-_pitch, 0.0, 0.0)
+	_runtime_yaw = _yaw
+	_runtime_pitch = _pitch
+	_yaw_pivot.rotation = Vector3(0.0, _runtime_yaw, 0.0)
+	_pitch_pivot.rotation = Vector3(-_runtime_pitch, 0.0, 0.0)
