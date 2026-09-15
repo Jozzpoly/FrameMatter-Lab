@@ -7,16 +7,16 @@ extends SceneTree
 
 const ACQUIRE_FRAMES := 18
 const SETTLE_FRAMES := 3
-const MOTION_FRAMES := 12
+const MOTION_FRAMES := 36
 const POST_REBASE_FRAMES := 3
 const POST_SPLIT_FRAMES := 4
-const SIBLING_MOTION_FRAMES := 18
+const SIBLING_MOTION_FRAMES := 30
 const POST_FREEZE_FRAMES := 3
 const FEEDBACK_FRAMES := 2
 
 const CENTRAL_IMPULSE := Vector3(0.0, 0.0, -36.0)
-const TORQUE_IMPULSE := Vector3(0.0, 90.0, 0.0)
-const SIBLING_IMPULSE := Vector3(24.0, 0.0, 0.0)
+const TORQUE_IMPULSE := Vector3(0.0, 180.0, 0.0)
+const SIBLING_IMPULSE := Vector3(36.0, 0.0, 0.0)
 const EDGE_Z := 8
 const HUD_SAFE_POINT := Vector2(50.0, 50.0)
 const POINTER_SCAN_STEP := 46
@@ -129,8 +129,10 @@ func _run() -> void:
 	_check(body.linear_velocity.length() < 0.0001 and body.angular_velocity.length() < 0.0001, "release itself contributes no hidden motion")
 	await _capture("03_released_zero_motion")
 
-	# 3. Real motion comes from explicit finite inputs while actor/camera remain on
-	# the same logical Space.
+	# 3. Real motion comes only from production-scale finite inputs. The longer
+	# observation interval is intentional evidence design: the first rehearsal
+	# proved mechanics but did not leave enough rendered displacement/rotation to
+	# make the causal change legible without telemetry.
 	_check(_control.apply_local_central_impulse(_source, CENTRAL_IMPULSE), "finite translation impulse accepted")
 	_check(_control.apply_local_torque_impulse(_source, TORQUE_IMPULSE), "finite yaw impulse accepted")
 	await _advance_frames(MOTION_FRAMES)
@@ -201,8 +203,9 @@ func _run() -> void:
 	_check(actor_successor != null and actor_successor.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC, "actor successor remains dynamic immediately after split")
 	await _capture("07_split_immediate")
 
-	# 6. Give only the sibling an additional finite impulse. The frame should make
-	# independence readable while preserving relation to the common source event.
+	# 6. Give only the sibling an additional production-scale finite impulse. The
+	# longer observation window makes independence readable rather than merely
+	# measurable while preserving relation to the common source event.
 	var sibling: LocalMatterSpace = null
 	for candidate in active_spaces:
 		if candidate != actor_successor:
@@ -217,7 +220,7 @@ func _run() -> void:
 	var sibling_delta := 0.0
 	if sibling != null:
 		sibling_delta = sibling.get_active_provider().global_position.distance_to(sibling_origin_before)
-		_check(sibling_delta > 0.25, "sibling-only drive creates measurable independent motion")
+		_check(sibling_delta > 0.75, "sibling-only drive creates materially visible independent motion")
 	await _capture("08_split_independent_sibling")
 
 	# 7. Freeze only the actor-owned successor at its current pose while the
