@@ -45,14 +45,11 @@ try {
         exit 1
     }
 
-    if (-not $content.Contains("P1_INTERACTION_CAPTURE_PASS")) {
-        Write-Error "Expected G5 interaction PASS marker missing."
-        exit 1
-    }
-
-    if (-not $content.Contains("P1_INTERACTION_UI_BLOCK_PASS")) {
-        Write-Error "Expected G5 pointer/HUD exclusion PASS marker missing."
-        exit 1
+    foreach ($marker in @("P1_INTERACTION_CAPTURE_PASS", "P1_INTERACTION_UI_BLOCK_PASS", "P1_INTERACTION_FEEDBACK_EXPIRE_PASS")) {
+        if (-not $content.Contains($marker)) {
+            Write-Error "Expected G5 evidence marker missing: $marker"
+            exit 1
+        }
     }
 
     if (-not $content.Contains("D3D12") -or -not $content.Contains("Forward+")) {
@@ -62,8 +59,10 @@ try {
 
     $required = @(
         "00_remove_target.png",
-        "01_place_target.png",
-        "02_expand_target.png"
+        "01_remove_success_feedback.png",
+        "02_remove_rejection_feedback.png",
+        "03_place_target.png",
+        "04_expand_target.png"
     )
     foreach ($file in $required) {
         $path = Join-Path $OutputDir $file
