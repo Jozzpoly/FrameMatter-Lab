@@ -10,6 +10,7 @@ on:
       - "actor/**"
       - "space/**"
       - "tests/p1_visual_capture.gd"
+      - "tests/support/**"
       - "ci/run_godot_visual_capture.ps1"
       - "project.godot"
       - ".github/workflows/p1-visual-evidence.yml"
@@ -64,6 +65,8 @@ jobs:
             exit 1
           fi
           test -f "$P1_VISUAL_EVIDENCE_DIR/00_initial_static.png"
+          test -f "$P1_VISUAL_EVIDENCE_DIR/20_granularity_near.png"
+          test -f "$P1_VISUAL_EVIDENCE_DIR/22_granularity_far.png"
           test -f "$P1_VISUAL_EVIDENCE_DIR/02_dynamic_motion.png"
           test -f "$P1_VISUAL_EVIDENCE_DIR/04_split_successors.png"
 
@@ -94,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [canonical, balanced_fill, balanced_fill_ssao]
+        variant: [canonical, surface_cells, surface_modulation]
     runs-on: windows-latest
     timeout-minutes: 10
     env:
