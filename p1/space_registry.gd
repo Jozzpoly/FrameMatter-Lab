@@ -45,7 +45,7 @@ func get_active_count() -> int:
 
 
 func find_space_for_node(node: Node) -> LocalMatterSpace:
-	var current := node
+	var current: Node = node
 	while current != null:
 		if current is LocalMatterSpace:
 			var space := current as LocalMatterSpace
@@ -65,13 +65,13 @@ func find_space_for_provider(provider: Node3D) -> LocalMatterSpace:
 
 func find_nearest_space(world_point: Vector3) -> LocalMatterSpace:
 	var best: LocalMatterSpace
-	var best_distance := INF
+	var best_distance: float = INF
 	for space in get_active_spaces():
-		var provider := space.get_active_provider()
+		var provider: Node3D = space.get_active_provider()
 		if provider == null:
 			continue
-		var focus_world := provider.to_global(space.get_content_center_local())
-		var distance := world_point.distance_squared_to(focus_world)
+		var focus_world: Vector3 = provider.to_global(space.get_content_center_local())
+		var distance: float = world_point.distance_squared_to(focus_world)
 		if distance < best_distance:
 			best_distance = distance
 			best = space
@@ -121,6 +121,6 @@ func _on_topology_split_committed(result: LocalMatterSplitResult, source: LocalM
 
 func _prune_invalid() -> void:
 	for index in range(_active_spaces.size() - 1, -1, -1):
-		var space := _active_spaces[index]
+		var space: LocalMatterSpace = _active_spaces[index]
 		if space == null or not is_instance_valid(space) or space.is_retired():
 			_active_spaces.remove_at(index)
