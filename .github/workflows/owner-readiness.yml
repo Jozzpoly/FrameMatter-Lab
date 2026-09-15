@@ -23,8 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Checkout
+      - name: Checkout governance state with history
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Validate readiness manifest and evidence references
         run: python ci/verify_owner_readiness.py --mode validate
@@ -45,7 +47,7 @@ jobs:
           )
           if [ "$status" = "BLOCKED" ]; then
             set +e
-            python ci/verify_owner_readiness.py --mode delivery --commit "$GITHUB_SHA" > /tmp/readiness-negative.log 2>&1
+            python ci/verify_owner_readiness.py --mode delivery > /tmp/readiness-negative.log 2>&1
             result=$?
             set -e
             cat /tmp/readiness-negative.log
@@ -70,12 +72,13 @@ jobs:
           print("contract_version:", data["campaign_contract_version"])
           print("status:", data["status"])
           print("promotion_authorized:", data["promotion_authorized"])
-          print("approved_commit:", data["approved_commit"] or "<none>")
+          print("approved_runtime_commit:", data["approved_runtime_commit"] or "<none>")
           print("owner_attention_allowed:", data["owner_attention_event"]["allowed"])
           print("open_blockers:", len(data["open_blockers"]))
           for name, gate in data["required_gates"].items():
               print(
                   f"{name}: {gate['status']} type={gate['evidence_type']} "
-                  f"verified_commit={gate['verified_commit'] or '<none>'} evidence={len(gate['evidence'])}"
+                  f"verified_runtime={gate['verified_runtime_commit'] or '<none>'} "
+                  f"evidence={len(gate['evidence'])}"
               )
           PY
