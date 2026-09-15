@@ -14,9 +14,9 @@ import hashlib
 import json
 import pathlib
 import re
+import subprocess
 import sys
 from typing import Any
-
 
 VALID_STATUSES = {"PASS", "FAIL", "PENDING", "SUPERSEDED"}
 FULL_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
@@ -63,6 +63,54 @@ def git_blob_sha1(path: pathlib.Path) -> str:
     payload = path.read_bytes()
     header = f"blob {len(payload)}\0".encode("ascii")
     return hashlib.sha1(header + payload).hexdigest()
+
+
+def active_contract_blob_history(repo_root: pathlib.Path, contract_path: pathlib.Path) -> tuple[set[str], list[str]]:
+    """Return distinct Git blob SHAs seen for the active versioned contract.
+
+    PR merge commits and the original branch commit may both appear in history;
+    that is fine when they point at the same blob. More than one distinct blob
+    means the sealed versioned snapshot was edited in place.
+    """
+    if not (repo_root / ".git").exists():
+        return set(), []
+    try:
+        rel = contract_path.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return set(), ["active campaign contract is outside repository root"]
+
+    try:
+        history = subprocess.run(
+            ["git", "log", "--all", "--format=%H", "--", rel],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        return set(), [f"cannot inspect active contract Git history: {exc}"]
+
+    blobs: set[str] = set()
+    for commit in history:
+        if not commit.strip():
+            continue
+        try:
+            row = subprocess.run(
+                ["git", "ls-tree", commit.strip(), "--", rel],
+                cwd=repo_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        except (OSError, subprocess.CalledProcessError) as exc:
+            return set(), [f"cannot inspect active contract blob at {commit}: {exc}"]
+        if not row:
+            continue
+        parts = row.split()
+        if len(parts) >= 3 and parts[1] == "blob":
+            blobs.add(parts[2])
+
+    return blobs, []
 
 
 def parse_contract_gates(contract: dict[str, Any]) -> tuple[dict[str, str], list[str]]:
@@ -144,9 +192,7 @@ def validate_contract(
             if previous_contract is not None:
                 expected_previous_version = int(contract.get("contract_version", 0)) - 1
                 if previous_contract.get("contract_version") != expected_previous_version:
-                    errors.append(
-                        "previous campaign contract version does not immediately precede active contract"
-                    )
+                    errors.append("previous campaign contract version does not immediately precede active contract")
                 if previous_contract.get("campaign_id") != contract.get("campaign_id"):
                     errors.append("previous campaign contract belongs to a different campaign")
 
@@ -154,9 +200,15 @@ def validate_contract(
         version = contract.get("contract_version")
         expected_suffix = f".v{version}.json"
         if not contract_path.name.endswith(expected_suffix):
+            errors.append(f"active contract filename must end with {expected_suffix}, got {contract_path.name}")
+        blobs, history_errors = active_contract_blob_history(repo_root, contract_path)
+        errors.extend(history_errors)
+        if len(blobs) > 1:
             errors.append(
-                f"active contract filename must end with {expected_suffix}, got {contract_path.name}"
+                "active versioned campaign contract was modified in place; create a new contract version instead"
             )
+        elif (repo_root / ".git").exists() and not blobs:
+            errors.append("active campaign contract is not represented in available Git history")
 
     change_policy = contract.get("change_policy")
     required_change_flags = (
@@ -165,6 +217,7 @@ def validate_contract(
         "owner_goal_change_requires_owner_feedback",
         "contract_changes_must_be_versioned",
         "versioned_contract_snapshots_are_append_only",
+        "active_contract_snapshot_must_be_immutable",
     )
     if not isinstance(change_policy, dict):
         errors.append("campaign contract change_policy must be an object")
@@ -180,6 +233,8 @@ def validate_contract(
         "review_must_attempt_falsification",
         "review_must_evaluate_owner_goal_and_claim_evidence_fit",
         "review_must_cover_nominal_and_off_nominal_scenarios",
+        "review_must_reference_frozen_runtime_commit",
+        "candidate_runtime_change_invalidates_review",
         "material_findings_block_promotion",
     )
     if not isinstance(assurance_policy, dict):
@@ -197,6 +252,7 @@ def validate_contract(
         "owner_attention_event_must_be_authorized",
         "artifact_delivery_requires_approved_runtime_commit",
         "governance_commit_may_differ_from_runtime_commit",
+        "delivery_materializes_approved_runtime_not_governance",
         "independent_assurance_required",
     )
     if not isinstance(promotion_policy, dict):
@@ -213,7 +269,6 @@ def validate_manifest(
     data: dict[str, Any], contract: dict[str, Any], repo_root: pathlib.Path
 ) -> tuple[list[str], dict[str, str]]:
     errors: list[str] = []
-
     if data.get("schema_version") != 4:
         errors.append("readiness schema_version must be 4")
 
@@ -256,7 +311,6 @@ def validate_manifest(
 
     contract_gates, contract_gate_errors = parse_contract_gates(contract)
     errors.extend(contract_gate_errors)
-
     readiness_gates = data.get("required_gates")
     if not isinstance(readiness_gates, dict):
         errors.append("required_gates must be an object")
@@ -273,17 +327,14 @@ def validate_manifest(
         gate = readiness_gates.get(gate_name)
         if not isinstance(gate, dict):
             continue
-
         status = gate.get("status")
         if status not in VALID_STATUSES:
             errors.append(f"gate {gate_name} has invalid status {status!r}")
-
         evidence_type = gate.get("evidence_type")
         if evidence_type != contract_evidence_type:
             errors.append(
                 f"gate {gate_name} evidence_type {evidence_type!r} does not match contract {contract_evidence_type!r}"
             )
-
         verified_runtime_commit = gate.get("verified_runtime_commit")
         if not isinstance(verified_runtime_commit, str):
             errors.append(f"gate {gate_name} verified_runtime_commit must be a string")
@@ -291,7 +342,6 @@ def validate_manifest(
             errors.append(
                 f"gate {gate_name} verified_runtime_commit must be empty or a full 40-character commit SHA"
             )
-
         evidence = gate.get("evidence")
         if not isinstance(evidence, list) or not all(is_nonempty_string(item) for item in evidence):
             errors.append(f"gate {gate_name} evidence must be a list of non-empty paths")
@@ -306,16 +356,13 @@ def validate_manifest(
 
 def enforce_delivery(data: dict[str, Any], contract_gates: dict[str, str]) -> list[str]:
     errors: list[str] = []
-
     if data.get("status") != "READY_FOR_OWNER":
         errors.append("campaign status is not READY_FOR_OWNER")
     if data.get("promotion_authorized") is not True:
         errors.append("promotion_authorized is not true")
-
     attention = data.get("owner_attention_event", {})
     if attention.get("allowed") is not True:
         errors.append("Owner attention event is not authorized")
-
     blockers = data.get("open_blockers", [])
     if blockers:
         errors.append(f"{len(blockers)} open blocker(s) remain")
@@ -333,7 +380,6 @@ def enforce_delivery(data: dict[str, Any], contract_gates: dict[str, str]) -> li
             errors.append(f"required gate {gate_name} is {gate.get('status', 'MISSING')}, not PASS")
         if not gate.get("evidence"):
             errors.append(f"required gate {gate_name} has no evidence")
-
         verified_runtime_commit = str(gate.get("verified_runtime_commit", "")).strip().lower()
         if not verified_runtime_commit:
             errors.append(f"required gate {gate_name} has no verified_runtime_commit")
@@ -347,15 +393,11 @@ def enforce_delivery(data: dict[str, Any], contract_gates: dict[str, str]) -> li
 
     if "independent_assurance_review" not in contract_gates:
         errors.append("campaign contract does not require independent_assurance_review")
-
     return errors
 
 
 def load_state(repo_root: pathlib.Path, manifest_name: str) -> tuple[
-    dict[str, Any] | None,
-    dict[str, Any] | None,
-    dict[str, str],
-    list[str],
+    dict[str, Any] | None, dict[str, Any] | None, dict[str, str], list[str]
 ]:
     manifest_path = (repo_root / manifest_name).resolve()
     data, errors = load_json(manifest_path, "readiness manifest")
@@ -366,7 +408,6 @@ def load_state(repo_root: pathlib.Path, manifest_name: str) -> tuple[
     errors.extend(validate_repo_relative_file(repo_root, contract_path_value, "campaign_contract"))
     if errors:
         return data, None, {}, errors
-
     contract_path = (repo_root / str(contract_path_value)).resolve()
     contract, contract_load_errors = load_json(contract_path, "campaign contract")
     errors.extend(contract_load_errors)
@@ -410,11 +451,7 @@ def main() -> None:
         print(runtime_commit)
         return
 
-    pending = [
-        name
-        for name in contract_gates
-        if data["required_gates"].get(name, {}).get("status") != "PASS"
-    ]
+    pending = [name for name in contract_gates if data["required_gates"].get(name, {}).get("status") != "PASS"]
     unbound = [
         name
         for name in contract_gates
