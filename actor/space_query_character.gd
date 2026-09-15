@@ -182,19 +182,27 @@ func _snap_and_attach_ground() -> bool:
 	if safe >= 0.999999:
 		return false
 
+	# `_rest_info_at_unsafe_fraction()` samples relative to the already-reached
+	# safe position (the same contract used by `_move_with_slide`). Ground snap
+	# must therefore advance temporarily before asking for the overlap normal.
+	var start_position := global_position
+	global_position += down * safe
 	var hit := _rest_info_at_unsafe_fraction(down, safe, unsafe)
 	if hit.is_empty():
+		global_position = start_position
 		return false
 	var normal := Vector3(hit.get("normal", Vector3.ZERO)).normalized()
 	if normal.y < ground_normal_min_y:
+		global_position = start_position
 		return false
 
-	global_position += down * safe
 	var collider := _collider_from_rest_info(hit)
 	if collider == null:
+		global_position = start_position
 		return false
 	var resolved_support := _resolve_support_frame(collider)
 	if resolved_support == null:
+		global_position = start_position
 		return false
 
 	var changed_support := resolved_support != support_body
