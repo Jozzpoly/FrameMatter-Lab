@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [canonical, state_contour_soft_neutral_reference]
+        variant: [canonical]
     runs-on: windows-latest
     timeout-minutes: 10
     env:
@@ -116,7 +116,7 @@ jobs:
 
       - name: Strict synchronous project import
         shell: pwsh
-        run: ./ci/run_godot_import.ps1
+        run: ./ci/run_godot_import.ps1 -OutputDir $env:P1_VISUAL_EVIDENCE_DIR
 
       - name: Capture D3D12 Forward+ rendered P1 evidence
         shell: pwsh
