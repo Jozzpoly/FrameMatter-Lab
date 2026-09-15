@@ -10,6 +10,8 @@ Recurring product pressure:
 
 > walk → dig/build → activate/release a local Space → ride it → edit it while moving → use a simple mechanism → understand/debug the consequences.
 
+For Owner-facing work, the rendered screen is part of the research instrument. Hidden mechanical correctness does not compensate for pixels that make the system unreadable.
+
 ## Decision rules
 
 - Evidence outranks sequence.
@@ -20,6 +22,8 @@ Recurring product pressure:
 - Stable intent/invariants matter more than class names, APIs or current host mechanisms.
 - Rank work by **information value × leverage × risk reduction / cost**.
 - Interactive pressure must recur so the project does not become a detached technology catalogue.
+- **Owner-visible presentation is first-class evidence whenever the Owner is asked to judge the system.**
+- An acceptance property may not silently become a nonclaim merely because it lacks an automated test.
 
 ## Evidence maturity
 
@@ -34,7 +38,7 @@ A PASS at one level never silently implies the next.
 
 ---
 
-# Recently closed campaigns
+# Defended historical campaigns
 
 ## I0B → LAB → I2 → I3 lifecycle line — **CLOSED FOR CURRENT SCOPE**
 
@@ -70,17 +74,19 @@ The bounded translation+yaw loop worked mechanically, but first Owner interactio
 
 ## P0.5 interaction shell — **AUTOMATED + DELIVERY PASS / OWNER RUN COMPLETE**
 
-Improved camera/readability enough to reveal that the old consumer itself—not merely presentation—was inadequate. P0/P0.5 remain historical evidence, not executable authority.
+P0.5 improved some measurement cues but still exposed that the consumer itself was inadequate. It remains historical evidence, not executable authority.
 
-## P1 destructive professional rebuild — **AUTOMATED INTEGRATED + CANONICAL + DELIVERY PASS / CLOSED AT OWNER BOUNDARY**
+---
+
+# P1 status — mechanically defended, Owner-facing reopened
 
 P1 replaced the old consumer aggressively while preserving defended substrate semantics.
 
-The current canonical P1 scene now composes:
+Mechanically defended P1 composition includes:
 
 - real collision-bearing world reference,
 - query-based volumetric actor,
-- SpringArm camera with actor + Space context,
+- SpringArm camera infrastructure,
 - multi-Space registry,
 - live topology consequence,
 - bounded expandable local storage with explicit coordinate-frame rebase,
@@ -90,88 +96,169 @@ The current canonical P1 scene now composes:
 - finite solver-owned impulse/torque motion,
 - dynamic→static freeze at current pose.
 
-The integrated gate exercises one chain:
+The integrated gate still defends one causal chain:
 
 > actor grounded → release → finite motion → ride → moving edit/build → non-zero storage-frame rebase → mapped placement → destructive split → actor/camera succession → freeze successor.
 
-Representative metrics:
+Representative mechanical metrics remain:
 
 - storage shift `(3,0,0)`,
 - rebase linear/angular state error `0 / 0`,
 - topology handoff error about `1.25e-6 m`,
 - final actor/support anchor error about `0.98e-6 m`.
 
-Canonical startup passes on Linux and Windows. Owner-candidate delivery run `#7` / `34964102720` passed the complete strict P1 chain and exported Windows + Web candidates.
+Canonical startup and the strict runtime suite pass on Linux and Windows.
 
-Evidence: `docs/evidence/p1-integrated-owner-candidate.md`.
+**This does not close P1.** The first P1 Owner candidate failed the actual Owner-facing acceptance target severely. The rendered result hid or distorted the systems the Owner was meant to judge.
+
+Evidence:
+
+- `docs/evidence/p1-integrated-owner-candidate.md` — retained mechanical/canonical/package evidence,
+- `docs/evidence/p1-owner-interaction-failure.md` — Owner-facing failure and rendering/presentation regressions,
+- `docs/p1-professional-rebuild-audit.md` — original P1 acceptance intent.
 
 ---
 
-# Active campaign — P1 Owner interaction
+# Active campaign — P1 Owner-facing recovery
 
 Status:
 
-- **strict P1 bounded gates: PASS**
+- **strict P1 mechanical gates: PASS**
 - **integrated causal-loop gate: PASS**
-- **canonical startup Linux: PASS**
-- **canonical startup Windows: PASS**
-- **historical fast-invariant ratchet under zero-engine-error wrapper: PASS**
-- **Windows/Web delivery: PASS**
-- **direct P1 Owner interaction: PENDING**
+- **canonical startup Linux/Windows: PASS**
+- **first P1 Owner interaction: FAIL**
+- **visual/readability measurement surface: FAIL**
+- **new rendered-evidence lane: ACTIVE**
+- **automatic Owner delivery: DISABLED**
+- **P1 merge to `main`: BLOCKED**
 
 ## Campaign question
 
-> **Once the major P0/P0.5 consumer defects are removed, which remaining limitation actually dominates direct use?**
+> **Can Godot + FrameMatter present the already-important systems through a professional, physically legible visual instrument, so the Owner can judge the actual system rather than reconstruct it mentally from debug pixels?**
 
-P1 has earned the right to be tested. It has not earned the right to be called good.
+The failed candidate demonstrated that mechanical truth and visual truth must be defended together.
 
-## Owner-facing loop to pressure
+The Owner's observable product during this campaign is the screen:
 
-The Owner does not need to follow a rigid script. The candidate should support chaotic experimentation around:
+> world reference → Matter form + cell scale → state → interaction target → actor/Space/world relationship → causal motion/topology consequence.
 
-> walk → remove/place → release the same logical Space → give it finite motion → ride/edit while moving → build beyond prior storage bounds → cut it into real successor Spaces → freeze a successor → keep experimenting.
+Debug telemetry is subordinate to that hierarchy.
 
-Useful observations include:
+## Recovery sequence
 
-- movement/camera quality and whether context is easy to retain,
-- targeting clarity and whether REMOVE/PLACE feels predictable,
-- whether storage-edge building feels continuous rather than like an invisible implementation bound,
-- whether zero-launch release and finite pulses make motion causally legible,
-- whether riding/editing a moving Space is understandable,
-- whether topology cuts visibly become believable independent successors,
-- whether freeze reads as the current Space/state becoming static rather than a reset,
-- perceived edit latency under natural repeated use,
-- what the Owner naturally wants to do next but cannot.
+The authoritative detailed plan is `docs/p1-owner-facing-recovery-campaign.md` and the acceptance gate is `docs/p1-visual-acceptance-contract.md`.
 
-## Hard stop
+### G0 — failed baseline / mechanical freeze
 
-**Do not autonomously add another feature tranche before this Owner interaction.**
+**PASS / ACTIVE AS HISTORICAL BASELINE**
 
-Permitted before/around the test:
+- first P1 Owner recording is durable negative evidence,
+- mechanical substrate evidence is retained,
+- no new feature/substrate tranche is allowed while visual recovery is active,
+- previous automatic delivery is disabled.
 
-- fix a packaging/startup blocker,
-- fix a reproduced regression that prevents the intended P1 loop,
-- clarify misleading test instructions or telemetry,
-- preserve evidence/provenance.
+### G1 — rendered evidence harness
 
-Not permitted by roadmap inertia:
+**ACTIVE**
+
+- deterministic rendered captures must cover static, release, moving, storage-rebased, split and frozen states,
+- Linux Compatibility capture is a reproducible auxiliary lane,
+- a Windows rendered lane is being established as the closest CI parity path to the Owner executable,
+- backend differences must be recorded explicitly rather than collapsed into one screenshot claim.
+
+G1 is complete only when the campaign can inspect actual rendered pixels from a sufficiently relevant path before changing presentation.
+
+### G2 — lighting/environment truth
+
+**BLOCKED ON G1 BASELINE**
+
+First change family is intentionally narrow:
+
+1. correct the ambient-source mismatch,
+2. render exact A/B states,
+3. only then decide whether key/fill/exposure/shadow changes are required.
+
+Do not mix material/cell-language redesign into the first lighting experiment.
+
+### G3 — Matter visual language
+
+**PENDING**
+
+Challenge at least two bounded approaches to cell-scale readability before promotion. Preserve broad form at distance and edit granularity up close. Restore meaningful static/dynamic/focus/successor semantics without noisy debug-wire aesthetics.
+
+### G4 — camera as experiment instrument
+
+**PENDING**
+
+Acceptance is useful rendered composition, not merely possession of `SpringArm3D`. Actor, relevant Space and world reference must remain understandable across movement, close obstacles, falls, rebase, split and freeze.
+
+### G5 — interaction visual hierarchy
+
+**PENDING**
+
+Replace the default through-wall debug wire cue with depth-correct, operation-specific interaction language. REMOVE / PLACE / EXPAND must be obvious before clicking without covering the geometry.
+
+### G6 — world/motion/topology causality
+
+**PENDING**
+
+Reference environment, state cues and successor presentation must make release, translation, rotation, split and freeze readable from pixels rather than HUD telemetry.
+
+### G7 — renderer / host viability checkpoint
+
+**PENDING**
+
+Only after competent G2–G6 work may Godot itself be judged. If the simple FrameMatter scene still requires disproportionate work or hits material host limitations, build a small equivalent web reference and compare the same geometry/camera target honestly.
+
+The failed black/white P1 recording is not evidence against Godot because concrete project-side rendering and presentation defects are already identified.
+
+### G8 — adversarial visual preflight / Owner package
+
+**BLOCKED**
+
+Before another Owner executable:
+
+- full mechanical suite green,
+- rendered evidence green on the chosen parity path,
+- V-A through V-G from `docs/p1-visual-acceptance-contract.md` have current evidence and no material FAIL,
+- an autonomous rehearsal recording has been inspected frame-by-frame,
+- result is clearly superior to both P0.5 and the failed P1 candidate as a research instrument,
+- remaining visual defects are documented before packaging.
+
+Only then may the manual delivery workflow be used for another Owner candidate.
+
+## Hard stop during recovery
+
+Not permitted:
 
 - speculative mechanics catalogue,
 - chunk/world architecture,
 - persistence framework,
-- arbitrary pitch/roll adhesion hack,
-- polish campaign without Owner evidence,
-- vehicle system.
+- vehicle system,
+- arbitrary pitch/roll adhesion hacks,
+- packaging a new Owner candidate because mechanical CI is green,
+- treating visual work as optional polish.
+
+Permitted:
+
+- rendered-evidence infrastructure,
+- lighting/material/camera/world/UI changes required by G2–G6,
+- mechanical fixes only when visual work exposes a real underlying invariant failure,
+- evidence/documentation/provenance work that keeps the campaign honest.
 
 ---
 
-# Decision routing after P1 Owner interaction
+# Decision routing after visual recovery
 
-## If interaction / camera / targeting dominates
+## If Godot reaches the intended readable baseline with ordinary engine facilities
 
-Improve only the highest-leverage obstacle. Keep P1 as a research surface, not an open-ended UI/graphics project.
+Continue to use Godot for the present research layer. Let the next Owner interaction choose the next semantic/system pressure.
 
-## If edit/rebuild latency dominates
+## If competent G2–G6 still show disproportionate renderer/tooling friction
+
+Enter G7 host comparison. Build the smallest equivalent web reference and compare evidence rather than preference.
+
+## If edit/rebuild latency becomes visible once presentation is fixed
 
 Reopen representation research using R2A as measured evidence.
 
@@ -187,17 +274,13 @@ Enter the oriented/volumetric actor frontier deliberately. Explicitly decide wor
 
 Design a finite-force exchange challenger. Do not restore accidental kinematic push authority.
 
-## If lifecycle / storage / topology continuity fails
+## If lifecycle / storage / topology continuity fails under the improved visual instrument
 
-Reproduce the exact invariant and reopen that layer. Do not hide substrate failure in camera/recovery/UI glue.
+Reproduce the exact invariant and reopen that layer. Do not hide substrate failure in camera/presentation glue.
 
-## If the loop is mechanically coherent but uninteresting
+## If the visible loop is coherent but uninteresting
 
 Treat that as strong evidence. Revisit product pressure and interaction semantics before infrastructure expansion.
-
-## If the loop naturally asks for a mechanism/world interaction
-
-Let the specific Owner desire select the next bounded integrated subsystem. Existing mechanics evidence is available as donor knowledge; do not resume the old standalone catalogue automatically.
 
 ---
 
@@ -207,13 +290,9 @@ Let the specific Owner desire select the next bounded integrated subsystem. Exis
 
 Trigger: direct use needs pitch/roll support, slopes/steps, frame-local gravity, adhesion or richer locomotion.
 
-Known pressure: earlier pitch/roll work retained support but accumulated large local drift because support transport and world-down validation semantics disagreed. P1 does not silently resolve that semantic question.
-
 ## F — finite actor↔construct force exchange
 
 Trigger: the Owner wants physical pushing, recoil, impacts or meaningful mass interaction between actor and constructs.
-
-P1 currently avoids infinite-force authority; it does not yet provide a final two-way force model.
 
 ## R2 — update-local representation follow-up
 
@@ -225,10 +304,7 @@ R2A is evidence for locality, not for fixed chunk-shaped final collision partiti
 
 Trigger: a real world consumer needs transfer between canonical lattice and independent local Space.
 
-Keep separate:
-
-- exact lattice-compatible reintegration,
-- incompatible bake/resample with explicit error/provenance policy.
+Keep exact lattice-compatible reintegration separate from incompatible bake/resample with explicit error/provenance policy.
 
 ## P — persistence / durable logical identity
 
@@ -274,6 +350,8 @@ Trigger: planar/local Matter assumptions materially block a real planetary exper
 - forcing arbitrary rotated local Matter into a canonical voxel lattice,
 - hiding orientation semantics with ad-hoc adhesion.
 
+“Final game art” is a non-goal. **Professional Owner-readable presentation is not.**
+
 ---
 
 # Core invariants to protect while future mechanisms change
@@ -287,5 +365,6 @@ Trigger: planar/local Matter assumptions materially block a real planetary exper
 - freeze/provider replacement is not canonical-world reintegration.
 - dirty/update locality is not automatically final physical/world partitioning.
 - bounded/integrated PASS is not scale/playability/product PASS.
+- **Owner-facing PASS requires the rendered instrument to expose, not conceal, the defended system.**
 
 When a future mechanism conflicts with one of these, require stronger evidence before weakening the invariant.
