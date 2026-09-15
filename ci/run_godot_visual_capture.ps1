@@ -15,9 +15,19 @@ try {
     New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
     $env:P1_VISUAL_EVIDENCE_DIR = $OutputDir
 
+    # Windows hosted runners have no usable Vulkan surface, but Godot's D3D12
+    # RenderingDevice path is available and is the relevant Forward+ fallback.
+    # Select it explicitly so strict visual evidence is not contaminated by an
+    # avoidable failed Vulkan initialization before the real D3D12 capture.
     $process = Start-Process `
         -FilePath $godotExecutable `
-        -ArgumentList @("--path", ".", "--audio-driver", "Dummy", "--script", "res://tests/p1_visual_capture.gd") `
+        -ArgumentList @(
+            "--path", ".",
+            "--audio-driver", "Dummy",
+            "--rendering-method", "forward_plus",
+            "--rendering-driver", "d3d12",
+            "--script", "res://tests/p1_visual_capture.gd"
+        ) `
         -NoNewWindow `
         -Wait `
         -PassThru `
@@ -41,6 +51,11 @@ try {
 
     if (-not $content.Contains("P1_VISUAL_CAPTURE_PASS")) {
         Write-Error "Expected rendered capture PASS marker missing."
+        exit 1
+    }
+
+    if (-not $content.Contains("D3D12") -or -not $content.Contains("Forward+")) {
+        Write-Error "Windows capture did not prove the expected D3D12 Forward+ path."
         exit 1
     }
 
