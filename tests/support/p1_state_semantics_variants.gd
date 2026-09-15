@@ -9,13 +9,19 @@ const MATERIAL_DYNAMIC_V1 := Color(0.80, 0.73, 0.60, 1.0)
 const CONTOUR_STATIC_V1 := Color(0.24, 0.62, 0.80, 0.68)
 const CONTOUR_DYNAMIC_V1 := Color(0.92, 0.60, 0.20, 0.72)
 
-# Refinement: preserve perceived material identity and reduce outline dominance.
+# Second-round values.
 const MATERIAL_STATIC_V2 := Color(0.70, 0.77, 0.85, 1.0)
 const MATERIAL_DYNAMIC_V2 := Color(0.78, 0.76, 0.68, 1.0)
 const CONTOUR_STATIC_V2 := Color(0.22, 0.56, 0.72, 0.42)
 const CONTOUR_DYNAMIC_V2 := Color(0.86, 0.53, 0.20, 0.46)
+
+# Final contour-intensity challenger: same hue family, lower occupation.
+const CONTOUR_STATIC_V3 := Color(0.22, 0.56, 0.72, 0.32)
+const CONTOUR_DYNAMIC_V3 := Color(0.86, 0.53, 0.20, 0.36)
+
 const FOCUS_V1 := Color(0.66, 0.88, 1.0, 0.78)
-const FOCUS_CROWN := Color(0.76, 0.90, 1.0, 0.58)
+const FOCUS_CROWN_BLUE := Color(0.76, 0.90, 1.0, 0.58)
+const FOCUS_CROWN_NEUTRAL := Color(0.96, 0.98, 1.0, 0.62)
 const CONTOUR_OFFSET := 0.012
 const FOCUS_MARGIN := 0.09
 const FOCUS_LENGTH := 0.34
@@ -31,7 +37,6 @@ static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 		failures.append("state-semantics challenger found no active Spaces")
 		return
 	var focus := p1.call("get_space") as LocalMatterSpace
-	var refined := variant.ends_with("_refined")
 
 	for space in spaces:
 		if space == null or space.is_retired() or space.volume == null:
@@ -42,20 +47,32 @@ static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 		_remove_test_nodes(provider)
 		_restore_or_capture_base_material(provider, false)
 
-		if variant == "state_material" or variant == "state_material_refined":
-			_apply_material_state(space, provider, failures, refined)
-		elif variant == "state_contour" or variant == "state_contour_refined":
-			_restore_or_capture_base_material(provider, true)
-			_apply_contour_state(space, provider, refined)
-		else:
-			failures.append("unsupported state-semantics variant: %s" % variant)
-			return
+		match variant:
+			"state_material":
+				_apply_material_state(space, provider, failures, false)
+			"state_material_refined":
+				_apply_material_state(space, provider, failures, true)
+			"state_contour":
+				_restore_or_capture_base_material(provider, true)
+				_apply_contour_state(space, provider, 1)
+			"state_contour_refined", "state_contour_neutral_focus":
+				_restore_or_capture_base_material(provider, true)
+				_apply_contour_state(space, provider, 2)
+			"state_contour_soft_neutral_focus":
+				_restore_or_capture_base_material(provider, true)
+				_apply_contour_state(space, provider, 3)
+			_:
+				failures.append("unsupported state-semantics variant: %s" % variant)
+				return
 
-		if space == focus:
-			if refined:
-				_add_focus_crown(space, provider)
-			else:
-				_add_focus_brackets(space, provider)
+		if space != focus:
+			continue
+		if variant == "state_material" or variant == "state_contour":
+			_add_focus_brackets(space, provider)
+		elif variant == "state_material_refined" or variant == "state_contour_refined":
+			_add_focus_crown(space, provider, FOCUS_CROWN_BLUE)
+		else:
+			_add_focus_crown(space, provider, FOCUS_CROWN_NEUTRAL)
 
 
 static func _apply_material_state(
@@ -84,23 +101,26 @@ static func _apply_material_state(
 	mesh_instance.material_override = material
 
 
-static func _apply_contour_state(space: LocalMatterSpace, provider: Node3D, refined: bool) -> void:
+static func _apply_contour_state(space: LocalMatterSpace, provider: Node3D, profile: int) -> void:
 	var overlay := MeshInstance3D.new()
 	overlay.name = "G3SStateContour"
 	overlay.mesh = _build_surface_contour(space.volume)
 	overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var material := StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	if space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC:
-		material.albedo_color = CONTOUR_STATIC_V2 if refined else CONTOUR_STATIC_V1
+	var is_static := space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC
+	if profile == 1:
+		material.albedo_color = CONTOUR_STATIC_V1 if is_static else CONTOUR_DYNAMIC_V1
+	elif profile == 2:
+		material.albedo_color = CONTOUR_STATIC_V2 if is_static else CONTOUR_DYNAMIC_V2
 	else:
-		material.albedo_color = CONTOUR_DYNAMIC_V2 if refined else CONTOUR_DYNAMIC_V1
+		material.albedo_color = CONTOUR_STATIC_V3 if is_static else CONTOUR_DYNAMIC_V3
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	overlay.material_override = material
 	provider.add_child(overlay)
 
 
-static func _add_focus_crown(space: LocalMatterSpace, provider: Node3D) -> void:
+static func _add_focus_crown(space: LocalMatterSpace, provider: Node3D, color: Color) -> void:
 	var mesh := _build_top_surface_perimeter(space.volume)
 	if mesh.get_surface_count() == 0:
 		return
@@ -110,7 +130,7 @@ static func _add_focus_crown(space: LocalMatterSpace, provider: Node3D) -> void:
 	overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var material := StandardMaterial3D.new()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color = FOCUS_CROWN
+	material.albedo_color = color
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	overlay.material_override = material
 	provider.add_child(overlay)
@@ -199,10 +219,6 @@ static func _build_surface_contour(volume: CellVolume) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	if volume == null or volume.count_solid() == 0:
 		return mesh
-
-	# Count edge incidence inside each face orientation. An internal coplanar cell
-	# boundary appears twice and disappears. A real perimeter, hole boundary or
-	# crease remains once for that surface orientation.
 	var edge_records: Dictionary = {}
 	for z in range(volume.size.z):
 		for y in range(volume.size.y):
@@ -224,7 +240,6 @@ static func _build_surface_contour(volume: CellVolume) -> ArrayMesh:
 						var record: Dictionary = edge_records[key]
 						record["count"] = int(record["count"]) + 1
 						edge_records[key] = record
-
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_LINES)
 	for record_variant in edge_records.values():
@@ -232,8 +247,11 @@ static func _build_surface_contour(volume: CellVolume) -> ArrayMesh:
 		if int(record["count"]) != 1:
 			continue
 		var normal: Vector3 = CellMesher.FACE_NORMALS[int(record["face"])]
-		var offset := normal * CONTOUR_OFFSET
-		_add_segment(surface, Vector3(record["a"]) + offset, Vector3(record["b"]) + offset)
+		_add_segment(
+			surface,
+			Vector3(record["a"]) + normal * CONTOUR_OFFSET,
+			Vector3(record["b"]) + normal * CONTOUR_OFFSET
+		)
 	return surface.commit(mesh)
 
 
