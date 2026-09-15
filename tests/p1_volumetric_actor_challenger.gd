@@ -32,7 +32,7 @@ func _probe_static_floor_wall_ceiling(host: Node3D) -> void:
 	volume.fill_box(Vector3i(5, 1, 0), Vector3i(6, 4, 8), CellVolume.SOLID)
 	# Low roof over the spawn/walk side, leaving only a small jump clearance.
 	volume.fill_box(Vector3i(0, 3, 0), Vector3i(5, 4, 8), CellVolume.SOLID)
-	var lineage := _make_lineage(volume, 710000)
+	var lineage: MatterLineageMap = _make_lineage(volume, 710000)
 
 	var space := LocalMatterSpace.new()
 	space.name = "P1StaticSpace"
@@ -67,11 +67,11 @@ func _probe_static_floor_wall_ceiling(host: Node3D) -> void:
 	await _advance_frames(ACQUIRE_FRAMES)
 	_check(jumper.grounded, "P1 ceiling challenger starts grounded")
 	jumper.request_jump()
-	var peak_y := jumper.global_position.y
+	var peak_y: float = jumper.global_position.y
 	for _frame in range(CEILING_FRAMES):
 		await physics_frame
 		await process_frame
-		peak_y = max(peak_y, jumper.global_position.y)
+		peak_y = maxf(peak_y, jumper.global_position.y)
 	_check(jumper.observed_ceiling_blocks > 0, "P1 volumetric capsule detects roof contact during jump")
 	_check(peak_y < 2.20, "P1 jump cannot tunnel through the low Matter ceiling")
 
@@ -83,7 +83,7 @@ func _probe_static_floor_wall_ceiling(host: Node3D) -> void:
 func _probe_dynamic_support_without_push(host: Node3D) -> void:
 	var volume := CellVolume.new(Vector3i(8, 2, 8))
 	volume.fill_box(Vector3i(0, 0, 0), Vector3i(8, 1, 8), CellVolume.SOLID)
-	var lineage := _make_lineage(volume, 720000)
+	var lineage: MatterLineageMap = _make_lineage(volume, 720000)
 
 	var space := LocalMatterSpace.new()
 	space.name = "P1DynamicSpace"
@@ -116,25 +116,25 @@ func _probe_dynamic_support_without_push(host: Node3D) -> void:
 		await process_frame
 		return
 
-	var stationary_local := actor.support_local_center
-	var max_local_drift := 0.0
+	var stationary_local: Vector3 = actor.support_local_center
+	var max_local_drift: float = 0.0
 	for _frame in range(RIDE_FRAMES):
 		await physics_frame
 		await process_frame
-		max_local_drift = max(max_local_drift, actor.support_local_center.distance_to(stationary_local))
+		max_local_drift = maxf(max_local_drift, actor.support_local_center.distance_to(stationary_local))
 	_check(max_local_drift < 0.05, "P1 volumetric actor remains local while riding translation+yaw support")
 
-	var linear_before := body.linear_velocity
-	var angular_before := body.angular_velocity
-	var walk_start_local := actor.support_local_center
+	var linear_before: Vector3 = body.linear_velocity
+	var angular_before: Vector3 = body.angular_velocity
+	var walk_start_local: Vector3 = actor.support_local_center
 	actor.desired_local_velocity = Vector3(1.2, 0.0, 0.0)
 	for _frame in range(WALK_FRAMES):
 		await physics_frame
 		await process_frame
 	actor.desired_local_velocity = Vector3.ZERO
-	var walk_distance := actor.support_local_center.distance_to(walk_start_local)
-	var linear_delta := body.linear_velocity.distance_to(linear_before)
-	var angular_delta := body.angular_velocity.distance_to(angular_before)
+	var walk_distance: float = actor.support_local_center.distance_to(walk_start_local)
+	var linear_delta: float = body.linear_velocity.distance_to(linear_before)
+	var angular_delta: float = body.angular_velocity.distance_to(angular_before)
 
 	_check(walk_distance > 0.35, "P1 volumetric actor can walk within a moving Space")
 	_check(actor.grounded, "P1 actor remains grounded after moving-Space walk")
@@ -160,7 +160,7 @@ func _probe_dynamic_support_without_push(host: Node3D) -> void:
 
 func _make_lineage(volume: CellVolume, first_token: int) -> MatterLineageMap:
 	var lineage := MatterLineageMap.new(volume.size)
-	var token := first_token
+	var token: int = first_token
 	for z in range(volume.size.z):
 		for y in range(volume.size.y):
 			for x in range(volume.size.x):
