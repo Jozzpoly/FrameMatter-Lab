@@ -1,16 +1,17 @@
 extends SceneTree
 
 const ACQUIRE_FRAMES := 18
-const ACTOR_LOCAL := Vector3(1.5, 1.95, 8.5)
-const SCREEN_STEP := 24
-const EDGE_MARGIN := 24
+const ACTOR_LOCAL := Vector3(6.5, 1.95, 8.5)
+const PILLAR_XZ := Vector2i(8, 8)
+const EXPECTED_REMOVE := Vector3i(8, 5, 8)
+const EXPECTED_PLACE := Vector3i(8, 6, 8)
 const ORBITS := [
-	[-PI * 0.5, 0.12, 5.2],
-	[-PI * 0.45, 0.12, 5.2],
-	[-PI * 0.55, 0.12, 5.2],
-	[-PI * 0.5, 0.18, 5.2],
-	[-PI * 0.45, 0.18, 5.2],
-	[-PI * 0.55, 0.18, 5.2],
+	[0.72, 0.48, 7.2],
+	[0.72, 0.34, 7.2],
+	[0.72, 0.62, 7.2],
+	[0.20, 0.48, 7.2],
+	[1.20, 0.48, 7.2],
+	[0.72, 0.48, 5.2],
 ]
 
 var _failures: Array[String] = []
@@ -42,19 +43,17 @@ func _run() -> void:
 		_finish()
 		return
 
-	# Same real boundary geometry as the failed center-reticle evidence state.
-	# Only the screen ray source is challenged; Matter/collision/edit semantics
-	# remain canonical.
+	# Build a connected vertical Matter pillar to y=5, the highest legal cell in
+	# the current dense storage. Its exposed top face is plainly visible from an
+	# ordinary elevated third-person camera, and PLACE across that face resolves
+	# to y=6: a real out-of-storage EXPAND request. This avoids demanding that a
+	# pointer select a physically hidden outward wall face.
 	player.set_physics_process(false)
-	for cell in [
-		Vector3i(1, 0, 8),
-		Vector3i(0, 0, 8),
-		Vector3i(0, 1, 8),
-		Vector3i(0, 2, 8),
-	]:
+	for y in range(1, 6):
+		var cell := Vector3i(PILLAR_XZ.x, y, PILLAR_XZ.y)
 		_check(
 			interactor.apply_edit_to_cell(space, cell, P1MatterInteractor.EditMode.PLACE),
-			"pointer challenger builds boundary cell %s" % str(cell)
+			"pointer challenger builds storage-height pillar cell %s" % str(cell)
 		)
 	await _advance_frames(2)
 
@@ -62,6 +61,11 @@ func _run() -> void:
 	_move_player(player, provider.to_global(ACTOR_LOCAL))
 	interactor.set_mode(P1MatterInteractor.EditMode.PLACE)
 
+	var top_face_world := provider.to_global(Vector3(
+		float(PILLAR_XZ.x) + 0.5,
+		6.0,
+		float(PILLAR_XZ.y) + 0.5
+	))
 	var found := false
 	var found_screen := Vector2.ZERO
 	var found_orbit: Array = []
@@ -72,27 +76,29 @@ func _run() -> void:
 		camera_rig.set("_distance", float(orbit[2]))
 		camera_rig.call("_apply_user_orbit_immediately")
 		await _advance_frames(2)
-		var viewport := camera_rig.get_camera().get_viewport()
-		var size := viewport.get_visible_rect().size
-		for y in range(EDGE_MARGIN, int(size.y) - EDGE_MARGIN, SCREEN_STEP):
-			for x in range(EDGE_MARGIN, int(size.x) - EDGE_MARGIN, SCREEN_STEP):
-				var screen := Vector2(float(x), float(y))
-				interactor.update_target_from_screen_position(screen)
-				if (
-					interactor.target_space == space
-					and interactor.target_valid
-					and not interactor.target_in_storage
-				):
-					found = true
-					found_screen = screen
-					found_orbit = orbit.duplicate()
-					break
-			if found:
-				break
-		if found:
+
+		var camera := camera_rig.get_camera()
+		var viewport := camera.get_viewport()
+		var visible_rect := viewport.get_visible_rect()
+		if camera.is_position_behind(top_face_world):
+			continue
+		var screen := camera.unproject_position(top_face_world)
+		if not visible_rect.has_point(screen):
+			continue
+		interactor.update_target_from_screen_position(screen)
+		if (
+			interactor.target_space == space
+			and interactor.target_valid
+			and not interactor.target_in_storage
+			and interactor.remove_cell == EXPECTED_REMOVE
+			and interactor.place_cell == EXPECTED_PLACE
+		):
+			found = true
+			found_screen = screen
+			found_orbit = orbit.duplicate()
 			break
 
-	_check(found, "pointer ray can select a visible out-of-storage PLACE target on the real boundary")
+	_check(found, "pointer ray can select the visible top face that produces real EXPAND semantics")
 	if found:
 		var viewport_size := camera_rig.get_camera().get_viewport().get_visible_rect().size
 		var face := interactor.place_cell - interactor.remove_cell
@@ -110,10 +116,7 @@ func _run() -> void:
 				str(face),
 			]
 		)
-		_check(
-			abs(face.x) + abs(face.y) + abs(face.z) == 1,
-			"pointer target preserves one exact hit-face relation"
-		)
+		_check(face == Vector3i.UP, "pointer EXPAND target preserves exact top-face relation")
 
 	player.set_physics_process(true)
 	p1.free()
@@ -145,7 +148,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_POINTER_TARGETING_PASS: explicit screen ray found a visible EXPAND target while preserving canonical collision and face semantics.")
+		print("P1_POINTER_TARGETING_PASS: explicit screen ray selected a visible top-face EXPAND target while preserving canonical collision and face semantics.")
 		quit(0)
 		return
 	for failure in _failures:
