@@ -101,9 +101,41 @@ Final automated P0 gate on commit `09eb18e8…` / run `#202` measured:
 
 The same commit passed current-campaign validation, fast invariants and the full historical research ratchet through R2A.
 
-This is **not playability/product evidence**. Mouse-selection clarity, camera/movement feel, perceived latency and overall usefulness still require direct Owner interaction.
+The first direct Owner run is now complete. It did **not** demonstrate a substrate failure; instead it exposed strong measurement-surface contamination from distant fixed framing, weak cell-target feedback, low Matter readability and an always-dominant telemetry HUD. That qualitative evidence motivated P0.5 rather than a speculative substrate rewrite.
+
+P0 remains **integrated automated evidence, not playability/product evidence**.
 
 Evidence: `docs/evidence/p0-interactive-consumer.md`.
+
+## P0.5 interaction/readability shell — bounded automated surface evidence
+
+P0.5 deliberately layers owner-facing interaction and presentation above the defended P0 consumer instead of replacing its Matter/lifecycle path.
+
+The current shell adds:
+
+- a materially closer orbit/zoom camera,
+- explicit remove/place cell previews,
+- occupied-cell grid context for the small LAB,
+- clearer static/dynamic presentation,
+- compact default Owner HUD with full P0 engineering telemetry retained behind `F1`,
+- explicit actor recovery for test continuity without replacing logical Space or provider authority.
+
+The green delivery run `#6` / ID `34915675303` on commit `9790d5b859073c3a2f7136cb14861613f3d54661` first re-ran the defended P0 smoke and then passed the dedicated P0.5 interaction-surface smoke.
+
+P0.5 measured:
+
+- initial camera focus distance `8.326`,
+- programmatically zoomed distance `6.200`,
+- sampled presentation-grid/provider transform gap `0.00000000`,
+- recovery preserving the same logical Space and provider while reacquiring support,
+- remove/place remaining on the shared authoritative Matter mutation path,
+- compatibility with static→dynamic activation.
+
+The same run exported both Windows and Web Owner-test artifacts successfully.
+
+This establishes only that the improved interaction shell coexists with the defended P0 path and is packageable. It does **not** establish good camera feel, good targeting ergonomics, acceptable edit latency, product-quality visuals/UI, scalable grid rendering or compelling gameplay. Those remain Owner-test questions.
+
+Evidence: `docs/evidence/p05-interaction-baseline.md`.
 
 ## One→many topology split through shared runtime — integrated
 
@@ -333,44 +365,46 @@ Current mass properties assume equal mass per occupied cell. `material_id` is no
 
 # OPEN — current re-audited priorities
 
-## Active: P0 Owner interaction
+## Active: P0.5 Owner interaction
 
-The embodied P0 implementation and automated integrated composition gate are now green in the bounded translation+yaw scope.
+The first direct P0 Owner run is complete. It showed that the underlying bounded loop could be exercised, but prototype interaction/readability friction dominated the experience strongly enough to contaminate the next decision.
 
-The highest-information remaining P0 question is no longer “can these systems compose at all?” but:
+P0.5 now supplies a deliberately thin improved measurement surface while preserving the defended P0 consumer underneath it. Its automated P0 regression gate, dedicated P0.5 interaction-surface gate and Windows/Web packaging are green.
 
-> does the direct loop actually feel coherent, legible and useful when the Owner uses it?
+The highest-information question is now:
+
+> with the largest obvious measurement-surface contamination reduced, does the direct loop feel coherent, legible and useful — and which remaining limitation actually dominates the experience?
 
 Current interactive loop:
 
-> walk on/around Matter → point at a local cell → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect/debug the consequences.
+> walk on/around Matter → comfortably frame the scene → clearly preview a local cell operation → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect/debug only when useful.
 
-The LAB uses the shared runtime rather than creating parallel semantics:
+P0.5 still uses the shared runtime rather than creating parallel semantics:
 
 - `FrameProbeCharacter` for current support-frame behavior,
 - `LocalMatterSpace` for logical ownership and mutation,
 - shared static↔dynamic provider replacement,
 - `MERGED_CUBOIDS` as current collision default,
-- minimal follow camera, pointer selection and telemetry.
+- the inherited P0 mutation/lifecycle path under a new presentation shell.
 
-What remains specifically unresolved by automation:
+What remains unresolved by automation and requires the second Owner run:
 
-- movement/camera feel,
-- pointer targeting clarity,
-- remove/place interaction clarity,
+- orbit/zoom camera feel,
+- preview clarity before clicking,
+- Matter/cell readability,
+- movement and editing comprehension while the Space moves,
 - perceived edit latency under natural repeated use,
-- visual legibility of provider/motion/edit consequences,
-- whether the loop exposes a compelling next pressure.
+- whether the loop exposes a compelling next semantic/gameplay pressure.
 
-P0 is not evidence that the current actor is a final game controller.
+P0.5 is not evidence that the current actor is a final game controller or that the current interaction shell is product-quality.
 
-Decision pressure from the Owner test:
+Decision pressure from the next Owner test:
 
 - if edit latency is material, reopen representation with R2A locality evidence but do not equate dirty regions with collider chunks;
 - if arbitrary orientation, walls/steps/ceilings or reaction forces become the blocker, move deliberately to the oriented/volumetric/finite-force actor frontier;
-- if provider transition/support continuity fails under direct interaction, reproduce and reopen that lifecycle invariant rather than patching around it in LAB;
-- if the substrate works but interaction is awkward or uninteresting, treat Owner experience as evidence before building more infrastructure;
-- if the loop is coherent, choose the next pressure from what the Owner actually wants to do next rather than automatically extending P0.
+- if provider transition/support continuity fails under direct interaction, reproduce and reopen that exact lifecycle invariant rather than patching around it in LAB;
+- if interaction/readability still dominates, improve only the highest-leverage obstacle rather than turning P0.5 into an open-ended UI/graphics campaign;
+- if the loop is coherent, choose the next semantic pressure from what the Owner actually wants to do next rather than automatically extending P0.5.
 
 ## Important consumer-triggered frontiers
 
@@ -454,4 +488,4 @@ The deliberately small Owner-facing loop is implemented and mechanically gated i
 
 > walk → dig/place → activate/freeze a local Space → ride/build on it → inspect/debug consequences.
 
-The next evidence must come from actual Owner use. A simple mechanism remains a possible later extension, not a prerequisite for proving actor/edit/lifecycle composition. The next major architectural decision should be pulled by what that interaction exposes, not pushed by another speculative subsystem.
+The first direct Owner use has happened and motivated P0.5. The next evidence must come from a second direct Owner run using the improved P0.5 package. A simple mechanism remains a possible later extension, not a prerequisite for proving actor/edit/lifecycle composition. The next major architectural decision should be pulled by what that interaction exposes, not pushed by another speculative subsystem.
