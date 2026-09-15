@@ -51,6 +51,9 @@ jobs:
       - name: Run P1 storage rebase probe
         run: godot --headless --path . --script res://tests/p1_storage_rebase_probe.gd
 
+      - name: Run P1 finite Space control probe
+        run: godot --headless --path . --script res://tests/p1_finite_space_control_probe.gd
+
   p1-windows-scene-diagnostic:
     runs-on: windows-latest
     timeout-minutes: 3
