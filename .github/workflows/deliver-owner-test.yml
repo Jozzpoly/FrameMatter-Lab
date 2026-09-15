@@ -1,4 +1,4 @@
-name: Deliver P0 Owner Test
+name: Deliver P0.5 Owner Test
 
 on:
   push:
@@ -9,6 +9,8 @@ on:
       - "construct/**"
       - "matter/**"
       - "space/**"
+      - "tests/p0_interactive_lab_smoke.gd"
+      - "tests/p05_interaction_baseline_smoke.gd"
       - "project.godot"
       - "export_presets.cfg"
       - ".github/workflows/deliver-owner-test.yml"
@@ -18,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: "p0-owner-delivery"
+  group: "p05-owner-delivery"
   cancel-in-progress: true
 
 jobs:
@@ -39,8 +41,11 @@ jobs:
       - name: Prime project import
         run: godot --headless --path . --editor --quit
 
-      - name: Verify P0 before packaging
+      - name: Verify defended P0 before packaging
         run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
+
+      - name: Verify P0.5 interaction baseline before packaging
+        run: godot --headless --path . --script res://tests/p05_interaction_baseline_smoke.gd
 
       - name: Export browser build
         run: |
@@ -53,8 +58,8 @@ jobs:
       - name: Export Windows build
         run: |
           mkdir -p build/windows
-          godot --headless --path . --export-release "Windows Desktop" build/windows/FrameMatter-P0.exe
-          test -f build/windows/FrameMatter-P0.exe
+          godot --headless --path . --export-release "Windows Desktop" build/windows/FrameMatter-P05.exe
+          test -f build/windows/FrameMatter-P05.exe
 
       - name: Add no-Jekyll marker
         run: touch build/web/.nojekyll
@@ -62,7 +67,7 @@ jobs:
       - name: Upload browser download artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P0-Web
+          name: FrameMatter-P05-Web
           path: build/web
           if-no-files-found: error
           retention-days: 30
@@ -70,14 +75,15 @@ jobs:
       - name: Upload Windows download artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P0-Windows
-          path: build/windows/FrameMatter-P0.exe
+          name: FrameMatter-P05-Windows
+          path: build/windows/FrameMatter-P05.exe
           if-no-files-found: error
           retention-days: 30
 
       - name: Delivery summary
         run: |
-          echo "P0 smoke PASS"
+          echo "Defended P0 smoke PASS"
+          echo "P0.5 interaction baseline smoke PASS"
           echo "Browser export PASS"
           echo "Windows export PASS"
-          echo "Download artifacts: FrameMatter-P0-Web and FrameMatter-P0-Windows"
+          echo "Download artifacts: FrameMatter-P05-Web and FrameMatter-P05-Windows"
