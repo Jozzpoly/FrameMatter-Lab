@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://p1/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://p1/camera_rig.tscn" id="3_camera"]
+[ext_resource type="Script" path="res://p1/space_registry.gd" id="4_registry"]
 
 [sub_resource type="Environment" id="Environment_P1"]
 background_mode = 1
@@ -72,6 +73,9 @@ material_override = SubResource("OriginMaterial")
 cast_shadow = 0
 
 [node name="Spaces" type="Node3D" parent="."]
+
+[node name="P1SpaceRegistry" type="Node" parent="."]
+script = ExtResource("4_registry")
 
 [node name="P1Player" parent="." instance=ExtResource("2_player")]
 
