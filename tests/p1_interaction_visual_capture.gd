@@ -1,30 +1,14 @@
 extends SceneTree
 
 const ACQUIRE_FRAMES := 18
-const SETTLE_FRAMES := 1
+const SETTLE_FRAMES := 2
 const CENTER_ACTOR_LOCAL := Vector3(8.5, 2.15, 8.5)
 const EXPAND_ACTOR_LOCAL := Vector3(6.5, 1.95, 8.5)
 const EXPAND_REMOVE := Vector3i(8, 5, 8)
 const EXPAND_PLACE := Vector3i(8, 6, 8)
-const USABLE_TOP_NORM := 0.22
 const POINTER_SCAN_STEP := 52
 const POINTER_CENTER_EXCLUSION := 0.18
-const PRESENTATION_LEGACY := "legacy"
-const PRESENTATION_FACE_LED := "face_led"
-const PRESENTATION_POINTER_FACE_LED := "pointer_face_led"
-const SCAN_YAWS := [
-	0.72,
-	0.0,
-	PI * 0.25,
-	PI * 0.5,
-	PI * 0.75,
-	PI,
-	-PI * 0.75,
-	-PI * 0.5,
-	-PI * 0.25,
-]
-const SCAN_PITCHES := [0.48, 0.34, 0.62, 0.78]
-const SCAN_DISTANCES := [5.2, 7.2, 4.0]
+const HUD_PROBE_POINT := Vector2(50.0, 50.0)
 const POINTER_ORBITS := [
 	[0.72, 0.48, 7.2],
 	[0.20, 0.48, 7.2],
@@ -45,7 +29,6 @@ const EXPAND_ORBITS := [
 
 var _failures: Array[String] = []
 var _output_dir := ""
-var _presentation_variant := PRESENTATION_LEGACY
 var _p1: Node
 var _space: LocalMatterSpace
 var _player: SpaceQueryCharacter
@@ -61,19 +44,11 @@ func _init() -> void:
 func _run() -> void:
 	_output_dir = OS.get_environment("P1_INTERACTION_EVIDENCE_DIR")
 	if _output_dir.is_empty():
-		_output_dir = ProjectSettings.globalize_path("res://artifacts/p1-interaction-evidence")
+		_output_dir = ProjectSettings.globalize_path("res://artifacts/p1-interaction-evidence/production")
 	DirAccess.make_dir_recursive_absolute(_output_dir)
 
-	var requested_variant := OS.get_environment("P1_TARGET_PRESENTATION_VARIANT").strip_edges().to_lower()
-	if not requested_variant.is_empty():
-		_presentation_variant = requested_variant
-	_check(_is_supported_variant(), "G5 capture presentation variant is supported")
-	if not _is_supported_variant():
-		_finish()
-		return
-
 	var packed := load("res://p1/main.tscn") as PackedScene
-	_check(packed != null, "G5 capture loads canonical P1 scene")
+	_check(packed != null, "G5 production capture loads canonical P1 scene")
 	if packed == null:
 		_finish()
 		return
@@ -87,128 +62,69 @@ func _run() -> void:
 	_player = _p1.call("get_player") as SpaceQueryCharacter
 	_camera_rig = _p1.call("get_camera_rig") as P1CameraRig
 	_interactor = _p1.call("get_interactor") as P1MatterInteractor
+	_target_presentation = _p1.get_node_or_null("P1MatterTargetPresentation") as P1MatterTargetPresentation
 	_check(
 		_space != null and _player != null and _camera_rig != null and _interactor != null,
-		"G5 capture resolves real P1 Space/actor/camera/interactor"
+		"G5 production capture resolves composed interaction roles"
 	)
-	if _space == null or _player == null or _camera_rig == null or _interactor == null:
+	_check(_target_presentation != null, "G5 production scene owns one target presentation consumer")
+	_check(
+		_interactor != null and _interactor.targeting_mode == P1MatterInteractor.TargetingMode.POINTER,
+		"G5 production interaction uses pointer acquisition"
+	)
+	_check(_p1.get_node_or_null("HUD/Reticle") == null, "G5 production HUD has no false center reticle")
+	if _target_presentation != null and _interactor != null:
+		_check(_target_presentation.interactor == _interactor, "G5 production presenter binds existing interactor authority")
+	if _space == null or _player == null or _camera_rig == null or _interactor == null or _target_presentation == null:
 		_p1.free()
 		_finish()
 		return
 
-	if _uses_face_led_presentation():
-		_target_presentation = P1MatterTargetPresentation.new()
-		_target_presentation.name = "P1MatterTargetPresentationEvidence"
-		_p1.add_child(_target_presentation)
-		_target_presentation.set_interactor(_interactor)
-		_target_presentation.suppress_legacy_outline = true
-		_target_presentation.refresh_now()
-
-	if _uses_pointer_acquisition():
-		_interactor.set_targeting_mode(P1MatterInteractor.TargetingMode.POINTER)
-		_interactor.set_process(false)
-		var reticle := _p1.get_node_or_null("HUD/Reticle") as Control
-		if reticle != null:
-			reticle.visible = false
-
-	print("P1_INTERACTION_PRESENTATION_VARIANT: %s" % _presentation_variant)
-
-	# Target semantics, not player locomotion, are under test here. Hold the actor
-	# at exact authored positions while the real interactor performs real physics
-	# rays against canonical Matter collision.
+	# Deterministic evidence drives the same production pointer-safe resolver with
+	# explicit screen positions; disable only live mouse polling during capture.
 	_player.set_physics_process(false)
+	_interactor.set_process(false)
 
-	if _uses_pointer_acquisition():
-		var remove_state := await _find_pointer_target(P1MatterInteractor.EditMode.REMOVE, CENTER_ACTOR_LOCAL)
-		_check(not remove_state.is_empty(), "G5 pointer lane resolves an off-center visible REMOVE target")
-		if not remove_state.is_empty():
-			await _capture_pointer_target("00_remove_target", "REMOVE", remove_state)
+	_check(_interactor.pointer_blocker != null, "G5 production interactor binds HUD pointer blocker")
+	if _interactor.pointer_blocker != null:
+		_check(
+			_interactor.pointer_blocker.get_global_rect().has_point(HUD_PROBE_POINT),
+			"G5 HUD probe point is physically inside pointer blocker"
+		)
+	_interactor.update_target_from_pointer_position(HUD_PROBE_POINT)
+	_check(_interactor.target_space == null and not _interactor.target_valid, "G5 pointer cannot target Matter through HUD")
+	print("P1_INTERACTION_UI_BLOCK_PASS point=%s target_cleared=%s" % [str(HUD_PROBE_POINT), str(_interactor.target_space == null)])
 
-		var place_state := await _find_pointer_target(P1MatterInteractor.EditMode.PLACE, CENTER_ACTOR_LOCAL)
-		_check(not place_state.is_empty(), "G5 pointer lane resolves an off-center visible PLACE target")
-		if not place_state.is_empty():
-			await _capture_pointer_target("01_place_target", "PLACE", place_state)
-	else:
-		var remove_found := await _find_center_target(P1MatterInteractor.EditMode.REMOVE, CENTER_ACTOR_LOCAL)
-		_check(remove_found, "G5 baseline resolves an actionable in-storage REMOVE target")
-		if remove_found:
-			await _capture_center_target("00_remove_target", "REMOVE")
+	var remove_state := await _find_pointer_target(P1MatterInteractor.EditMode.REMOVE, CENTER_ACTOR_LOCAL)
+	_check(not remove_state.is_empty(), "G5 production resolves an off-center visible REMOVE target")
+	if not remove_state.is_empty():
+		await _capture_pointer_target("00_remove_target", "REMOVE", remove_state, true)
 
-		var place_found := await _find_center_target(P1MatterInteractor.EditMode.PLACE, CENTER_ACTOR_LOCAL)
-		_check(place_found, "G5 baseline resolves an actionable in-storage PLACE target")
-		if place_found:
-			await _capture_center_target("01_place_target", "PLACE")
+	var place_state := await _find_pointer_target(P1MatterInteractor.EditMode.PLACE, CENTER_ACTOR_LOCAL)
+	_check(not place_state.is_empty(), "G5 production resolves an off-center visible PLACE target")
+	if not place_state.is_empty():
+		await _capture_pointer_target("01_place_target", "PLACE", place_state, true)
 
-	# Build a connected pillar through y=5, the highest legal dense-storage cell.
-	# Its top face is physically visible. PLACE across that face resolves to y=6,
-	# providing a real EXPAND target without asking the interaction system to pick
-	# an occluded boundary face.
 	for y in range(1, 6):
 		var cell := Vector3i(8, y, 8)
 		_check(
 			_interactor.apply_edit_to_cell(_space, cell, P1MatterInteractor.EditMode.PLACE),
-			"G5 A/B builds storage-height pillar cell %s" % str(cell)
+			"G5 production builds storage-height pillar cell %s" % str(cell)
 		)
 	await _advance_frames(2)
 
-	var ab_state := await _find_expand_ab_state()
-	_check(not ab_state.is_empty(), "G5 A/B finds one usable-view state where pointer reaches visible EXPAND and center reticle does not")
-	if not ab_state.is_empty():
-		await _capture_expand_ab(ab_state)
+	var expand_state := await _find_exact_expand_target()
+	_check(not expand_state.is_empty(), "G5 production resolves visible out-of-storage EXPAND target")
+	if not expand_state.is_empty():
+		await _capture_pointer_target("02_expand_target", "EXPAND", expand_state, false)
+		_check(_interactor.remove_cell == EXPAND_REMOVE, "G5 EXPAND resolves exact source top cell")
+		_check(_interactor.place_cell == EXPAND_PLACE, "G5 EXPAND resolves exact out-of-storage destination")
+		_check(_interactor.place_cell - _interactor.remove_cell == Vector3i.UP, "G5 EXPAND preserves exact +Y hit face")
 
 	_interactor.set_process(true)
 	_player.set_physics_process(true)
 	_p1.free()
 	_finish()
-
-
-func _is_supported_variant() -> bool:
-	return (
-		_presentation_variant == PRESENTATION_LEGACY
-		or _presentation_variant == PRESENTATION_FACE_LED
-		or _presentation_variant == PRESENTATION_POINTER_FACE_LED
-	)
-
-
-func _uses_face_led_presentation() -> bool:
-	return _presentation_variant == PRESENTATION_FACE_LED or _presentation_variant == PRESENTATION_POINTER_FACE_LED
-
-
-func _uses_pointer_acquisition() -> bool:
-	return _presentation_variant == PRESENTATION_POINTER_FACE_LED
-
-
-func _find_center_target(mode: int, actor_local: Vector3) -> bool:
-	var provider := _space.get_active_provider()
-	if provider == null:
-		return false
-	_move_player_world(provider.to_global(actor_local))
-	_interactor.set_mode(mode)
-	_camera_rig.reset_view()
-	await _advance_frames(2)
-
-	for distance_variant in SCAN_DISTANCES:
-		var distance := float(distance_variant)
-		for pitch_variant in SCAN_PITCHES:
-			var pitch := float(pitch_variant)
-			for yaw_variant in SCAN_YAWS:
-				var yaw := float(yaw_variant)
-				_camera_rig.set("_yaw", yaw)
-				_camera_rig.set("_pitch", pitch)
-				_camera_rig.set("_distance", distance)
-				_camera_rig.call("_apply_user_orbit_immediately")
-				await _advance_frames(SETTLE_FRAMES)
-				_interactor.call("_update_target_from_camera")
-				if _interactor.target_space == _space and _interactor.target_valid and _interactor.target_in_storage:
-					print(
-						"P1_INTERACTION_TARGET_FOUND mode=%s yaw=%.3f pitch=%.3f distance=%.2f remove=%s place=%s face=%s" % [
-							_interactor.get_mode_name(), yaw, pitch, distance,
-							str(_interactor.remove_cell), str(_interactor.place_cell),
-							str(_interactor.place_cell - _interactor.remove_cell),
-						]
-					)
-					return true
-	return false
 
 
 func _find_pointer_target(mode: int, actor_local: Vector3) -> Dictionary:
@@ -218,8 +134,7 @@ func _find_pointer_target(mode: int, actor_local: Vector3) -> Dictionary:
 	_move_player_world(provider.to_global(actor_local))
 	_interactor.set_mode(mode)
 	_camera_rig.reset_view()
-	await _advance_frames(2)
-	_interactor.set_process(false)
+	await _advance_frames(SETTLE_FRAMES)
 
 	for orbit_variant in POINTER_ORBITS:
 		var orbit := orbit_variant as Array
@@ -227,188 +142,94 @@ func _find_pointer_target(mode: int, actor_local: Vector3) -> Dictionary:
 		_camera_rig.set("_pitch", float(orbit[1]))
 		_camera_rig.set("_distance", float(orbit[2]))
 		_camera_rig.call("_apply_user_orbit_immediately")
-		await _advance_frames(2)
+		await _advance_frames(SETTLE_FRAMES)
 
 		var viewport := _camera_rig.get_camera().get_viewport()
 		var rect := viewport.get_visible_rect()
-		var start_x := int(rect.size.x * 0.12)
-		var end_x := int(rect.size.x * 0.88)
-		var start_y := int(rect.size.y * 0.24)
-		var end_y := int(rect.size.y * 0.86)
-		for y in range(start_y, end_y, POINTER_SCAN_STEP):
-			for x in range(start_x, end_x, POINTER_SCAN_STEP):
+		for y in range(int(rect.size.y * 0.24), int(rect.size.y * 0.86), POINTER_SCAN_STEP):
+			for x in range(int(rect.size.x * 0.12), int(rect.size.x * 0.88), POINTER_SCAN_STEP):
 				var screen := rect.position + Vector2(float(x), float(y))
 				var norm := Vector2(float(x) / rect.size.x, float(y) / rect.size.y)
 				if norm.distance_to(Vector2(0.5, 0.5)) < POINTER_CENTER_EXCLUSION:
 					continue
-				_interactor.update_target_from_screen_position(screen)
-				if (
-					_interactor.target_space == _space
-					and _interactor.target_valid
-					and _interactor.target_in_storage
-				):
-					var face := _interactor.place_cell - _interactor.remove_cell
-					if absi(face.x) + absi(face.y) + absi(face.z) != 1:
-						continue
-					print(
-						"P1_POINTER_PRESENTATION_TARGET mode=%s screen=(%.1f,%.1f) norm=(%.3f,%.3f) remove=%s place=%s face=%s" % [
-							_interactor.get_mode_name(), screen.x, screen.y, norm.x, norm.y,
-							str(_interactor.remove_cell), str(_interactor.place_cell), str(face),
-						]
-					)
-					return {"screen": screen, "norm": norm, "orbit": orbit.duplicate()}
+				_interactor.update_target_from_pointer_position(screen)
+				if _interactor.target_space != _space or not _interactor.target_valid or not _interactor.target_in_storage:
+					continue
+				var face := _interactor.place_cell - _interactor.remove_cell
+				if absi(face.x) + absi(face.y) + absi(face.z) != 1:
+					continue
+				return {"screen": screen, "norm": norm, "orbit": orbit.duplicate()}
 	return {}
 
 
-func _find_expand_ab_state() -> Dictionary:
+func _find_exact_expand_target() -> Dictionary:
 	var provider := _space.get_active_provider()
 	if provider == null:
 		return {}
 	_move_player_world(provider.to_global(EXPAND_ACTOR_LOCAL))
 	_interactor.set_mode(P1MatterInteractor.EditMode.PLACE)
 	_camera_rig.reset_view()
-	await _advance_frames(2)
-	_interactor.set_process(false)
-
+	await _advance_frames(SETTLE_FRAMES)
 	var top_face_world := provider.to_global(Vector3(8.5, 6.0, 8.5))
+
 	for orbit_variant in EXPAND_ORBITS:
 		var orbit := orbit_variant as Array
 		_camera_rig.set("_yaw", float(orbit[0]))
 		_camera_rig.set("_pitch", float(orbit[1]))
 		_camera_rig.set("_distance", float(orbit[2]))
 		_camera_rig.call("_apply_user_orbit_immediately")
-		await _advance_frames(2)
-
+		await _advance_frames(SETTLE_FRAMES)
 		var camera := _camera_rig.get_camera()
-		var viewport := camera.get_viewport()
-		var visible_rect := viewport.get_visible_rect()
+		var rect := camera.get_viewport().get_visible_rect()
 		if camera.is_position_behind(top_face_world):
 			continue
 		var screen := camera.unproject_position(top_face_world)
-		if not visible_rect.has_point(screen):
+		if not rect.has_point(screen):
 			continue
-		var norm := Vector2(screen.x / visible_rect.size.x, screen.y / visible_rect.size.y)
-		if norm.x < 0.05 or norm.x > 0.95 or norm.y < USABLE_TOP_NORM or norm.y > 0.95:
+		var norm := Vector2(screen.x / rect.size.x, screen.y / rect.size.y)
+		if norm.x < 0.05 or norm.x > 0.95 or norm.y < 0.22 or norm.y > 0.95:
 			continue
-
-		_interactor.update_target_from_screen_position(screen)
-		var pointer_hits_expand := (
+		_interactor.update_target_from_pointer_position(screen)
+		if (
 			_interactor.target_space == _space
 			and _interactor.target_valid
 			and not _interactor.target_in_storage
 			and _interactor.remove_cell == EXPAND_REMOVE
 			and _interactor.place_cell == EXPAND_PLACE
-		)
-		if not pointer_hits_expand:
-			continue
-
-		_interactor.call("_update_target_from_camera")
-		var center_hits_same_expand := (
-			_interactor.target_space == _space
-			and _interactor.target_valid
-			and not _interactor.target_in_storage
-			and _interactor.remove_cell == EXPAND_REMOVE
-			and _interactor.place_cell == EXPAND_PLACE
-		)
-		if center_hits_same_expand:
-			continue
-
-		print(
-			"P1_INTERACTION_AB_STATE screen=(%.1f,%.1f) norm=(%.3f,%.3f) yaw=%.3f pitch=%.3f distance=%.2f center_remove=%s center_place=%s center_valid=%s center_in_storage=%s" % [
-				screen.x, screen.y, norm.x, norm.y,
-				float(orbit[0]), float(orbit[1]), float(orbit[2]),
-				str(_interactor.remove_cell), str(_interactor.place_cell),
-				str(_interactor.target_valid), str(_interactor.target_in_storage),
-			]
-		)
-		return {"screen": screen, "norm": norm, "orbit": orbit.duplicate()}
+		):
+			return {"screen": screen, "norm": norm, "orbit": orbit.duplicate()}
 	return {}
 
 
-func _capture_center_target(label: String, semantic_name: String) -> void:
-	_interactor.call("_update_target_from_camera")
-	_check(_interactor.target_space == _space, "%s targets the live authored Space" % label)
-	_check(_interactor.target_valid, "%s target remains actionable at capture" % label)
-	_check(_interactor.target_in_storage, "%s remains an in-storage %s target" % [label, semantic_name])
-	var face := _interactor.place_cell - _interactor.remove_cell
-	_check(abs(face.x) + abs(face.y) + abs(face.z) == 1, "%s resolves one exact hit face" % label)
-	print(
-		"P1_INTERACTION_TRUTH label=%s semantic=%s presentation=%s acquisition=center target_cell=%s remove=%s place=%s face=%s in_storage=%s valid=%s" % [
-			label, semantic_name, _presentation_variant,
-			str(_interactor.get_target_cell()), str(_interactor.remove_cell), str(_interactor.place_cell),
-			str(face), str(_interactor.target_in_storage), str(_interactor.target_valid),
-		]
-	)
-	await _capture_pixels(label)
-
-
-func _capture_pointer_target(label: String, semantic_name: String, state: Dictionary) -> void:
+func _capture_pointer_target(
+	label: String,
+	semantic_name: String,
+	state: Dictionary,
+	expect_in_storage: bool
+) -> void:
 	var screen: Vector2 = state["screen"]
 	var norm: Vector2 = state["norm"]
-	_interactor.update_target_from_screen_position(screen)
-	_check(_interactor.target_space == _space, "%s pointer targets the live authored Space" % label)
-	_check(_interactor.target_valid, "%s pointer target remains actionable" % label)
-	_check(_interactor.target_in_storage, "%s pointer target remains in-storage" % label)
+	_interactor.update_target_from_pointer_position(screen)
+	_check(_interactor.target_space == _space, "%s targets the live authored Space" % label)
+	_check(_interactor.target_valid, "%s remains actionable" % label)
+	_check(_interactor.target_in_storage == expect_in_storage, "%s storage relation matches %s" % [label, semantic_name])
 	var face := _interactor.place_cell - _interactor.remove_cell
-	_check(absi(face.x) + absi(face.y) + absi(face.z) == 1, "%s pointer resolves one exact hit face" % label)
+	_check(absi(face.x) + absi(face.y) + absi(face.z) == 1, "%s resolves one exact hit face" % label)
 	print(
-		"P1_INTERACTION_TRUTH label=%s semantic=%s presentation=%s acquisition=pointer screen_norm=(%.3f,%.3f) target_cell=%s remove=%s place=%s face=%s" % [
-			label, semantic_name, _presentation_variant, norm.x, norm.y,
-			str(_interactor.get_target_cell()), str(_interactor.remove_cell), str(_interactor.place_cell), str(face),
+		"P1_INTERACTION_PRODUCTION_TRUTH label=%s semantic=%s screen_norm=(%.3f,%.3f) target=%s remove=%s place=%s face=%s in_storage=%s" % [
+			label, semantic_name, norm.x, norm.y, str(_interactor.get_target_cell()),
+			str(_interactor.remove_cell), str(_interactor.place_cell), str(face), str(_interactor.target_in_storage),
 		]
 	)
+	_target_presentation.refresh_now()
 	await _capture_pixels(label)
-
-
-func _capture_expand_ab(ab_state: Dictionary) -> void:
-	var screen: Vector2 = ab_state["screen"]
-	var norm: Vector2 = ab_state["norm"]
-
-	_interactor.call("_update_target_from_camera")
-	var center_remove := _interactor.remove_cell
-	var center_place := _interactor.place_cell
-	var center_valid := _interactor.target_valid
-	var center_in_storage := _interactor.target_in_storage
-	_check(
-		not (
-			_interactor.target_space == _space
-			and center_valid
-			and not center_in_storage
-			and center_remove == EXPAND_REMOVE
-			and center_place == EXPAND_PLACE
-		),
-		"center-reticle baseline does not silently target the off-center EXPAND face"
-	)
-	print(
-		"P1_INTERACTION_TRUTH label=02_expand_center_reticle_miss semantic=CENTER_MISS presentation=%s visible_expand_screen_norm=(%.3f,%.3f) center_remove=%s center_place=%s center_valid=%s center_in_storage=%s" % [
-			_presentation_variant, norm.x, norm.y,
-			str(center_remove), str(center_place), str(center_valid), str(center_in_storage),
-		]
-	)
-	await _capture_pixels("02_expand_center_reticle_miss")
-
-	_interactor.update_target_from_screen_position(screen)
-	_check(_interactor.target_space == _space, "pointer A/B targets the live authored Space")
-	_check(_interactor.target_valid, "pointer A/B target is actionable")
-	_check(not _interactor.target_in_storage, "pointer A/B target carries real EXPAND semantics")
-	_check(_interactor.remove_cell == EXPAND_REMOVE, "pointer A/B resolves exact source top cell")
-	_check(_interactor.place_cell == EXPAND_PLACE, "pointer A/B resolves exact out-of-storage destination cell")
-	var face := _interactor.place_cell - _interactor.remove_cell
-	_check(face == Vector3i.UP, "pointer A/B preserves exact +Y hit face")
-	print(
-		"P1_INTERACTION_TRUTH label=03_expand_pointer_hit semantic=EXPAND presentation=%s acquisition=pointer screen=(%.1f,%.1f) norm=(%.3f,%.3f) remove=%s place=%s face=%s" % [
-			_presentation_variant, screen.x, screen.y, norm.x, norm.y,
-			str(_interactor.remove_cell), str(_interactor.place_cell), str(face),
-		]
-	)
-	await _capture_pixels("03_expand_pointer_hit")
 
 
 func _capture_pixels(label: String) -> void:
-	if _target_presentation != null:
-		_target_presentation.refresh_now()
 	await process_frame
 	await RenderingServer.frame_post_draw
+	var legacy_outline := _interactor.get_node_or_null("TargetOutline") as MeshInstance3D
+	_check(legacy_outline == null or not legacy_outline.visible, "%s suppresses legacy no-depth outline" % label)
 	var image := get_root().get_texture().get_image()
 	_check(image != null and not image.is_empty(), "%s produced rendered pixels" % label)
 	if image == null or image.is_empty():
@@ -445,7 +266,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_INTERACTION_CAPTURE_PASS: D3D12 evidence captured %s interaction hierarchy and explicit-screen acquisition truth." % _presentation_variant)
+		print("P1_INTERACTION_CAPTURE_PASS: promoted production pointer acquisition, UI exclusion and face-led REMOVE/PLACE/EXPAND presentation rendered on D3D12.")
 		quit(0)
 		return
 	for failure in _failures:
