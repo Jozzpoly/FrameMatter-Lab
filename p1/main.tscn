@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://p1/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://p1/matter_surface_grid.gd" id="7_surface_grid"]
 [ext_resource type="Script" path="res://p1/matter_state_presentation.gd" id="8_state_presentation"]
 [ext_resource type="Script" path="res://p1/matter_target_presentation.gd" id="9_target_presentation"]
+[ext_resource type="Script" path="res://p1/interaction_feedback.gd" id="10_interaction_feedback"]
 
 [sub_resource type="Environment" id="Environment_P1"]
 background_mode = 1
@@ -134,3 +135,12 @@ text = "P1 INTERACTIVE FOUNDATION"
 theme_override_colors/font_color = Color(0.75, 0.82, 0.90, 1)
 theme_override_font_sizes/font_size = 13
 text = "WASD move   Space jump   T release/freeze   arrows impulse/torque   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset"
+
+[node name="P1InteractionFeedback" type="Control" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("10_interaction_feedback")
