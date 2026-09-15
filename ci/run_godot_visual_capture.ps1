@@ -1,0 +1,62 @@
+param(
+    [Parameter(Mandatory = $true)][string]$OutputDir
+)
+
+$stdoutFile = [System.IO.Path]::GetTempFileName()
+$stderrFile = [System.IO.Path]::GetTempFileName()
+
+try {
+    $godotCommand = Get-Command godot -ErrorAction Stop
+    $godotExecutable = $godotCommand.Source
+    if ([string]::IsNullOrWhiteSpace($godotExecutable)) {
+        throw "Could not resolve Godot executable."
+    }
+
+    New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
+    $env:P1_VISUAL_EVIDENCE_DIR = $OutputDir
+
+    $process = Start-Process `
+        -FilePath $godotExecutable `
+        -ArgumentList @("--path", ".", "--audio-driver", "Dummy", "--script", "res://tests/p1_visual_capture.gd") `
+        -NoNewWindow `
+        -Wait `
+        -PassThru `
+        -RedirectStandardOutput $stdoutFile `
+        -RedirectStandardError $stderrFile
+
+    $stdout = Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue
+    $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+    $content = ($stdout + [Environment]::NewLine + $stderr)
+    Write-Host $content
+
+    if ($process.ExitCode -ne 0) {
+        Write-Error "Godot rendered capture exited with status $($process.ExitCode)"
+        exit 1
+    }
+
+    if ($content -match '(?m)^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|P1_VISUAL_CAPTURE_FAIL') {
+        Write-Error "Rendered capture emitted an engine/script/failure error despite process exit 0."
+        exit 1
+    }
+
+    if (-not $content.Contains("P1_VISUAL_CAPTURE_PASS")) {
+        Write-Error "Expected rendered capture PASS marker missing."
+        exit 1
+    }
+
+    $required = @(
+        "00_initial_static.png",
+        "02_dynamic_motion.png",
+        "04_split_successors.png"
+    )
+    foreach ($file in $required) {
+        $path = Join-Path $OutputDir $file
+        if (-not (Test-Path $path)) {
+            Write-Error "Rendered evidence file missing: $path"
+            exit 1
+        }
+    }
+}
+finally {
+    Remove-Item -Path $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+}
