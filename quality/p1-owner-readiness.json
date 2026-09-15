@@ -5,16 +5,16 @@
   "campaign_contract_version": 3,
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
-  "status": "BLOCKED",
+  "status": "READY_FOR_OWNER",
   "candidate_state": "FROZEN",
   "candidate_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
   "owner_goal": "Provide a professional, physically legible sandbox research surface where the Owner can directly see and judge editable Matter, moving/static local Spaces, actor relations, editing, topology consequences and motion without reconstructing hidden mechanics from debug output.",
   "owner_visible_surface": "Windows desktop P1 runtime, rendered scene, camera, interaction feedback and default UI",
-  "promotion_authorized": false,
-  "approved_runtime_commit": "",
+  "promotion_authorized": true,
+  "approved_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
   "owner_attention_event": {
-    "allowed": false,
-    "reason": "Exact runtime candidate is frozen and has passed candidate-wide revalidation plus G8 adversarial rehearsal, but independent assurance and final readiness audit remain open."
+    "allowed": true,
+    "reason": "Exact frozen runtime passed candidate-wide revalidation, recorded G8 adversarial rehearsal, separate read-only independent assurance and final cross-plane readiness audit with zero material blockers."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -137,16 +137,21 @@
       ]
     },
     "independent_assurance_review": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "independent_assurance_review",
-      "verified_runtime_commit": "",
-      "evidence": []
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": [
+        "quality/assurance/p1-independent-review.json",
+        "docs/evidence/p1-independent-assurance.md"
+      ]
     },
     "final_readiness_audit": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "final_cross_plane_audit",
-      "verified_runtime_commit": "",
-      "evidence": []
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": [
+        "docs/evidence/p1-final-readiness-audit.md"
+      ]
     }
   },
   "scenario_coverage": {
@@ -201,8 +206,5 @@
       "evidence": ["docs/evidence/p1-g4-camera-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
     }
   },
-  "open_blockers": [
-    "Independent assurance review not yet passed",
-    "Final readiness audit not yet passed"
-  ]
+  "open_blockers": []
 }
