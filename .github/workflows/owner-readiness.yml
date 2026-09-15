@@ -6,6 +6,7 @@ on:
     paths:
       - "quality/**"
       - "ci/verify_owner_readiness.py"
+      - "ci/test_owner_readiness_guard.py"
       - "docs/QUALITY-SYSTEM.md"
       - "docs/p1-owner-facing-recovery-campaign.md"
       - "docs/p1-visual-acceptance-contract.md"
@@ -27,6 +28,9 @@ jobs:
 
       - name: Validate readiness manifest and evidence references
         run: python ci/verify_owner_readiness.py --mode validate
+
+      - name: Adversarially self-test the readiness guard
+        run: python ci/test_owner_readiness_guard.py
 
       - name: Prove BLOCKED state cannot pass delivery enforcement
         shell: bash
