@@ -2,9 +2,10 @@
 """Adversarial self-test for the Owner-readiness guard.
 
 The test attacks contract/readiness drift, predecessor tampering, in-place
-contract edits, missing independent assurance and stale runtime evidence. It
-also proves that later governance can authorize one frozen runtime candidate
-without confusing the governance commit with the delivered artifact.
+contract edits, moving-candidate confusion, scenario gaps, missing independent
+assurance and stale runtime evidence. It also proves that later governance can
+authorize one frozen runtime candidate without confusing governance with the
+artifact being delivered.
 """
 
 from __future__ import annotations
@@ -68,7 +69,6 @@ def main() -> None:
     blobs, history_errors = guard.active_contract_blob_history(ROOT, CONTRACT_PATH)
     check(not history_errors, "active v3 contract history can be inspected: %s" % history_errors)
     check(len(blobs) == 1, "active v3 contract has exactly one distinct historical blob: %s" % sorted(blobs))
-
     synthetic_blobs, synthetic_errors = make_two_blob_repo()
     check(not synthetic_errors, "synthetic contract history can be inspected: %s" % synthetic_errors)
     check(len(synthetic_blobs) == 2, "in-place versioned contract edit produces two distinct blobs")
@@ -96,11 +96,23 @@ def main() -> None:
     check(any("new_required_plane" in error for error in errors),
           "new contract requirement cannot be silently ignored by readiness")
 
+    weakened_contract = copy.deepcopy(contract)
+    weakened_contract["required_gates"] = [row for row in weakened_contract["required_gates"] if row["id"] != "camera_composition"]
+    errors = guard.validate_contract(weakened_contract, ROOT, CONTRACT_PATH)
+    check(any("acceptance regression" in error and "camera_composition" in error for error in errors),
+          "new contract version cannot silently remove inherited acceptance gate")
+
     bad_chain = copy.deepcopy(contract)
     bad_chain["previous_contract_git_blob_sha1"] = "0" * 40
     errors = structural_errors(manifest, bad_chain)
     check(any("previous contract integrity mismatch" in error for error in errors),
           "tampered predecessor binding is rejected")
+
+    moving_open = copy.deepcopy(manifest)
+    moving_open["candidate_runtime_commit"] = "0123456789abcdef0123456789abcdef01234567"
+    errors = structural_errors(moving_open, contract)
+    check(any("OPEN candidate_state" in error for error in errors),
+          "OPEN development cannot pretend to be a frozen runtime candidate")
 
     contract_gates, contract_gate_errors = guard.parse_contract_gates(contract)
     check(not contract_gate_errors, "campaign contract gate parsing succeeds: %s" % contract_gate_errors)
@@ -108,7 +120,7 @@ def main() -> None:
     check("independent_assurance_review" in contract_gates,
           "sealed contract explicitly requires independent assurance")
 
-    errors = guard.enforce_delivery(manifest, contract_gates)
+    errors = guard.enforce_delivery(manifest, contract, contract_gates)
     check(bool(errors), "real BLOCKED state is rejected by delivery enforcement")
     check(any("not READY_FOR_OWNER" in error for error in errors),
           "BLOCKED state fails for explicit readiness reason")
@@ -118,6 +130,8 @@ def main() -> None:
 
     ready = copy.deepcopy(manifest)
     ready["status"] = "READY_FOR_OWNER"
+    ready["candidate_state"] = "FROZEN"
+    ready["candidate_runtime_commit"] = candidate_runtime
     ready["promotion_authorized"] = True
     ready["approved_runtime_commit"] = candidate_runtime
     ready["owner_attention_event"] = {"allowed": True, "reason": "synthetic guard test"}
@@ -127,12 +141,14 @@ def main() -> None:
         gate["verified_runtime_commit"] = candidate_runtime
         if not gate["evidence"]:
             gate["evidence"] = ["docs/QUALITY-SYSTEM.md"]
+    for scenario in ready["scenario_coverage"].values():
+        scenario["status"] = "PASS"
+        scenario["verified_runtime_commit"] = candidate_runtime
+        scenario["evidence"] = ["docs/QUALITY-SYSTEM.md"]
 
-    stale = copy.deepcopy(ready)
-    stale["required_gates"]["camera_composition"]["verified_runtime_commit"] = stale_runtime
-    errors = structural_errors(stale, contract)
-    check(not errors, "stale candidate remains structurally valid before promotion check: %s" % errors)
-    errors = guard.enforce_delivery(stale, contract_gates)
+    stale_gate = copy.deepcopy(ready)
+    stale_gate["required_gates"]["camera_composition"]["verified_runtime_commit"] = stale_runtime
+    errors = guard.enforce_delivery(stale_gate, contract, contract_gates)
     check(any("camera_composition" in error and "not approved runtime" in error for error in errors),
           "stale per-gate runtime evidence is rejected")
 
@@ -140,15 +156,29 @@ def main() -> None:
     no_assurance["required_gates"]["independent_assurance_review"]["status"] = "PENDING"
     no_assurance["required_gates"]["independent_assurance_review"]["evidence"] = []
     no_assurance["required_gates"]["independent_assurance_review"]["verified_runtime_commit"] = ""
-    errors = guard.enforce_delivery(no_assurance, contract_gates)
+    errors = guard.enforce_delivery(no_assurance, contract, contract_gates)
     check(any("independent_assurance_review" in error for error in errors),
           "missing independent assurance blocks promotion")
 
+    missing_scenario = copy.deepcopy(ready)
+    missing_scenario["scenario_coverage"]["close_camera_obstacle_stress"]["status"] = "PENDING"
+    missing_scenario["scenario_coverage"]["close_camera_obstacle_stress"]["evidence"] = []
+    missing_scenario["scenario_coverage"]["close_camera_obstacle_stress"]["verified_runtime_commit"] = ""
+    errors = guard.enforce_delivery(missing_scenario, contract, contract_gates)
+    check(any("close_camera_obstacle_stress" in error for error in errors),
+          "one unproven representative scenario blocks promotion")
+
+    stale_scenario = copy.deepcopy(ready)
+    stale_scenario["scenario_coverage"]["close_camera_obstacle_stress"]["verified_runtime_commit"] = stale_runtime
+    errors = guard.enforce_delivery(stale_scenario, contract, contract_gates)
+    check(any("close_camera_obstacle_stress" in error and "not approved runtime" in error for error in errors),
+          "scenario evidence from an older runtime cannot bless the frozen candidate")
+
     errors = structural_errors(ready, contract)
-    check(not errors, "synthetic runtime-bound candidate is structurally valid: %s" % errors)
-    errors = guard.enforce_delivery(ready, contract_gates)
+    check(not errors, "synthetic frozen runtime candidate is structurally valid: %s" % errors)
+    errors = guard.enforce_delivery(ready, contract, contract_gates)
     check(not errors,
-          "fully consistent frozen-runtime candidate is accepted by later governance state: %s" % errors)
+          "fully consistent frozen-runtime candidate and full scenario matrix are accepted: %s" % errors)
 
     if failures:
         for failure in failures:
@@ -157,9 +187,9 @@ def main() -> None:
 
     print(
         "OWNER_READINESS_GUARD_SELFTEST_PASS: guard rejects in-place sealed-contract mutation, predecessor "
-        "tampering, missing gates, evidence-type drift, Owner-goal drift, contract expansion drift, BLOCKED "
-        "delivery, stale runtime evidence and missing independent assurance, while accepting a fully "
-        "consistent frozen-runtime candidate authorized by later governance evidence."
+        "tampering, acceptance weakening, moving-target state, missing gates, evidence drift, stale gate evidence, "
+        "missing independent assurance, unproven scenarios and stale scenario evidence, while accepting one fully "
+        "consistent frozen runtime candidate authorized by later governance."
     )
 
 
