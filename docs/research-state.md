@@ -1,6 +1,6 @@
 # FrameMatter Lab — current research state
 
-Status: **live truth document**. This is intentionally a synthesis, not a historical log. Durable measurements live in `docs/evidence/`; decision order lives in `ROADMAP.md`.
+Status: **live truth synthesis**. Durable measurements and failures live in `docs/evidence/`; decision order lives in `ROADMAP.md`; promotion policy lives in `docs/QUALITY-SYSTEM.md` and `quality/`.
 
 ## Evidence language
 
@@ -12,25 +12,66 @@ Status: **live truth document**. This is intentionally a synthesis, not a histor
 - **FALSIFIED / REJECTED** — shortcut or claim contradicted by evidence in the tested scope.
 - **OPEN** — material unanswered question/debt.
 
-No result silently promotes itself to the next maturity level. In particular, automated integrated evidence is not Owner/playability/product evidence.
+For Owner-facing campaigns, evidence is also separated into six independent truth planes:
+
+1. Owner-intent truth,
+2. substrate truth,
+3. composition truth,
+4. observable truth,
+5. interaction truth,
+6. promotion/delivery truth.
+
+A PASS on one plane never silently implies another.
 
 ---
 
 # LIVE TRUTH
 
-The canonical branch runtime is now **P1**, not the historical P0/P0.5 LAB:
+The canonical branch runtime is P1:
 
 `application/run/main_scene = res://p1/main.tscn`
 
-P1 rebuild validation, cross-platform canonical startup, historical fast invariants and the P1 Owner-candidate delivery pipeline are green under strict wrappers that reject engine/script `ERROR:` output even when Godot exits successfully.
+P1 is **mechanically much stronger than P0/P0.5 but not Owner-ready**.
 
-The current highest-information next step is **direct Owner interaction with the packaged P1 candidate**. Autonomous feature expansion stops at this boundary until that interaction supplies new pressure.
+The first P1 Owner candidate passed substantial mechanical/integration/package automation and then failed the actual Owner-facing measurement surface. The Owner recording showed catastrophic black Matter surfaces, flat white faces, weak cell granularity, debug interaction cues, destructive camera framing and telemetry-dominated presentation.
 
-Evidence: `docs/evidence/p1-integrated-owner-candidate.md`, `docs/evidence/p1-evidence-gate-reset.md`.
+A Windows D3D12 Forward+ rendered lane reproduced the critical black-surface failure inside CI. A bounded G2-A experiment changed only the Environment ambient source SKY→COLOR and zeroed sky contribution; on the deterministic initial Windows scene it changed approximately:
+
+- near-black coverage `52.96% → 0.00%`,
+- luminance below `0.08`: `54.70% → 1.74%`,
+- mean luminance `0.142 → 0.366`.
+
+This strongly attributes the catastrophic black collapse to project configuration rather than a demonstrated Godot rendering limitation. It does **not** establish overall visual quality.
+
+## Current stop condition — Q0
+
+The active campaign is **Q0 quality-system hardening**, not another Owner package and not ordinary feature expansion.
+
+Q0 exists because the previous process could accumulate extensive green hidden-system evidence while the Owner-visible instrument remained obviously broken.
+
+Current quality machinery:
+
+- `docs/QUALITY-SYSTEM.md` — general Owner-centered quality model,
+- `quality/p1-campaign-contract.json` — versioned Owner goal, protected invariants, representative scenarios and required quality gates,
+- `quality/p1-owner-readiness.json` — current evidence state,
+- `ci/verify_owner_readiness.py` — contract/readiness validation and delivery enforcement,
+- `.github/workflows/owner-readiness.yml` — CI validation,
+- manual Owner delivery hard-blocked by exact-commit readiness.
+
+Current readiness status is **BLOCKED**.
+
+No new Owner candidate may be produced until every required contract gate is PASS, every gate has durable evidence, every gate is re-verified on the exact candidate commit, no blockers remain and Owner attention is explicitly authorized.
+
+Evidence:
+
+- `docs/evidence/p1-owner-interaction-failure.md`,
+- `docs/evidence/p1-g1-rendered-baseline.md`,
+- `docs/evidence/p1-quality-system-postmortem.md`,
+- `docs/QUALITY-SYSTEM.md`.
 
 ---
 
-# DEFENDED
+# DEFENDED — SUBSTRATE / COMPOSITION
 
 ## Matter authority — bounded/integrated
 
@@ -44,7 +85,7 @@ Evidence: `docs/evidence/p1-integrated-owner-candidate.md`, `docs/evidence/p1-ev
 
 ## Logical Space / provider separation — reusable-substrate, narrow
 
-The defended semantic separation remains:
+Defended semantic separation:
 
 > **logical Space ≠ current engine provider**
 
@@ -52,297 +93,331 @@ Within tested scope:
 
 - one logical `LocalMatterSpace` owns one authoritative Matter + lineage pair,
 - static and dynamic providers are replaceable derived hosts,
-- static→dynamic release and dynamic→static freeze can replace concrete provider identity without redefining logical Space identity,
+- static→dynamic release and dynamic→static freeze replace concrete provider identity without redefining logical Space identity,
 - live Matter mutation composes with moving providers,
-- actor/camera consumers can follow the current provider while retaining a logical-Space relation,
-- topology split is different: the source Space retires and explicit successor mapping is required.
+- actor/camera consumers can follow current providers while retaining logical-Space relations,
+- topology split is different: source Space retires and explicit successor mapping is required.
 
-Class names, direct parent/child layout, signals and scheduling remain implementation details rather than canonical architecture.
-
-Evidence: I0B, lifecycle LAB, I2, I3 and P1 records.
+Class names, signals and tree layout remain implementation details rather than canonical architecture.
 
 ## P1 integrated causal loop — integrated automated evidence
 
-The current P1 gate composes one causal chain through the shared runtime:
+Current integrated gate composes:
 
 > grounded actor → zero-launch release → finite impulse/torque → ride moving Space → edit/build while moving → out-of-storage placement → storage-frame rebase → mapped placement → destructive cut → one→many topology succession → actor/camera handoff → freeze actor-owned successor.
 
-Representative strict integrated metrics:
+Representative strict metrics:
 
 - forced storage-frame shift `(3, 0, 0)`,
-- linear state error after rebase `0.00000000`,
-- angular state error after rebase `0.00000000`,
-- source→successor actor handoff error `0.00000125 m`,
+- linear/angular state error after rebase `0 / 0`,
+- source→successor actor handoff error about `1.25e-6 m`,
 - two live successor Spaces,
-- moving ride anchor error `0.00000135 m`,
-- final actor/support anchor error after successor freeze `0.00000098 m`.
+- moving ride anchor error about `1.35e-6 m`,
+- final actor/support anchor error after successor freeze about `0.98e-6 m`.
 
-This is stronger than the previous catalogue of isolated bounded probes because storage maintenance, solver motion, actor support, topology succession and lifecycle replacement now survive one composed runtime sequence.
+This is meaningful composition evidence. It is not observable/interaction/Owner-readiness evidence.
 
-It is **not** evidence of good Owner feel or production quality.
+## Volumetric actor — bounded + integrated in world-up translation/yaw scope
 
-Evidence: `docs/evidence/p1-integrated-owner-candidate.md`.
+P1 uses direct-space capsule queries rather than P0's single support ray.
 
-## Volumetric actor in world-up / translation+yaw scope — bounded + integrated
-
-The P1 actor uses Godot/Jolt direct-space capsule queries rather than the P0 single world-down support ray as its collision model.
-
-Defended in the tested scope:
+Defended in tested scope:
 
 - Matter floors support the actor,
-- vertical Matter walls block it,
+- vertical walls block it,
 - low ceilings block jumping,
-- the actor rides and walks relative to a translating/yawing dynamic Space,
-- query-based movement does not inject implicit linear/angular velocity into the supporting `ConstructBody`,
+- actor rides/walks relative to translating/yawing dynamic Space,
+- query movement does not inject implicit rigid-body linear/angular velocity,
 - support remains a logical-Space relation through provider replacement,
-- explicit mapping preserves support across topology succession,
-- explicit local-coordinate maintenance preserves support across storage-frame rebases.
+- explicit topology mapping preserves support across succession,
+- explicit coordinate maintenance preserves support across storage rebases.
 
-Representative actor metrics:
-
-- wall blocks `23`,
-- ceiling blocks `1`,
-- moving-support local drift about `0.00000691`,
-- local moving-Space walk distance about `0.720004`,
-- injected linear velocity delta `0`,
-- injected angular velocity delta `0`.
-
-**Arbitrary pitch/roll is not defended.** World gravity vs frame-local gravity/adhesion remains an explicit semantic frontier.
+Arbitrary pitch/roll, local gravity and adhesion remain open.
 
 ## Storage-frame maintenance — bounded + integrated
 
-The current dense local storage can expand beyond its current coordinate extent through a physics-boundary maintenance transaction.
+Current dense local storage can expand via an explicit frame-maintenance transaction.
 
-Defended properties:
+Defended:
 
-- rebase is coordinate-frame maintenance, not a logical Matter edit,
+- rebase is coordinate maintenance, not logical Matter edit,
 - retained Matter world positions remain continuous within numerical tolerance,
-- retained lineage is preserved,
-- active provider identity can remain stable through the rebase,
-- dynamic linear/angular state is preserved in the tested case,
-- actor support-local coordinates are explicitly remapped,
-- camera context is refreshed into the rebased frame,
-- an out-of-storage PLACE can complete afterward as an ordinary authoritative Matter creation with fresh lineage.
+- retained lineage survives,
+- provider identity can remain stable,
+- dynamic solver state is preserved in tested cases,
+- actor support-local coordinates are remapped,
+- camera context is refreshed,
+- mapped outside-storage placement can complete with fresh lineage.
 
-A deliberately unfixed challenger first demonstrated the missing consumer remap with a clean `4 m` actor/camera discontinuity while Matter itself remained correct. The consumer-side fix reduced the corresponding actor/camera frame errors to zero in the same challenger.
-
-This mechanism is **not** a final world/chunk/streaming/storage architecture.
+This is not a final chunk/streaming/persistence architecture.
 
 ## One→many topology succession — integrated
 
-When destructive editing disconnects a dynamic Matter Space:
+When destructive editing disconnects dynamic Matter:
 
-- the source Space/provider authority retires explicitly,
-- no fragment arbitrarily inherits the source logical Space identity,
+- source Space/provider authority retires,
+- no fragment arbitrarily inherits source Space identity,
 - fresh successor Spaces receive compact Matter + lineage storage,
-- retained Matter world placement and rigid velocity-field continuity remain numerically tight,
+- retained Matter world placement and rigid velocity-field continuity remain tight,
 - actor support maps explicitly to an appropriate successor,
 - camera/focus can follow the actor-owned successor,
 - detached successors own independent dynamic providers.
 
-Sharpened P1 telemetry separates the instantaneous handoff from later legitimate solver motion. Representative handoff error is about `0.00000048 m`; later successor motion is measured separately rather than mislabeled as teleportation.
-
 ## Finite Space motion semantics — bounded + integrated
 
-P1 deliberately rejects the old unexplained hard-coded perpetual launch as the Owner-facing motion model.
+Defended:
 
-Current defended behavior:
-
-- release to dynamic representation has zero hidden launch,
-- explicit local central impulse produces solver-owned finite translational motion,
-- identical impulse produces inverse-mass velocity response in the bounded mass challenger,
+- release itself has zero hidden launch,
+- explicit finite central impulse produces solver-owned translation,
+- mass response is inverse-mass in the bounded challenger,
 - explicit torque impulse produces solver-owned angular motion,
-- Owner controls issue discrete pulses rather than setting persistent velocity.
+- Owner controls issue finite pulses rather than persistent velocity assignment.
 
-This is causal research pressure, **not** a vehicle framework or final control scheme.
-
-## Real world reference + camera composition — integrated
-
-P1's visible reference ground is a real collision-bearing `StaticBody3D`, not decorative geometry. The actor can leave Matter, fall and physically land on the visible world reference.
-
-The camera is a dedicated SpringArm-based rig that tracks the actor while retaining contextual pressure from the active/focused Space. Camera quality remains an Owner-test question; the defended claim is composition/collision/context behavior, not good feel.
-
-## Canonical startup and delivery — automated package evidence
-
-The branch's persisted project contract now points to P1 and stores the Owner InputMap actions explicitly.
-
-`p1_canonical_startup_smoke.gd` verifies the configured main scene from `ProjectSettings`, persisted controls and composed P1 roles. Canonical startup passes on Linux and Windows Godot 4.7.2.
-
-`Deliver P1 Owner Candidate` run `#7` / `34964102720` independently re-ran the strict P1 chain before exporting Web and Windows artifacts.
-
-Verified Windows artifact:
-
-- PE32+ Windows GUI x86-64,
-- executable size `109740584` bytes,
-- executable SHA-256 `9a73c77ba3a939a53541670861322ea3c27125e0df9ca20864895a1b458f88ee`,
-- embedded product metadata `FrameMatter P1 Owner Candidate`.
-
-This establishes packageability and canonical consistency, not human playability.
-
-## Evidence harness — defended process property
-
-A PASS marker is no longer sufficient evidence by itself.
-
-Current P1 and historical fast-regression wrappers reject engine/script `ERROR:` lines even if Godot returns exit code 0. The prior false-green P1 evidence was explicitly reset and the P1 layers were re-earned under the strict contract.
-
-Windows import also synchronously waits for the editor process and verifies the global script-class cache before runtime probes.
-
-Validate research harness run `#304` / `34963534245` passed the current-campaign controls and defended fast-invariant set under the stricter historical wrapper.
+This is not a vehicle framework.
 
 ## Exact merged-cuboid collision — scale-pressure + integrated
 
-R1 remains the current provider collision default.
+R1 remains provider collision default.
 
 Defended in tested range:
 
 - exact occupied collision coverage,
 - collider topology/count remains derived rather than Matter identity,
-- dense `14³`: `2744 → 1` reference-to-merged shape,
+- dense `14³`: `2744 → 1`,
 - shell `14³`: `1016 → 6`,
-- large dense/shell provider/rebuild improvements,
 - lifecycle/topology/actor composition remains coherent with merged collision active.
 
-`PER_CELL` remains a historical/reference control, not a scalability candidate.
+`PER_CELL` remains a historical/reference control.
 
-## Post-R1 cost ranking and locality pressure — scale-pressure
+## Update locality pressure — scale-pressure
 
-R2P still establishes that full mesh/cuboid/COM derivation dominates representative post-R1 whole-provider rebuild cost rather than installation of the already-small merged shape set.
+R2P established that post-R1 whole-volume mesh/cuboid/COM derivation dominates representative rebuild cost.
 
-R2A still establishes:
+R2A established:
 
 > **dirty/invalidation partition ≠ final physical representation partition**
 
-Bounded dirty derivation can reduce one-cell edit work by orders of magnitude at larger tested extents, while naive fixed regions can badly inflate dense/shell collider partitions. The locality principle is useful; the fixed-region mechanism remains unpromoted.
+Bounded locality can reduce edit work dramatically while naive fixed regions can badly inflate collider partitions. No final chunk/locality architecture is promoted.
 
-Do not optimize this next unless Owner interaction demonstrates that edit/rebuild latency is materially limiting.
+## Lifecycle timing / observation phases — integrated
 
-## Lifecycle timing / observation phases — integrated and repeatedly reproduced
+Transaction truth, solver truth and synchronized scene-node visibility are related but not universally simultaneous.
 
-Transaction truth, current PhysicsServer/solver truth and synchronized scene-node visibility are related but not universally simultaneous.
-
-Fresh provider RIDs can participate in the upcoming solver step before the corresponding node exposes that new transform at the next synchronization. Tests/debuggers must state which phase they sample; phase advance of an old provider must not be mislabeled as replacement teleportation.
+Tests/debuggers must state which phase they sample. Old-provider phase advance must not be mislabeled as replacement teleportation.
 
 ## Mechanics / binding semantics — bounded
 
 Still defended:
 
-- contact, mechanical constraint and rigid bind are distinct relations,
-- mechanically constrained frames can remain logically distinct,
+- contact, mechanical constraint and rigid bind are distinct,
+- constrained frames can remain logically distinct,
 - Matter lineage can own mechanical anchors through split/partition/contraction,
-- destroyed anchor-owner Matter retires the relation; same-address recreation does not resurrect it,
+- destroyed anchor-owner Matter retires the relation,
+- same-address recreation does not resurrect it,
 - constraint graphs can partition on split and contract on merge,
 - tested pin/hinge/motor/limit state survives bounded succession cases.
 
-Standalone mechanics expansion remains closed until a real integrated consumer asks for another relation.
-
-## Host viability — current layer
-
-Godot 4.7.2 + built-in Jolt remains adequate for the current research layer. No defended result currently requires replacing the host or moving the core research path to native C++.
+Standalone mechanics expansion remains closed until integrated pressure asks for it.
 
 ---
 
-# PROVISIONAL
+# OBSERVABLE / INTERACTION TRUTH
 
-## `LocalMatterSpace` implementation shape
+## Rendered parity harness — DEFENDED AS INSTRUMENTATION
 
-Its semantics are materially better defended than its current class/API/signal/tree layout. Do not turn it into a universal world manager merely because P1 passes.
+G1 established real rendered capture of canonical P1 states:
 
-## Query-based `SpaceQueryCharacter`
+- initial static,
+- released dynamic,
+- dynamic motion,
+- storage-rebased/build state,
+- split successors,
+- frozen successor.
 
-The actor is now a much more credible experimental consumer than P0's probe, but it is not a final game controller. Step/slope feel, arbitrary orientation, reaction-force semantics and broader locomotion design remain open.
+Windows D3D12 Forward+ is the current acceptance-relevant parity lane. Linux Compatibility remains a secondary renderer guardrail because it fails differently and can detect backend-specific regressions.
+
+G1 instrumentation PASS does not mean current visuals pass.
+
+## Lighting/environment — PARTIAL BOUNDED EVIDENCE
+
+G2-A strongly supports that the catastrophic Windows black-collapse came from incorrect ambient-source configuration.
+
+Overall form/depth readability is still **PENDING**. Correcting one catastrophic defect exposed remaining flat/weak presentation rather than completing the visual system.
+
+## Matter granularity — OPEN / CURRENTLY INADEQUATE
+
+Current P1 does not adequately communicate one-cell editing scale without debug targeting cues.
+
+At least two bounded visual-language approaches must be challenged before promotion.
+
+## System state semantics — OPEN / CURRENTLY INADEQUATE
+
+STATIC/DYNAMIC, focus/edit state and topology-successor independence are not yet defended as readable from pixels without engineering telemetry.
+
+## Camera composition — OPEN / CURRENTLY INADEQUATE
+
+SpringArm and logical context tracking are mechanically useful but do not establish useful framing.
+
+Camera acceptance now requires rendered stress evidence across close obstacles, Space edges, moving Space, split, freeze, falls and recovery.
+
+## Interaction hierarchy — OPEN / CURRENTLY INADEQUATE
+
+The default through-wall wire target is classified as engineering debug presentation.
+
+REMOVE / PLACE / EXPAND intent and exact target must become depth-correct and visually unambiguous without obscuring Matter.
+
+## World/motion/topology causality — OPEN
+
+Reference world, release, translation, yaw, split and freeze are not yet defended as causally readable without HUD text.
+
+## UI hierarchy — OPEN / CURRENT DEFAULT FAILS
+
+The failed P1 wide telemetry/control panel is not acceptable as default Owner presentation. Deep telemetry may remain available but must be secondary.
+
+## Cross-layer visible composition — OPEN
+
+A major lesson from failed P1 is that individually sensible systems can compose into a disastrous image. Visible acceptance therefore requires the real Matter + camera + interaction + runtime state together, not isolated fixtures.
+
+---
+
+# PROMOTION / DELIVERY TRUTH
+
+The first P1 delivery pipeline proved packageability, not Owner readiness.
+
+The historical Windows candidate remains useful negative evidence. It is not a current recommendation.
+
+Current Owner delivery is manual-only and hard-blocked by `ci/verify_owner_readiness.py`.
+
+Promotion now requires:
+
+- versioned campaign contract,
+- all required gates PASS,
+- durable evidence for every gate,
+- exact-commit re-verification for every gate,
+- zero open blockers,
+- explicit Owner-attention authorization,
+- exact approved commit matching the packaged commit.
+
+This is the current promotion authority; old wording such as "Owner candidate" in historical evidence does not override it.
+
+---
+
+# PROVISIONAL IMPLEMENTATION SHAPES
+
+## `LocalMatterSpace`
+
+Semantics are better defended than current API/class/signal/tree layout. Do not turn it into a universal world manager merely because P1 passes mechanically.
+
+## `SpaceQueryCharacter`
+
+Credible experimental consumer, not final game controller. Step/slope feel, arbitrary orientation, force exchange and richer locomotion remain open.
 
 ## Dense expandable storage
 
-Useful bounded mechanism for removing invisible local bounds and testing coordinate maintenance. Not a persistence model, streaming scheme, sparse world database or final chunk system.
+Useful bounded mechanism for testing coordinate maintenance and removing invisible local bounds. Not persistence, streaming or final sparse world storage.
 
-## Merged-cuboid compiler implementation
+## Merged-cuboid compiler
 
-The semantic R1 result is stronger than the current deterministic greedy x→y→z algorithm. It is not claimed globally minimal or optimal for future materials/local update economics.
+Semantic R1 result is stronger than the current greedy deterministic algorithm. Global optimality is not claimed.
 
 ## Update-local representation mechanism
 
-R2A supports locality if real pressure requires it, but no dirty-region/mesh/collider/world partition is canonical.
+R2A supports locality under real pressure. No dirty-region/mesh/collider/world partition is canonical.
 
 ## Static/dynamic host strategy
 
-In-place freeze and true provider replacement both remain useful evidence-backed tools. The current P1 Owner loop uses provider transitions because they pressure the defended identity separation; that does not make this the final representation strategy.
+Provider replacement remains a useful pressure on identity separation, not a final universal representation strategy.
 
 ## Physical material model
 
-Current occupied cells use a simple equal-mass-per-cell model. `material_id` is not yet a complete density/friction/material contract.
+Current occupied cells use a simple equal-mass-per-cell model. `material_id` is not yet a complete physical material contract.
 
 ---
 
 # FALSIFIED / REJECTED IN TESTED SCOPE
 
-- Matter truth as scene cubes/nodes rather than logical data.
-- Physics body/shape IDs as durable gameplay identity.
-- Coordinate identity as Matter identity.
-- Scene-tree parenting as the physical model for merely standing on moving constructs.
-- Contact alone as sufficient logical support/frame membership.
-- Query-only reacquisition as lossless topology handoff.
-- One independent PhysicsSystem/domain per construct as a default architecture.
-- Artificially enormous construct mass as a fix for stock kinematic actor→rigid interaction.
-- One box/collider per occupied cell as a scalable final representation.
-- Collider count as semantic occupied-cell count.
-- Solver-observed COM as synchronous authority inside fresh topology transactions.
-- Automatic nearest-cell resurrection of destroyed mechanical anchors.
-- Arbitrary rotated local Space → canonical voxel lattice as trivially lossless reintegration.
-- `RigidBody3D.freeze` as an implicit velocity pause/resume guarantee.
-- Immediately-read node transform after a server step as universal solver truth.
-- Arbitrarily assigning retired source Space identity to one topology fragment.
-- Naive fixed update-region collision partition as automatically superior to global merged collision.
-- Treating arbitrary pitch/roll actor support as solved by the current world-up P1 actor.
-- Hard-coded perpetual launch velocity as the primary Owner-facing meaning of “activate Space”.
-- Treating a PASS marker or process exit code 0 as sufficient evidence when Godot logged an engine/script error.
+Technical shortcuts rejected by evidence:
+
+- Matter truth as scene cubes/nodes,
+- physics body/shape IDs as durable identity,
+- coordinate identity as Matter identity,
+- scene parenting as the physical model for standing on moving constructs,
+- contact alone as logical support membership,
+- query-only reacquisition as lossless topology handoff,
+- one physics domain per construct as default architecture,
+- enormous construct mass as a fix for kinematic actor→rigid interaction,
+- one collider per occupied cell as scalable final representation,
+- collider count as occupied-cell truth,
+- automatic same-address anchor resurrection,
+- arbitrary rotated Space→canonical voxel lattice as trivially lossless reintegration,
+- `RigidBody3D.freeze` as velocity pause/resume guarantee,
+- arbitrary source-Space identity inheritance by one split fragment,
+- naive fixed update regions as automatically superior final collision partition,
+- current world-up actor as arbitrary pitch/roll solution,
+- hard-coded perpetual launch as meaning of Space activation,
+- process exit 0 or PASS marker as sufficient evidence in presence of engine errors.
+
+Quality/process shortcuts now explicitly rejected:
+
+- mechanical integrated PASS as Owner-readiness evidence,
+- scene-node existence as proof of Owner-visible quality,
+- export success as proof of useful artifact,
+- moving an original acceptance property into "nonclaim" because it is hard to test,
+- using the Owner as first reviewer of obvious visible defects,
+- promoting evidence from an older commit as if it certifies a changed candidate,
+- allowing manual delivery action to substitute for readiness evidence.
 
 ---
 
 # OPEN — CURRENT PRIORITIES
 
-## Active: P1 Owner interaction
+## Q0 — quality-system hardening
 
-The P1 automated campaign has reached a deliberate stop condition. The next evidence must come from the Owner candidate, not another autonomous feature tranche.
+Current priority before ordinary visual recovery continues.
 
-Current Owner loop:
+Must establish and validate:
 
-> walk → remove/place → release the logical Space with no hidden launch → apply finite motion → ride/build while moving → cross storage bounds → cut Matter into real successors → freeze a successor → observe what is coherent and what still feels wrong.
+- Campaign Contract ↔ Readiness Manifest consistency,
+- CI validation of evidence references and gate definitions,
+- hard delivery block while readiness is BLOCKED,
+- exact-commit gate binding,
+- synchronized README / ROADMAP / research-state truth,
+- durable process postmortem,
+- no automatic Owner artifact production.
 
-The key question is now:
+## P1 Owner-facing recovery after Q0
 
-> **once the major P0/P0.5 consumer defects are removed, which remaining limitation actually dominates direct use?**
+Sequence remains:
 
-Useful routing after Owner test:
-
-- **interaction/camera/targeting dominates** → fix only the highest-leverage obstacle before another test;
-- **edit latency dominates** → reopen update-local representation using R2A evidence without equating dirty regions with collider chunks;
-- **orientation/steps/slopes/ceilings dominate** → enter the actor/orientation frontier deliberately;
-- **reaction forces / physically meaningful actor↔construct exchange dominate** → design a finite-force interaction challenger rather than granting kinematic authority;
-- **provider/storage/topology continuity fails** → reproduce and reopen the exact invariant, do not hide it in presentation glue;
-- **loop is coherent but uninteresting** → revisit semantic/product pressure before adding infrastructure;
-- **loop is coherent and naturally asks for a mechanism/world interaction** → let that concrete desire select the next integrated subsystem.
+- G2 lighting/environment truth,
+- G3 Matter visual language,
+- G4 camera composition,
+- G5 interaction hierarchy,
+- G6 world/motion/topology causality,
+- G7 evidence-based Godot/host checkpoint,
+- G8 adversarial rehearsal and final readiness audit.
 
 ## Arbitrary orientation / gravity semantics
 
-Still unresolved: world gravity vs frame-local gravity vs adhesion, walkable-surface semantics on pitch/roll supports, and how actor orientation should respond. P0's pitch/roll failure remains valid pressure; P1 has not silently solved it.
+World gravity vs frame-local gravity vs adhesion, walkable-surface semantics on pitch/roll supports and actor orientation remain unresolved.
 
 ## Finite actor↔construct force exchange
 
-P1 avoids accidental push authority; it does not yet establish a satisfying physically meaningful two-way character/construct force model.
+P1 avoids accidental push authority but does not establish a final meaningful two-way force model.
 
-## Canonical-world extraction/reintegration
+## Canonical-world extraction / reintegration
 
-Open until a real world consumer requires moving Matter between canonical lattice and independent local Space. Exact lattice-compatible reintegration and incompatible bake/resample must remain distinct operations.
+Open until a real consumer requires transfer between canonical lattice and independent local Space. Exact lattice-compatible reintegration and incompatible bake/resample remain distinct operations.
 
-## Persistence / durable logical identity
+## Persistence / durable identity
 
 Open until Matter/Space identity must survive save/load/process boundaries.
 
 ## World scale / streaming
 
-Open until a concrete consumer exceeds one manageable local active region. Do not predeclare storage regions, dirty regions, render regions, collider partitions and streaming chunks to be the same thing.
+Open until a concrete consumer exceeds one manageable active region. Do not predeclare storage regions, dirty regions, render regions, collider partitions and streaming chunks to be one ontology.
 
-## Deferred until real pressure
+## Deferred until pressure
 
 - richer/breakable/looped mechanics,
 - multiple simulation domains/migration,
@@ -356,61 +431,14 @@ Open until a concrete consumer exceeds one manageable local active region. Do no
 
 # IMPORTANT SEMANTIC DISTINCTIONS
 
-## Freeze vs provider replacement vs split vs reintegration vs bake
+- **Matter identity ≠ storage coordinate ≠ provider/collider identity.**
+- **logical Space ≠ current provider ≠ simulation domain.**
+- **contact ≠ support relation ≠ mechanical constraint ≠ rigid bind.**
+- **storage rebase ≠ logical Matter mutation.**
+- **provider freeze/replacement ≠ topology split ≠ canonical reintegration ≠ incompatible bake/resample.**
+- **dirty/invalidation region ≠ final collider/render/world partition.**
+- **support-frame transport ≠ gravity/orientation/adhesion semantics.**
+- **finite impulse controls ≠ vehicle framework.**
+- **mechanical truth ≠ observable truth ≠ interaction truth ≠ promotion truth.**
 
-- **In-place freeze:** same dynamic host changes host mode.
-- **Provider replacement:** same logical Space retains Matter/lineage while concrete host changes.
-- **Topology split:** source logical Space retires into fresh successor Spaces through explicit mappings.
-- **Lossless lattice reintegration:** local Space maps exactly into canonical cells under a compatible transform.
-- **Bake/resample:** incompatible pose converts to another lattice and therefore needs an error/provenance policy.
-
-## Space vs representation vs simulation domain
-
-- logical Space is not provider identity,
-- provider is the current engine host,
-- simulation domain is the solver context for direct interaction,
-- these may correlate in small tests but are not defined as identical.
-
-## Transaction vs solver vs synchronized consumer state
-
-- transaction records authoritative mapping/commit state,
-- PhysicsServer may already contain a solver result,
-- scene nodes/consumers may expose the prior synchronized state until the next sync/update phase.
-
-## Contact vs constraint vs rigid bind
-
-- contact creates forces,
-- constraint mechanically couples distinct frames,
-- rigid bind/reframe replaces several rigid frames with one successor under explicit policy.
-
-## Logical Matter vs derived collision
-
-- Matter occupancy is logical truth,
-- collider count/topology is disposable compilation state,
-- exact coverage can survive radical representation changes.
-
-## Storage coordinates vs Matter identity
-
-- storage coordinate frame may rebase,
-- retained Matter lineage remains the logical identity relation,
-- consumers holding local coordinates must explicitly participate in frame maintenance.
-
-## Dirty boundaries vs representation/world identity
-
-- invalidation region = work unit,
-- render region = presentation partition,
-- collider partition = physical representation,
-- streaming/world chunk = world-management policy,
-- none is automatically logical Matter/Space identity.
-
-## Support transport vs gravity/orientation
-
-Keeping an actor at a local support coordinate is not the same as deciding what “down”, adhesion or walkability mean for a tilted frame.
-
----
-
-# CURRENT STOP CONDITION
-
-**Do not autonomously expand P1 with more features before the Owner candidate is used.**
-
-P1 has earned the right to be tested, not the right to be called good. The next major architectural decision should be pulled by direct interaction evidence.
+When a future mechanism or campaign conflicts with a defended distinction, require stronger evidence before weakening it.
