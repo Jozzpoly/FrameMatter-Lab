@@ -2,16 +2,13 @@ extends Node3D
 
 const SPACE_SIZE := Vector3i(16, 6, 16)
 const PLAYER_SPEED := 4.2
-const PLAYER_SPAWN_LOCAL := Vector3(8.5, 1.93, 8.5)
 const TEST_LINEAR_VELOCITY := Vector3(0.65, 0.0, -0.16)
 const TEST_ANGULAR_VELOCITY := Vector3(0.0, 0.22, 0.0)
 
-var _space: LocalMatterSpace
-var _volume: CellVolume
-var _lineage: MatterLineageMap
-var _next_lineage_token := 900001
+var _focus_space: LocalMatterSpace
 var _last_event := "P1 boot"
 
+@onready var _registry: P1SpaceRegistry = $P1SpaceRegistry
 @onready var _player: SpaceQueryCharacter = $P1Player
 @onready var _camera_rig: P1CameraRig = $P1CameraRig
 @onready var _status_label: Label = $HUD/Panel/MarginContainer/VBoxContainer/Status
@@ -20,10 +17,13 @@ var _last_event := "P1 boot"
 
 func _ready() -> void:
 	_ensure_input_actions()
+	_registry.provider_changed.connect(_on_registry_provider_changed)
+	_registry.split_committed.connect(_on_registry_split_committed)
+	_registry.active_spaces_changed.connect(_on_active_spaces_changed)
 	_initialize_space()
 	_camera_rig.set_target(_player)
-	_camera_rig.set_context_target(_space.get_active_provider())
-	_recover_player_to_space()
+	_refresh_camera_context()
+	_recover_player_to_space("initial spawn")
 	_update_hud()
 
 
@@ -34,6 +34,7 @@ func _physics_process(_delta: float) -> void:
 
 
 func _process(_delta: float) -> void:
+	_refresh_focus_from_player()
 	_update_hud()
 
 
@@ -54,7 +55,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func get_space() -> LocalMatterSpace:
-	return _space
+	# Compatibility accessor for the bounded P1 foundation smoke. Internally P1
+	# treats this as the current focus Space, not as a global singleton authority.
+	return _focus_space
+
+
+func get_active_spaces() -> Array[LocalMatterSpace]:
+	return _registry.get_active_spaces()
 
 
 func get_player() -> SpaceQueryCharacter:
@@ -66,18 +73,22 @@ func get_camera_rig() -> P1CameraRig:
 
 
 func activate_dynamic_probe_for_test() -> bool:
-	if _space == null or _space.get_provider_kind() != LocalMatterSpace.ProviderKind.STATIC:
+	if not _is_live_space(_focus_space):
 		return false
-	var accepted := _space.request_dynamic(TEST_LINEAR_VELOCITY, TEST_ANGULAR_VELOCITY)
+	if _focus_space.get_provider_kind() != LocalMatterSpace.ProviderKind.STATIC:
+		return false
+	var accepted := _focus_space.request_dynamic(TEST_LINEAR_VELOCITY, TEST_ANGULAR_VELOCITY)
 	if accepted:
 		_last_event = "test lifecycle activation queued"
 	return accepted
 
 
 func freeze_static_probe_for_test() -> bool:
-	if _space == null or _space.get_provider_kind() != LocalMatterSpace.ProviderKind.DYNAMIC:
+	if not _is_live_space(_focus_space):
 		return false
-	var accepted := _space.request_static()
+	if _focus_space.get_provider_kind() != LocalMatterSpace.ProviderKind.DYNAMIC:
+		return false
+	var accepted := _focus_space.request_static()
 	if accepted:
 		_last_event = "test lifecycle freeze queued"
 	return accepted
@@ -88,53 +99,57 @@ func recover_player_for_test() -> void:
 
 
 func _initialize_space() -> void:
-	if _space != null and is_instance_valid(_space):
-		_space.free()
+	_registry.clear()
+	for child in $Spaces.get_children():
+		child.free()
 
-	_volume = CellVolume.new(SPACE_SIZE)
-	# A deliberately larger authored test deck than P0.5. Editing remains off in
-	# P1-B; P1-C will challenge storage/bounds separately instead of pretending
-	# this fixed volume is already a world model.
-	_volume.fill_box(Vector3i(2, 0, 2), Vector3i(14, 1, 14), CellVolume.SOLID)
-	_volume.fill_box(Vector3i(3, 1, 4), Vector3i(4, 3, 9), CellVolume.SOLID)
-	_volume.fill_box(Vector3i(11, 1, 8), Vector3i(13, 2, 10), CellVolume.SOLID)
-	_volume.fill_box(Vector3i(7, 1, 12), Vector3i(10, 2, 13), CellVolume.SOLID)
+	var volume := CellVolume.new(SPACE_SIZE)
+	# A deliberately larger authored test deck than P0.5. P1-C/D now consume
+	# topology honestly; storage expansion remains a separate pressure probe.
+	volume.fill_box(Vector3i(2, 0, 2), Vector3i(14, 1, 14), CellVolume.SOLID)
+	volume.fill_box(Vector3i(3, 1, 4), Vector3i(4, 3, 9), CellVolume.SOLID)
+	volume.fill_box(Vector3i(11, 1, 8), Vector3i(13, 2, 10), CellVolume.SOLID)
+	volume.fill_box(Vector3i(7, 1, 12), Vector3i(10, 2, 13), CellVolume.SOLID)
 
-	_lineage = MatterLineageMap.new(SPACE_SIZE)
-	_next_lineage_token = 900001
-	for cell in _occupied_cells(_volume):
-		_lineage.set_lineage(cell, _next_lineage_token)
-		_next_lineage_token += 1
+	var lineage := MatterLineageMap.new(SPACE_SIZE)
+	var issuer := MatterLineageIssuer.new(900001)
+	for cell in _occupied_cells(volume):
+		lineage.set_lineage(cell, issuer.allocate())
 
-	_space = LocalMatterSpace.new()
-	_space.name = "P1LocalMatterSpace"
-	_space.mass_per_cell = 1.0
-	_space.dynamic_gravity_scale = 0.0
-	_space.dynamic_linear_damp = 0.0
-	_space.dynamic_angular_damp = 0.0
-	_space.dynamic_can_sleep = false
-	$Spaces.add_child(_space)
-	_space.provider_transition_committed.connect(_on_provider_transition_committed)
-	_space.initialize_static(
-		_volume,
-		_lineage,
+	var space := LocalMatterSpace.new()
+	space.name = "P1LocalMatterSpace"
+	space.lineage_issuer = issuer
+	space.mass_per_cell = 1.0
+	space.dynamic_gravity_scale = 0.0
+	space.dynamic_linear_damp = 0.0
+	space.dynamic_angular_damp = 0.0
+	space.dynamic_can_sleep = false
+	$Spaces.add_child(space)
+	space.initialize_static(
+		volume,
+		lineage,
 		Transform3D(Basis.IDENTITY, Vector3(-8.0, 0.0, -8.0))
 	)
+	_registry.register_space(space)
+	_focus_space = space
 	_last_event = "new logical Space initialized"
 
 
 func _reset_experiment() -> void:
 	_initialize_space()
-	_camera_rig.set_context_target(_space.get_active_provider())
 	_recover_player_to_space("experiment reset")
 	_camera_rig.reset_view()
+	_refresh_camera_context()
 
 
-func _recover_player_to_space(reason: String = "initial spawn") -> void:
-	if _space == null or _space.get_active_provider() == null:
+func _recover_player_to_space(reason: String = "recovery") -> void:
+	var target_space := _focus_space if _is_live_space(_focus_space) else _registry.find_nearest_space(_player.global_position)
+	if not _is_live_space(target_space):
 		return
-	var provider := _space.get_active_provider()
-	_player.global_position = provider.to_global(PLAYER_SPAWN_LOCAL)
+	_focus_space = target_space
+	var provider := target_space.get_active_provider()
+	var spawn_local := _find_safe_spawn_local(target_space)
+	_player.global_position = provider.to_global(spawn_local)
 	_player.desired_local_velocity = Vector3.ZERO
 	_player.world_velocity = Vector3.ZERO
 	_player.jump_requested = false
@@ -143,7 +158,32 @@ func _recover_player_to_space(reason: String = "initial spawn") -> void:
 	_player.support_space = null
 	_player.observed_support_velocity = Vector3.ZERO
 	_player.reset_physics_interpolation()
+	_refresh_camera_context()
 	_last_event = reason
+
+
+func _find_safe_spawn_local(space: LocalMatterSpace) -> Vector3:
+	if space == null or space.volume == null:
+		return Vector3(0.5, 2.0, 0.5)
+	var center := space.get_content_center_local()
+	var best_cell := Vector3i.ZERO
+	var best_score := INF
+	var found := false
+	for cell in _occupied_cells(space.volume):
+		# Prefer high exposed cells near the Matter content center. A cell with
+		# Matter immediately above it is not a useful standing surface.
+		var above := cell + Vector3i.UP
+		if space.volume.in_bounds(above) and space.volume.get_cell(above) != CellVolume.EMPTY:
+			continue
+		var horizontal := Vector2(float(cell.x) + 0.5 - center.x, float(cell.z) + 0.5 - center.z).length_squared()
+		var score := horizontal - float(cell.y) * 0.12
+		if score < best_score:
+			best_score = score
+			best_cell = cell
+			found = true
+	if not found:
+		return center + Vector3.UP * 2.0
+	return Vector3(float(best_cell.x) + 0.5, float(best_cell.y) + 1.0 + _player.height * 0.5 + 0.04, float(best_cell.z) + 0.5)
 
 
 func _update_player_intent() -> void:
@@ -174,33 +214,101 @@ func _update_player_intent() -> void:
 		_player.rotation.y = atan2(-planar.x, -planar.z)
 
 
-func _on_provider_transition_committed(
-	previous_provider_id: int,
-	current_provider_id: int,
-	provider_kind: int
-) -> void:
-	_camera_rig.set_context_target(_space.get_active_provider())
-	_last_event = "provider %d → %d (%s)" % [
-		previous_provider_id,
-		current_provider_id,
-		"DYNAMIC" if provider_kind == LocalMatterSpace.ProviderKind.DYNAMIC else "STATIC",
+func _on_registry_provider_changed(space: LocalMatterSpace) -> void:
+	if space == _focus_space or _player.support_space == space:
+		_focus_space = space
+		_refresh_camera_context()
+		_last_event = "provider replaced in focused Space"
+
+
+func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterSplitResult) -> void:
+	var transferred := false
+	if _player.grounded and _player.support_space == source:
+		var mapping := _find_actor_successor_mapping(result, _player.support_local_center)
+		if not mapping.is_empty():
+			var successor := mapping["space"] as LocalMatterSpace
+			var provider := successor.get_active_provider() if successor != null else null
+			if provider != null:
+				transferred = _player.transfer_support_frame(provider, mapping["local_point"])
+				if transferred:
+					_focus_space = successor
+
+	if not transferred and source == _focus_space:
+		_focus_space = _registry.find_nearest_space(_player.global_position)
+	_refresh_camera_context()
+	_last_event = "topology split → %d live Spaces%s" % [
+		_registry.get_active_count(),
+		"; actor mapped" if transferred else "",
 	]
 
 
+func _find_actor_successor_mapping(result: LocalMatterSplitResult, source_local_center: Vector3) -> Dictionary:
+	var best_cell := Vector3i.ZERO
+	var best_score := INF
+	var found := false
+	for component_variant in result.source_components:
+		var component := component_variant as CellVolume
+		if component == null:
+			continue
+		for cell in _occupied_cells(component):
+			var top_y := float(cell.y) + 1.0
+			if top_y > source_local_center.y + 0.35:
+				continue
+			var dx := float(cell.x) + 0.5 - source_local_center.x
+			var dz := float(cell.z) + 0.5 - source_local_center.z
+			var vertical_gap := max(0.0, source_local_center.y - top_y)
+			var score := dx * dx + dz * dz + vertical_gap * vertical_gap * 0.15
+			if score < best_score:
+				best_score = score
+				best_cell = cell
+				found = true
+	if not found:
+		return {}
+	return result.map_source_local_point_for_cell(best_cell, source_local_center)
+
+
+func _on_active_spaces_changed() -> void:
+	if not _is_live_space(_focus_space):
+		_focus_space = _registry.find_nearest_space(_player.global_position)
+	_refresh_camera_context()
+
+
+func _refresh_focus_from_player() -> void:
+	if _player.support_space != null and _is_live_space(_player.support_space) and _player.support_space != _focus_space:
+		_focus_space = _player.support_space
+		_refresh_camera_context()
+
+
+func _refresh_camera_context() -> void:
+	var context_space := _player.support_space if _is_live_space(_player.support_space) else _focus_space
+	if not _is_live_space(context_space):
+		context_space = _registry.find_nearest_space(_player.global_position)
+	if not _is_live_space(context_space):
+		_camera_rig.set_context_target(null)
+		return
+	_focus_space = context_space
+	_camera_rig.set_context_target(context_space.get_active_provider(), context_space.get_content_center_local())
+
+
+func _is_live_space(space: LocalMatterSpace) -> bool:
+	return space != null and is_instance_valid(space) and not space.is_retired() and space.get_active_provider() != null
+
+
 func _update_hud() -> void:
-	if _space == null or _space.get_active_provider() == null:
+	if not _is_live_space(_focus_space):
 		_status_label.text = "P1 rebuild — no active Space"
 		return
-	var kind := "STATIC" if _space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC else "DYNAMIC"
+	var kind := "STATIC" if _focus_space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC else "DYNAMIC"
 	var support := "world"
-	if _player.support_space == _space:
+	if _player.support_space != null and _is_live_space(_player.support_space):
 		support = "local Space"
 	elif not _player.grounded:
 		support = "airborne"
-	_status_label.text = "P1 INTERACTIVE FOUNDATION   •   %s   •   actor %s   •   support %s" % [
+	_status_label.text = "P1 INTERACTIVE FOUNDATION   •   %s   •   actor %s   •   support %s   •   live Spaces %d" % [
 		kind,
 		"grounded" if _player.grounded else "airborne",
 		support,
+		_registry.get_active_count(),
 	]
 	_hint_label.text = "WASD move   Space jump   MMB orbit   wheel zoom   Home camera   K recover   R reset\n%s" % _last_event
 
