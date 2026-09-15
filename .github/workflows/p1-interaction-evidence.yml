@@ -23,9 +23,14 @@ jobs:
   windows-forward-plus-interaction:
     runs-on: windows-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        presentation: [legacy, face_led]
     env:
-      P1_INTERACTION_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-interaction-evidence\canonical
+      P1_INTERACTION_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-interaction-evidence\${{ matrix.presentation }}
       P1_INTERACTION_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      P1_TARGET_PRESENTATION_VARIANT: ${{ matrix.presentation }}
     steps:
       - name: Checkout exact source commit
         uses: actions/checkout@v6
@@ -40,6 +45,7 @@ jobs:
             throw "G5 evidence checkout mismatch: expected $env:P1_INTERACTION_SOURCE_SHA, got $checkedOut"
           }
           "G5 exact source checkout: $checkedOut"
+          "G5 presentation variant: $env:P1_TARGET_PRESENTATION_VARIANT"
 
       - name: Setup Godot 4.7.2
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -52,7 +58,7 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_import.ps1
 
-      - name: Capture G5 interaction acquisition evidence
+      - name: Capture G5 interaction presentation evidence
         shell: pwsh
         run: ./ci/run_godot_interaction_capture.ps1 -OutputDir $env:P1_INTERACTION_EVIDENCE_DIR
 
@@ -72,14 +78,15 @@ jobs:
           renderer=Godot 4.7.2 Forward+ / D3D12
           source_scene=res://p1/main.tscn
           capture_script=res://tests/p1_interaction_visual_capture.gd
-          evidence_scope=canonical-center baseline plus explicit-screen acquisition A/B
+          presentation_variant=$env:P1_TARGET_PRESENTATION_VARIANT
+          evidence_scope=REMOVE/PLACE plus same-frame visible EXPAND center-miss versus explicit-screen acquisition
           "@ | Set-Content -Path (Join-Path $env:P1_INTERACTION_EVIDENCE_DIR "INTERACTION-EVIDENCE-INFO.txt")
 
       - name: Upload G5 interaction evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P1-G5-Interaction-Evidence-Windows-Canonical
-          path: artifacts/p1-interaction-evidence/canonical
+          name: FrameMatter-P1-G5-Interaction-Evidence-Windows-${{ matrix.presentation }}
+          path: artifacts/p1-interaction-evidence/${{ matrix.presentation }}
           retention-days: 30
           if-no-files-found: warn
