@@ -108,7 +108,11 @@ def main() -> None:
     check(any("previous contract integrity mismatch" in error for error in errors),
           "tampered predecessor binding is rejected")
 
+    # This synthetic case must stay OPEN even when the live campaign has
+    # legitimately advanced to FROZEN; otherwise the self-test accidentally
+    # inherits live state and stops exercising the rule it names.
     moving_open = copy.deepcopy(manifest)
+    moving_open["candidate_state"] = "OPEN"
     moving_open["candidate_runtime_commit"] = "0123456789abcdef0123456789abcdef01234567"
     errors = structural_errors(moving_open, contract)
     check(any("OPEN candidate_state" in error for error in errors),
