@@ -29,6 +29,7 @@ var support_local_center := Vector3.ZERO
 var observed_support_velocity := Vector3.ZERO
 var observed_ground_acquisitions := 0
 var observed_support_transfers := 0
+var observed_support_rebases := 0
 var observed_wall_blocks := 0
 var observed_ceiling_blocks := 0
 
@@ -65,6 +66,27 @@ func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -
 	observed_support_velocity = world_velocity
 	_topology_validation_grace_steps = 1
 	observed_support_transfers += 1
+	return true
+
+
+func rebase_support_local_coordinates(local_shift: Vector3) -> bool:
+	# Storage-frame rebasing changes only the provider-local coordinate system.
+	# The logical support relation and the actor's world point must stay intact.
+	if not grounded or support_body == null or not is_instance_valid(support_body):
+		return false
+	if support_space == null or not is_instance_valid(support_space):
+		return false
+	if support_space.get_active_provider() != support_body:
+		return false
+
+	support_local_center += local_shift
+	global_position = support_body.to_global(support_local_center)
+	_previous_support_point_world = global_position
+	_has_support_sample = true
+	world_velocity = _rigid_velocity_at_point(support_body, global_position)
+	observed_support_velocity = world_velocity
+	_topology_validation_grace_steps = 1
+	observed_support_rebases += 1
 	return true
 
 
