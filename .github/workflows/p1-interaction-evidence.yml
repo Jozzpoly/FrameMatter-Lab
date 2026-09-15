@@ -26,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        presentation: [legacy, face_led]
+        presentation: [legacy, face_led, pointer_face_led]
     env:
       P1_INTERACTION_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-interaction-evidence\${{ matrix.presentation }}
       P1_INTERACTION_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -79,7 +79,7 @@ jobs:
           source_scene=res://p1/main.tscn
           capture_script=res://tests/p1_interaction_visual_capture.gd
           presentation_variant=$env:P1_TARGET_PRESENTATION_VARIANT
-          evidence_scope=REMOVE/PLACE plus same-frame visible EXPAND center-miss versus explicit-screen acquisition
+          evidence_scope=REMOVE/PLACE/EXPAND interaction hierarchy with center and explicit-screen acquisition comparison
           "@ | Set-Content -Path (Join-Path $env:P1_INTERACTION_EVIDENCE_DIR "INTERACTION-EVIDENCE-INFO.txt")
 
       - name: Upload G5 interaction evidence
