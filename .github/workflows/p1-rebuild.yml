@@ -39,3 +39,6 @@ jobs:
 
       - name: Run P1 multi-Space registry probe
         run: godot --headless --path . --script res://tests/p1_space_registry_probe.gd
+
+      - name: Run P1 live topology consumer probe
+        run: godot --headless --path . --script res://tests/p1_live_topology_consumer_probe.gd
