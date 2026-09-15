@@ -23,14 +23,9 @@ jobs:
   windows-forward-plus-interaction:
     runs-on: windows-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        presentation: [legacy, face_led, pointer_face_led]
     env:
-      P1_INTERACTION_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-interaction-evidence\${{ matrix.presentation }}
+      P1_INTERACTION_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-interaction-evidence\production
       P1_INTERACTION_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      P1_TARGET_PRESENTATION_VARIANT: ${{ matrix.presentation }}
     steps:
       - name: Checkout exact source commit
         uses: actions/checkout@v6
@@ -45,7 +40,6 @@ jobs:
             throw "G5 evidence checkout mismatch: expected $env:P1_INTERACTION_SOURCE_SHA, got $checkedOut"
           }
           "G5 exact source checkout: $checkedOut"
-          "G5 presentation variant: $env:P1_TARGET_PRESENTATION_VARIANT"
 
       - name: Setup Godot 4.7.2
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -58,7 +52,7 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_import.ps1
 
-      - name: Capture G5 interaction presentation evidence
+      - name: Capture promoted G5 production evidence
         shell: pwsh
         run: ./ci/run_godot_interaction_capture.ps1 -OutputDir $env:P1_INTERACTION_EVIDENCE_DIR
 
@@ -69,7 +63,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $env:P1_INTERACTION_EVIDENCE_DIR | Out-Null
           $checkedOut = (git rev-parse HEAD).Trim()
           @"
-          FrameMatter P1 G5 interaction evidence
+          FrameMatter P1 G5 production interaction evidence
           workflow_run=$env:GITHUB_RUN_ID
           source_commit=$env:P1_INTERACTION_SOURCE_SHA
           checked_out_commit=$checkedOut
@@ -78,15 +72,15 @@ jobs:
           renderer=Godot 4.7.2 Forward+ / D3D12
           source_scene=res://p1/main.tscn
           capture_script=res://tests/p1_interaction_visual_capture.gd
-          presentation_variant=$env:P1_TARGET_PRESENTATION_VARIANT
-          evidence_scope=REMOVE/PLACE/EXPAND interaction hierarchy with center and explicit-screen acquisition comparison
+          interaction_policy=production pointer acquisition + HUD exclusion + depth-tested face-led cue
+          evidence_scope=REMOVE / PLACE / EXPAND prediction hierarchy
           "@ | Set-Content -Path (Join-Path $env:P1_INTERACTION_EVIDENCE_DIR "INTERACTION-EVIDENCE-INFO.txt")
 
       - name: Upload G5 interaction evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P1-G5-Interaction-Evidence-Windows-${{ matrix.presentation }}
-          path: artifacts/p1-interaction-evidence/${{ matrix.presentation }}
+          name: FrameMatter-P1-G5-Interaction-Evidence-Windows-Production
+          path: artifacts/p1-interaction-evidence/production
           retention-days: 30
           if-no-files-found: warn
