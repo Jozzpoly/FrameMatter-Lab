@@ -1,5 +1,7 @@
 extends RefCounted
 
+const StateSemanticsVariants = preload("res://tests/support/p1_state_semantics_variants.gd")
+
 # Test-only presentation challengers. None of these mechanisms is production
 # authority until rendered evidence justifies promotion.
 
@@ -17,6 +19,10 @@ const META_METALLIC := &"g3_original_metallic"
 
 static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 	if variant == "canonical" or variant == "balanced_fill":
+		return
+
+	if variant == "state_material" or variant == "state_contour":
+		StateSemanticsVariants.refresh(p1, variant, failures)
 		return
 
 	if variant == "balanced_fill_ssao":
@@ -40,9 +46,9 @@ static func refresh(p1: Node, variant: String, failures: Array[String]) -> void:
 		return
 
 	if variant == "surface_cells_clean_reference":
-		# G3 promotion equivalence lane: remove the production presenter, then
-		# render the accepted test-only clean 0.14 challenger on the same scene.
-		# This prevents a false grid+grid comparison after canonical promotion.
+		# Historical G3 promotion-equivalence lane. Production presentation is
+		# disabled before applying the accepted test-only clean 0.14 challenger,
+		# avoiding a false grid+grid comparison.
 		var presenter := p1.get_node_or_null("P1MatterSurfaceGrid") as P1MatterSurfaceGrid
 		if presenter == null:
 			failures.append("clean reference cannot resolve production P1MatterSurfaceGrid")
