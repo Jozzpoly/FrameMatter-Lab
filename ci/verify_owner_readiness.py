@@ -3,8 +3,8 @@
 
 Ordinary CI uses --mode validate so a deliberately BLOCKED campaign remains
 valid while work is in progress. Owner delivery uses --mode delivery, which
-requires every promotion condition to be satisfied and bound to the exact
-commit being packaged.
+requires every promotion condition to be satisfied and every required gate to
+have been re-verified on the exact commit being packaged.
 """
 
 from __future__ import annotations
@@ -45,8 +45,8 @@ def fail(errors: list[str]) -> None:
 def validate_structure(data: dict[str, Any], repo_root: pathlib.Path) -> list[str]:
     errors: list[str] = []
 
-    if data.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    if data.get("schema_version") != 2:
+        errors.append("schema_version must be 2")
 
     for key in ("campaign_id", "candidate_label", "source_branch", "owner_goal", "owner_visible_surface"):
         value = data.get(key)
@@ -93,15 +93,26 @@ def validate_structure(data: dict[str, Any], repo_root: pathlib.Path) -> list[st
         gate = gates.get(gate_name)
         if not isinstance(gate, dict):
             continue
+
         status = gate.get("status")
         if status not in VALID_STATUSES:
             errors.append(f"gate {gate_name} has invalid status {status!r}")
+
+        evidence_type = gate.get("evidence_type")
+        if not isinstance(evidence_type, str) or not evidence_type.strip():
+            errors.append(f"gate {gate_name} evidence_type must be non-empty")
+
+        verified_commit = gate.get("verified_commit")
+        if not isinstance(verified_commit, str):
+            errors.append(f"gate {gate_name} verified_commit must be a string")
+
         evidence = gate.get("evidence")
         if not isinstance(evidence, list) or not all(isinstance(item, str) and item.strip() for item in evidence):
             errors.append(f"gate {gate_name} evidence must be a list of non-empty paths")
             continue
         if status == "PASS" and not evidence:
             errors.append(f"gate {gate_name} is PASS but has no evidence")
+
         for evidence_path in evidence:
             # Only repository-relative evidence paths are accepted. External run IDs
             # may be recorded inside those durable evidence records.
@@ -116,6 +127,7 @@ def validate_structure(data: dict[str, Any], repo_root: pathlib.Path) -> list[st
 
 def enforce_delivery(data: dict[str, Any], commit: str) -> list[str]:
     errors: list[str] = []
+    commit = commit.strip().lower()
 
     if data.get("status") != "READY_FOR_OWNER":
         errors.append("campaign status is not READY_FOR_OWNER")
@@ -130,6 +142,14 @@ def enforce_delivery(data: dict[str, Any], commit: str) -> list[str]:
     if blockers:
         errors.append(f"{len(blockers)} open blocker(s) remain")
 
+    approved_commit = str(data.get("approved_commit", "")).strip().lower()
+    if not approved_commit:
+        errors.append("approved_commit is empty")
+    elif not commit:
+        errors.append("current commit could not be resolved")
+    elif approved_commit != commit:
+        errors.append(f"approved_commit {approved_commit} does not match exact delivery commit {commit}")
+
     gates = data.get("required_gates", {})
     for gate_name in REQUIRED_GATES:
         gate = gates.get(gate_name, {})
@@ -138,14 +158,15 @@ def enforce_delivery(data: dict[str, Any], commit: str) -> list[str]:
         if not gate.get("evidence"):
             errors.append(f"required gate {gate_name} has no evidence")
 
-    approved_commit = str(data.get("approved_commit", "")).strip().lower()
-    commit = commit.strip().lower()
-    if not approved_commit:
-        errors.append("approved_commit is empty")
-    elif not commit:
-        errors.append("current commit could not be resolved")
-    elif approved_commit != commit:
-        errors.append(f"approved_commit {approved_commit} does not match exact delivery commit {commit}")
+        verified_commit = str(gate.get("verified_commit", "")).strip().lower()
+        if not verified_commit:
+            errors.append(f"required gate {gate_name} has no verified_commit")
+        elif not commit:
+            errors.append(f"required gate {gate_name} cannot be matched because current commit is empty")
+        elif verified_commit != commit:
+            errors.append(
+                f"required gate {gate_name} was verified on {verified_commit}, not exact delivery commit {commit}"
+            )
 
     return errors
 
@@ -182,7 +203,7 @@ def main() -> None:
         print(
             "OWNER_READINESS_DELIVERY_PASS: every required quality plane is PASS, "
             "evidence exists, no blockers remain, Owner attention is authorized, "
-            "and readiness is bound to the exact delivery commit."
+            "and every gate is verified on the exact delivery commit."
         )
     else:
         pending = [
@@ -190,9 +211,14 @@ def main() -> None:
             for name, gate in data["required_gates"].items()
             if gate.get("status") != "PASS"
         ]
+        unbound = [
+            name
+            for name, gate in data["required_gates"].items()
+            if not str(gate.get("verified_commit", "")).strip()
+        ]
         print(
-            "OWNER_READINESS_MANIFEST_VALID: status=%s promotion_authorized=%s pending_or_failed=%d"
-            % (data["status"], data["promotion_authorized"], len(pending))
+            "OWNER_READINESS_MANIFEST_VALID: status=%s promotion_authorized=%s pending_or_failed=%d unbound_gates=%d"
+            % (data["status"], data["promotion_authorized"], len(pending), len(unbound))
         )
 
 
