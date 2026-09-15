@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://p1/camera_rig.gd" id="1_camera"]
+
+[sub_resource type="SphereShape3D" id="CameraProbe"]
+radius = 0.18
+
+[node name="P1CameraRig" type="Node3D"]
+script = ExtResource("1_camera")
+
+[node name="YawPivot" type="Node3D" parent="."]
+
+[node name="PitchPivot" type="Node3D" parent="YawPivot"]
+
+[node name="SpringArm3D" type="SpringArm3D" parent="YawPivot/PitchPivot"]
+spring_length = 7.2
+margin = 0.12
+collision_mask = 1
+shape = SubResource("CameraProbe")
+
+[node name="Camera3D" type="Camera3D" parent="YawPivot/PitchPivot/SpringArm3D"]
+current = true
+fov = 65.0
+near = 0.05
