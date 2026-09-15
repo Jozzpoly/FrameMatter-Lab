@@ -8,14 +8,14 @@ extends Node3D
 # Current scope remains world-up / translation+yaw. Arbitrary frame-relative
 # gravity and adhesion are still an explicit future semantic frontier.
 
-@export var radius := 0.32
-@export var height := 1.80
-@export var gravity_acceleration := 18.0
-@export var jump_speed := 5.8
-@export var ground_snap_distance := 0.24
-@export var ground_normal_min_y := 0.70
-@export var query_margin := 0.002
-@export var max_slide_iterations := 4
+@export var radius: float = 0.32
+@export var height: float = 1.80
+@export var gravity_acceleration: float = 18.0
+@export var jump_speed: float = 5.8
+@export var ground_snap_distance: float = 0.24
+@export var ground_normal_min_y: float = 0.70
+@export var query_margin: float = 0.002
+@export var max_slide_iterations: int = 4
 @export_flags_3d_physics var collision_mask := 1
 
 var desired_local_velocity := Vector3.ZERO
@@ -41,7 +41,7 @@ var _topology_validation_grace_steps := 0
 func _ready() -> void:
 	_shape = CapsuleShape3D.new()
 	_shape.radius = radius
-	_shape.height = max(height, radius * 2.0)
+	_shape.height = maxf(height, radius * 2.0)
 
 
 func request_jump() -> void:
@@ -51,7 +51,7 @@ func request_jump() -> void:
 func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -> bool:
 	if not grounded:
 		return false
-	var resolved_support := _resolve_support_frame(new_support)
+	var resolved_support: Node3D = _resolve_support_frame(new_support)
 	if resolved_support == null or not is_instance_valid(resolved_support):
 		return false
 
@@ -86,12 +86,12 @@ func _step_grounded(delta: float) -> void:
 		_step_airborne(delta)
 		return
 
-	var anchor_world := support_body.to_global(support_local_center)
-	var support_velocity := _support_velocity(anchor_world, delta)
+	var anchor_world: Vector3 = support_body.to_global(support_local_center)
+	var support_velocity: Vector3 = _support_velocity(anchor_world, delta)
 	observed_support_velocity = support_velocity
 	global_position = anchor_world
 
-	var desired_world := support_body.global_transform.basis.orthonormalized() * desired_local_velocity
+	var desired_world: Vector3 = support_body.global_transform.basis.orthonormalized() * desired_local_velocity
 	desired_world.y = 0.0
 
 	if jump_requested:
@@ -101,10 +101,10 @@ func _step_grounded(delta: float) -> void:
 		_move_with_slide(world_velocity * delta)
 		return
 
-	var before := global_position
+	var before: Vector3 = global_position
 	_move_with_slide(desired_world * delta)
-	var actual_motion := global_position - before
-	world_velocity = support_velocity + actual_motion / max(delta, 0.000001)
+	var actual_motion: Vector3 = global_position - before
+	world_velocity = support_velocity + actual_motion / maxf(delta, 0.000001)
 
 	if _topology_validation_grace_steps > 0:
 		_topology_validation_grace_steps -= 1
@@ -118,13 +118,13 @@ func _step_grounded(delta: float) -> void:
 
 
 func _step_airborne(delta: float) -> void:
-	var desired_world := desired_local_velocity
+	var desired_world: Vector3 = desired_local_velocity
 	desired_world.y = 0.0
 	world_velocity.x = desired_world.x
 	world_velocity.z = desired_world.z
 	world_velocity.y -= gravity_acceleration * delta
 
-	var vertical_before := world_velocity.y
+	var vertical_before: float = world_velocity.y
 	_move_with_slide(world_velocity * delta)
 	if vertical_before <= 0.0 and _snap_and_attach_ground():
 		world_velocity = _rigid_velocity_at_point(support_body, global_position)
@@ -132,24 +132,24 @@ func _step_airborne(delta: float) -> void:
 
 
 func _move_with_slide(motion: Vector3) -> void:
-	var remaining := motion
+	var remaining: Vector3 = motion
 	for _iteration in range(max_slide_iterations):
 		if remaining.length_squared() <= 0.0000000001:
 			break
 
-		var cast := _cast_motion(remaining)
+		var cast: PackedFloat32Array = _cast_motion(remaining)
 		if cast.is_empty():
 			global_position += remaining
 			break
 
-		var safe := clampf(cast[0], 0.0, 1.0)
-		var unsafe := clampf(cast[1], safe, 1.0)
+		var safe: float = clampf(cast[0], 0.0, 1.0)
+		var unsafe: float = clampf(cast[1], safe, 1.0)
 		if safe >= 0.999999:
 			global_position += remaining
 			break
 
 		global_position += remaining * safe
-		var hit := _rest_info_at_unsafe_fraction(remaining, safe, unsafe)
+		var hit: Dictionary = _rest_info_at_unsafe_fraction(remaining, safe, unsafe)
 		var normal := Vector3.ZERO
 		if not hit.is_empty():
 			normal = Vector3(hit.get("normal", Vector3.ZERO)).normalized()
@@ -165,7 +165,7 @@ func _move_with_slide(motion: Vector3) -> void:
 		if normal.y > ground_normal_min_y and world_velocity.y < 0.0:
 			world_velocity.y = 0.0
 
-		var leftover := remaining * (1.0 - safe)
+		var leftover: Vector3 = remaining * (1.0 - safe)
 		remaining = leftover.slide(normal)
 		# Keep the query shape just outside the contacted surface instead of
 		# relying on deep-overlap recovery in the next slide iteration.
@@ -173,39 +173,39 @@ func _move_with_slide(motion: Vector3) -> void:
 
 
 func _snap_and_attach_ground() -> bool:
-	var down := Vector3.DOWN * ground_snap_distance
-	var cast := _cast_motion(down)
+	var down: Vector3 = Vector3.DOWN * ground_snap_distance
+	var cast: PackedFloat32Array = _cast_motion(down)
 	if cast.is_empty():
 		return false
-	var safe := clampf(cast[0], 0.0, 1.0)
-	var unsafe := clampf(cast[1], safe, 1.0)
+	var safe: float = clampf(cast[0], 0.0, 1.0)
+	var unsafe: float = clampf(cast[1], safe, 1.0)
 	if safe >= 0.999999:
 		return false
 
 	# `_rest_info_at_unsafe_fraction()` samples relative to the already-reached
 	# safe position (the same contract used by `_move_with_slide`). Ground snap
 	# must therefore advance temporarily before asking for the overlap normal.
-	var start_position := global_position
+	var start_position: Vector3 = global_position
 	global_position += down * safe
-	var hit := _rest_info_at_unsafe_fraction(down, safe, unsafe)
+	var hit: Dictionary = _rest_info_at_unsafe_fraction(down, safe, unsafe)
 	if hit.is_empty():
 		global_position = start_position
 		return false
-	var normal := Vector3(hit.get("normal", Vector3.ZERO)).normalized()
+	var normal: Vector3 = Vector3(hit.get("normal", Vector3.ZERO)).normalized()
 	if normal.y < ground_normal_min_y:
 		global_position = start_position
 		return false
 
-	var collider := _collider_from_rest_info(hit)
+	var collider: Node3D = _collider_from_rest_info(hit)
 	if collider == null:
 		global_position = start_position
 		return false
-	var resolved_support := _resolve_support_frame(collider)
+	var resolved_support: Node3D = _resolve_support_frame(collider)
 	if resolved_support == null:
 		global_position = start_position
 		return false
 
-	var changed_support := resolved_support != support_body
+	var changed_support: bool = resolved_support != support_body
 	support_body = resolved_support
 	support_space = _resolve_support_space(resolved_support)
 	grounded = true
@@ -237,13 +237,13 @@ func _rest_info_at_unsafe_fraction(
 ) -> Dictionary:
 	var query := PhysicsShapeQueryParameters3D.new()
 	query.shape = _shape
-	var sample_fraction := unsafe_fraction
+	var sample_fraction: float = unsafe_fraction
 	if sample_fraction <= safe_fraction + 0.000001 and motion.length() > 0.000001:
-		sample_fraction = min(1.0, safe_fraction + min(0.02, query_margin * 2.0 / motion.length()))
-	var sample_transform := global_transform
+		sample_fraction = minf(1.0, safe_fraction + minf(0.02, query_margin * 2.0 / motion.length()))
+	var sample_transform: Transform3D = global_transform
 	# global_position has already advanced by safe_fraction. Sample only the
 	# remaining fraction between safe and the first unsafe position.
-	sample_transform.origin += motion * max(0.0, sample_fraction - safe_fraction)
+	sample_transform.origin += motion * maxf(0.0, sample_fraction - safe_fraction)
 	query.transform = sample_transform
 	query.margin = query_margin
 	query.collision_mask = collision_mask
@@ -253,10 +253,10 @@ func _rest_info_at_unsafe_fraction(
 
 
 func _collider_from_rest_info(hit: Dictionary) -> Node3D:
-	var collider_id := int(hit.get("collider_id", 0))
+	var collider_id: int = int(hit.get("collider_id", 0))
 	if collider_id == 0:
 		return null
-	var object := instance_from_id(collider_id)
+	var object: Object = instance_from_id(collider_id)
 	return object as Node3D
 
 
@@ -268,7 +268,7 @@ func _support_velocity(anchor_world: Vector3, delta: float) -> Vector3:
 	return (anchor_world - _previous_support_point_world) / delta
 
 
-func _detach_from_support(preserve_velocity := true) -> void:
+func _detach_from_support(preserve_velocity: bool = true) -> void:
 	if preserve_velocity and support_body != null and is_instance_valid(support_body):
 		world_velocity = _rigid_velocity_at_point(support_body, global_position)
 	grounded = false
@@ -282,7 +282,7 @@ func _detach_from_support(preserve_velocity := true) -> void:
 func _refresh_support_provider_from_space() -> void:
 	if support_space == null or not is_instance_valid(support_space):
 		return
-	var current_provider := support_space.get_active_provider()
+	var current_provider: Node3D = support_space.get_active_provider()
 	if current_provider == null or current_provider == support_body:
 		return
 
@@ -326,7 +326,7 @@ func _rigid_velocity_at_point(body: Node3D, world_point: Vector3) -> Vector3:
 	if not (body is RigidBody3D):
 		return Vector3.ZERO
 	var rigid := body as RigidBody3D
-	var center_world := rigid.global_position
+	var center_world: Vector3 = rigid.global_position
 	if body is ConstructBody:
 		var construct := body as ConstructBody
 		center_world = construct.to_global(construct.matter_center_of_mass_local)
