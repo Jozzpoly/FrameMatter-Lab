@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://p1/matter_interactor.gd" id="1_interactor"]
+
+[node name="P1MatterInteractor" type="Node3D"]
+script = ExtResource("1_interactor")
+
+[node name="TargetOutline" type="MeshInstance3D" parent="."]
+visible = false
+cast_shadow = 0
