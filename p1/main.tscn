@@ -10,9 +10,10 @@
 [sub_resource type="Environment" id="Environment_P1"]
 background_mode = 1
 background_color = Color(0.10, 0.16, 0.23, 1)
-ambient_light_source = 3
+ambient_light_source = 2
 ambient_light_color = Color(0.56, 0.65, 0.76, 1)
 ambient_light_energy = 0.65
+ambient_light_sky_contribution = 0.0
 
 [sub_resource type="BoxMesh" id="GroundMesh"]
 size = Vector3(64, 0.5, 64)
