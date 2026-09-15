@@ -10,6 +10,7 @@ on:
       - "actor/**"
       - "space/**"
       - "tests/p1_visual_capture.gd"
+      - "ci/run_godot_visual_capture.ps1"
       - "project.godot"
       - ".github/workflows/p1-visual-evidence.yml"
   workflow_dispatch:
@@ -19,17 +20,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  rendered-baseline:
-    name: rendered-baseline-${{ matrix.renderer }}
-    strategy:
-      fail-fast: false
-      matrix:
-        renderer: [gl_compatibility, forward_plus]
+  linux-compatibility:
+    name: rendered-linux-gl-compatibility
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     env:
       LIBGL_ALWAYS_SOFTWARE: "1"
-      P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/p1-visual-evidence/${{ matrix.renderer }}
+      P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/p1-visual-evidence/linux-gl-compatibility
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,24 +43,22 @@ jobs:
 
       - name: Capture rendered P1 evidence under Xvfb
         shell: bash
-        env:
-          P1_RENDERER: ${{ matrix.renderer }}
         run: |
           set -euo pipefail
           mkdir -p "$P1_VISUAL_EVIDENCE_DIR"
           set +e
-          xvfb-run -a godot --path . --audio-driver Dummy --rendering-method "$P1_RENDERER" --script res://tests/p1_visual_capture.gd 2>&1 | tee "/tmp/p1_visual_capture_${P1_RENDERER}.log"
+          xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/p1_visual_capture.gd 2>&1 | tee /tmp/p1_visual_capture.log
           status=${PIPESTATUS[0]}
           set -e
           if [ "$status" -ne 0 ]; then
             echo "Rendered capture process failed with exit code $status"
             exit "$status"
           fi
-          if grep -Eq 'SCRIPT ERROR:|ERROR:' "/tmp/p1_visual_capture_${P1_RENDERER}.log"; then
+          if grep -Eq 'SCRIPT ERROR:|ERROR:' /tmp/p1_visual_capture.log; then
             echo "Rendered capture emitted engine/script ERROR output"
             exit 1
           fi
-          if ! grep -q 'P1_VISUAL_CAPTURE_PASS' "/tmp/p1_visual_capture_${P1_RENDERER}.log"; then
+          if ! grep -q 'P1_VISUAL_CAPTURE_PASS' /tmp/p1_visual_capture.log; then
             echo "Rendered capture did not emit the expected PASS marker"
             exit 1
           fi
@@ -71,24 +66,69 @@ jobs:
           test -f "$P1_VISUAL_EVIDENCE_DIR/02_dynamic_motion.png"
           test -f "$P1_VISUAL_EVIDENCE_DIR/04_split_successors.png"
 
-      - name: Record rendered evidence provenance
+      - name: Record Linux rendered evidence provenance
         shell: bash
-        env:
-          P1_RENDERER: ${{ matrix.renderer }}
         run: |
           {
             echo "FrameMatter P1 rendered visual evidence"
             echo "workflow_run=${GITHUB_RUN_ID}"
             echo "commit=${GITHUB_SHA}"
-            echo "renderer=Godot 4.7.2 ${P1_RENDERER} under Xvfb / software runner"
+            echo "platform=ubuntu-latest"
+            echo "renderer=Godot 4.7.2 gl_compatibility under Xvfb / Mesa llvmpipe"
             echo "audio_driver=Dummy"
             echo "source_scene=res://p1/main.tscn"
             echo "capture_script=res://tests/p1_visual_capture.gd"
           } > "$P1_VISUAL_EVIDENCE_DIR/VISUAL-EVIDENCE-INFO.txt"
 
-      - name: Upload rendered visual evidence
+      - name: Upload Linux rendered visual evidence
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P1-Rendered-Evidence-${{ matrix.renderer }}
-          path: artifacts/p1-visual-evidence/${{ matrix.renderer }}
+          name: FrameMatter-P1-Rendered-Evidence-Linux-Compatibility
+          path: artifacts/p1-visual-evidence/linux-gl-compatibility
+          retention-days: 30
+
+  windows-default:
+    name: rendered-windows-project-default
+    runs-on: windows-latest
+    timeout-minutes: 8
+    env:
+      P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-visual-evidence\windows-project-default
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict synchronous project import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Capture rendered P1 evidence with project-default renderer
+        shell: pwsh
+        run: ./ci/run_godot_visual_capture.ps1 -OutputDir $env:P1_VISUAL_EVIDENCE_DIR
+
+      - name: Record Windows rendered evidence provenance
+        shell: pwsh
+        run: |
+          @"
+          FrameMatter P1 rendered visual evidence
+          workflow_run=$env:GITHUB_RUN_ID
+          commit=$env:GITHUB_SHA
+          platform=windows-latest
+          renderer=Godot 4.7.2 project-default renderer
+          audio_driver=Dummy
+          source_scene=res://p1/main.tscn
+          capture_script=res://tests/p1_visual_capture.gd
+          "@ | Set-Content -Path (Join-Path $env:P1_VISUAL_EVIDENCE_DIR "VISUAL-EVIDENCE-INFO.txt")
+
+      - name: Upload Windows rendered visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-Rendered-Evidence-Windows-Default
+          path: artifacts/p1-visual-evidence/windows-project-default
           retention-days: 30
