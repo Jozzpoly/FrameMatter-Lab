@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://p1/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://p1/space_control.gd" id="6_space_control"]
 [ext_resource type="Script" path="res://p1/matter_surface_grid.gd" id="7_surface_grid"]
 [ext_resource type="Script" path="res://p1/matter_state_presentation.gd" id="8_state_presentation"]
+[ext_resource type="Script" path="res://p1/matter_target_presentation.gd" id="9_target_presentation"]
 
 [sub_resource type="Environment" id="Environment_P1"]
 background_mode = 1
@@ -104,6 +105,9 @@ script = ExtResource("7_surface_grid")
 [node name="P1MatterStatePresentation" type="Node" parent="."]
 script = ExtResource("8_state_presentation")
 
+[node name="P1MatterTargetPresentation" type="Node" parent="."]
+script = ExtResource("9_target_presentation")
+
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="Panel" type="PanelContainer" parent="HUD"]
@@ -130,22 +134,3 @@ text = "P1 INTERACTIVE FOUNDATION"
 theme_override_colors/font_color = Color(0.75, 0.82, 0.90, 1)
 theme_override_font_sizes/font_size = 13
 text = "WASD move   Space jump   T release/freeze   arrows impulse/torque   MMB orbit   wheel zoom   E remove/place   LMB apply   Home camera   K recover   R reset"
-
-[node name="Reticle" type="Label" parent="HUD"]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -7.0
-offset_top = -12.0
-offset_right = 7.0
-offset_bottom = 12.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.92, 0.96, 1, 0.92)
-theme_override_font_sizes/font_size = 18
-text = "+"
-horizontal_alignment = 1
-vertical_alignment = 1
