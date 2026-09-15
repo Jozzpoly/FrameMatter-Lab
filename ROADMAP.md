@@ -91,99 +91,107 @@ The fixed-region test mechanism is deliberately **not** promoted into `MatterRep
 
 Evidence: `docs/evidence/r2a-derived-region-locality.md`.
 
----
+## P0 — first embodied consumer: **AUTOMATED PASS / FIRST OWNER RUN COMPLETE**
 
-# Active campaign — P0 interactive consumer pressure
+P0 moved the LAB from lifecycle instrumentation to a real embodied consumer. Its automated translation+yaw composition remains defended: actor support, direct Matter editing, static→dynamic ride/walk, moving edit and freeze all pass through the shared `LocalMatterSpace` path.
 
-Representation research has enough leverage to stop before becoming architecture by inertia, and P0 has now produced its first integrated consumer result.
-
-## Current status
-
-**Automated composition gate: PASS in bounded translation+yaw scope.**
-
-The real `lab/main.tscn` is now embodied rather than only a lifecycle console. It contains the existing `FrameProbeCharacter`, follow camera, direct provider-local Matter selection, remove/place editing and the shared static↔dynamic lifecycle path.
-
-On commit `09eb18e8e691f0f6b2ae085a931d96cf85447bc5`, GitHub Actions run `#202` passed:
-
-- current-campaign validation,
-- fast invariant validation,
-- full historical research validation through R0/R1/R2P/R2A.
-
-The P0 automated smoke itself measured:
-
-- zero floor-loss frames during stationary ride,
-- zero floor-loss frames while walking on the moving Space,
-- zero floor-loss frames after occupancy editing while moving,
-- stationary local drift `0.00000812`,
-- local walk displacement `0.95959115`,
-- fresh lineage after static and moving Matter recreation,
-- coherent static→dynamic→static provider succession under one logical Space.
-
-This is **integrated automated evidence, not playability/product PASS**. P0 remains active until the Owner has directly used the scene and supplied interaction/feel/latency feedback.
+The first direct Owner run then supplied the missing qualitative evidence. It did **not** demonstrate a substrate failure. Instead it showed that fixed distant framing, weak cell-target feedback, low Matter readability and an always-dominant telemetry HUD contaminated the experiment strongly enough that the next test needed a better measurement surface.
 
 Evidence: `docs/evidence/p0-interactive-consumer.md`.
 
-## First consumer finding
+---
 
-The initial P0 challenger intentionally included pitch/roll as well as yaw. It kept support (`floor_loss=0`) but produced about `0.501` local drift for a stationary rider.
+# Active campaign — P0.5 Owner interaction baseline
 
-That exposed a real boundary in the current `FrameProbeCharacter`: support transport is frame-aware, while support validation/snap is still a single world-down ground ray. Earlier actor evidence was yaw-only, so this is not a regression inside an already defended scope.
+P0.5 is a deliberately thin interaction/readability layer over P0. It exists to let the next Owner run pressure FrameMatter rather than mostly pressure prototype ergonomics.
 
-P0 deliberately does **not** hide the finding by choosing local gravity, adhesion or frame-relative 'down' semantics in the LAB. The Owner-facing slice is therefore currently translation+yaw bounded; arbitrary pitch/roll support moves to the actor frontier.
+## Current status
+
+**Automated P0 regression gate: PASS.**  
+**P0.5 interaction-surface gate: PASS.**  
+**Windows/Web delivery: PASS.**  
+**Second Owner interaction: PENDING.**
+
+Green delivery context:
+
+- workflow `Deliver P0.5 Owner Test`,
+- run `#6`, ID `34915675303`,
+- commit `9790d5b859073c3a2f7136cb14861613f3d54661`,
+- Godot `4.7.2` + built-in Jolt.
+
+The same delivery run first re-ran the defended P0 consumer and retained:
+
+- `ride_floor_loss = 0`,
+- `walk_floor_loss = 0`,
+- `post_edit_floor_loss = 0`,
+- stationary local drift `0.00000812`,
+- local walk displacement about `0.95959`,
+- fresh lineage across static and moving remove/recreate cycles.
+
+The P0.5-specific gate then verified:
+
+- compact Owner HUD + preserved rich debug telemetry,
+- materially closer camera and deterministic zoom,
+- explicit remove/place preview surfaces,
+- occupied-cell grid context,
+- non-destructive actor recovery that preserves logical Space/provider authority,
+- shared Matter mutation path beneath the presentation layer,
+- compatibility with static→dynamic activation,
+- sampled grid/provider transform gap `0.00000000` after explicit presentation sync.
+
+Evidence: `docs/evidence/p05-interaction-baseline.md`.
+
+## First Owner finding carried forward
+
+The original pitch/roll P0 challenger kept support (`floor_loss=0`) but produced about `0.501` local drift for a stationary rider.
+
+That remains a real boundary in the current `FrameProbeCharacter`: support transport is frame-aware, while support validation/snap is still a single world-down ground ray. Earlier actor evidence was yaw-only, so this is not a regression inside an already defended scope.
+
+P0.5 deliberately does **not** hide the finding by choosing local gravity, adhesion or frame-relative 'down' semantics. The Owner-facing slice remains translation+yaw bounded; arbitrary pitch/roll support remains an actor frontier.
 
 ## Question
 
-Can the currently defended substrate support a small coherent interactive loop in which a real actor **stands on, moves across, edits and transitions one logical local Space** without test-local orchestration or hidden semantic shortcuts — and does that loop feel coherent when the Owner actually uses it?
+With the largest obvious interaction/readability contamination reduced, does direct use now reveal a coherent and interesting manipulation loop for one editable static/dynamic logical Space — and which remaining limitation actually dominates the experience?
 
-## P0 target experience
+## P0.5 target experience
 
-The minimum pressure loop is:
+> walk → comfortably frame the scene → clearly preview a cell operation → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect technical state only when useful.
 
-> walk on/around Matter → inspect/select a local cell → remove/place Matter → activate the same logical Space → remain supported/ride it → edit while moving → freeze it → inspect what happened.
+A simple mechanism is still optional. Mechanics already has strong bounded evidence; it should enter only if direct use says a mechanism is the next high-information semantic pressure.
 
-A simple mechanism is deliberately optional for P0. Mechanics already has strong bounded evidence; forcing a joint into the first slice would add scope before Owner interaction has evaluated actor/edit/lifecycle composition.
+## P0.5 implementation discipline
 
-## P0 implementation discipline
+P0.5 must remain a measurement layer rather than silently becoming architecture:
 
-Prefer composition of existing defended systems over new architecture:
-
-- reuse `LocalMatterSpace` as the logical owner,
-- reuse `FrameProbeCharacter` support-frame semantics rather than falling back to stock `CharacterBody3D` rigid interaction,
-- keep edits routed through shared `LocalMatterSpace.mutate_cell`,
+- keep `lab/main.gd` as the defended P0 consumer and layer P0.5 above it,
+- keep edits routed through `LocalMatterSpace.mutate_cell`,
 - keep static↔dynamic transitions on the shared lifecycle path,
-- keep the current merged-cuboid provider default,
-- add only the minimum interactive input/camera/selection/feedback required to exercise the loop.
+- do not let presentation-grid structure define world/chunk/collision identity,
+- treat `K` recovery as test continuity tooling rather than gameplay design,
+- keep full telemetry available but out of the default visual path,
+- stop adding UX features once another Owner run can answer the campaign question.
 
-Do **not** build a general player framework, inventory, block catalogue, chunk manager, world manager, save system or production UI for P0.
+Do **not** build a general player framework, inventory, block catalogue, chunk manager, world manager, save system or production UI as part of P0.5.
 
-## P0 evidence requirements
+## Remaining material evidence
 
-Automated composition requirements are now met for the bounded translation+yaw slice. The remaining material evidence is direct Owner interaction:
+The next evidence is direct Owner use of the packaged P0.5 build:
 
-- movement/camera feel,
-- pointer selection clarity,
-- remove/place clarity,
+- camera orbit/zoom feel,
+- pointer preview clarity before clicking,
+- Matter/cell readability,
+- whether moving-Space editing remains understandable,
 - perceived edit latency,
 - transition continuity as seen rather than merely measured,
-- whether the loop is useful/interesting enough to reveal the next real pressure.
+- whether the improved loop exposes a compelling missing semantic/gameplay capability.
 
-The runtime already reports:
+P0.5 is successful as a campaign even if that run says it is still awkward. The job is to identify the highest-value next pressure, not to polish until the LAB resembles a product.
 
-- actor support Space/provider and grounded state,
-- target cell / operation result,
-- Matter revision / occupied count / lineage behavior,
-- provider kind and provider transition count,
-- edit rebuild timing,
-- collision-shape count,
-- transition/debug state.
-
-P0 is the first campaign where **Owner interaction quality is itself material evidence**.
-
-## P0 decision outcomes
+## P0.5 decision outcomes
 
 ### If the loop is coherent and editing latency is acceptable
 
-Do not optimize representation by inertia. Use Owner feedback to choose the next semantic pressure: volumetric actor behavior, finite force exchange, world transfer/reintegration, a simple mechanism, or richer editing.
+Do not optimize representation by inertia. Use Owner feedback to choose the next semantic pressure: volumetric actor behavior, finite force exchange, world transfer/reintegration, a simple mechanism, richer editing, or another clearly demanded capability.
 
 ### If editing latency materially harms the loop
 
@@ -197,15 +205,21 @@ Enter the volumetric/orientation/finite-force actor frontier deliberately rather
 
 Re-open the exact failing lifecycle invariant instead of building around it in the LAB.
 
-### If the experiment feels technically correct but awkward/uninteresting
+### If interaction/readability still dominates
 
-Treat that as evidence. Revisit interaction semantics and product pressure before expanding infrastructure.
+Improve only the highest-leverage obstacle exposed by Owner use. Do not turn P0.5 into an open-ended UI/graphics project.
 
-## P0 non-goals
+### If the experiment feels technically correct but uninteresting
+
+Treat that as strong evidence. Revisit the product pressure and semantics before expanding infrastructure.
+
+## P0.5 non-goals
 
 - final game controls,
-- production first-person controller,
+- production first-person/third-person controller,
 - arbitrary pitch/roll locomotion semantics,
+- production UI/visual language,
+- scalable grid rendering,
 - content pipeline,
 - inventory/crafting,
 - world streaming,
@@ -218,7 +232,7 @@ Treat that as evidence. Revisit interaction semantics and product pressure befor
 
 ---
 
-# Decision frontiers after / during P0
+# Decision frontiers after / during P0.5
 
 ## A — volumetric / oriented actor + finite force exchange
 
@@ -232,7 +246,7 @@ Entry trigger: a real world consumer needs transfer between canonical lattice an
 
 ## R2 — update-local representation follow-up
 
-Entry trigger: P0 or another concrete consumer demonstrates that whole-volume edit/rebuild cost materially limits the intended interaction.
+Entry trigger: P0.5 or another concrete consumer demonstrates that whole-volume edit/rebuild cost materially limits the intended interaction.
 
 Constraint: preserve R2A's distinction between update locality and final physical partition; do not promote fixed region collision topology by default.
 
@@ -278,7 +292,7 @@ Separate tests conceptually into:
 - current campaign,
 - historical evidence probes.
 
-The workflow now has a lightweight `current-campaign-validation` lane for the real LAB + P0 smoke, while fast invariants and the complete historical research ratchet remain separate protections.
+The lightweight current-consumer path now has two explicit layers: the defended P0 smoke for substrate composition and the P0.5 interaction-surface smoke before Owner packaging. Fast invariants and the complete historical research ratchet remain separate protections.
 
 Retiring an old probe from every-push CI does not erase evidence. Old green probes must not fossilize obsolete implementation details.
 
@@ -287,6 +301,8 @@ The R1 promotion produced concrete examples: historical `shape count == occupied
 R2A showed why current-campaign challengers should remain separable from promoted runtime invariants: a large local timing win can still expose a serious representation tradeoff and therefore remain evidence without becoming architecture.
 
 P0 adds the complementary lesson: an integrated consumer can expose a semantic limit (pitch/roll actor support) that narrower green probes did not test, without invalidating the bounded evidence those probes actually established.
+
+P0.5 adds another lesson: human interaction can expose measurement-surface problems that are neither substrate regressions nor mere cosmetic polish. Improving that surface is justified only insofar as it makes the next evidence cleaner.
 
 ---
 
@@ -301,6 +317,7 @@ Replan immediately if:
 - profiling shows whole-volume representation work is no longer the important next pressure,
 - an optimization requires disproportionate architecture before a real consumer demonstrates the need,
 - Owner/playability pressure shows the technically correct substrate is awkward or uninteresting,
+- P0.5 polish begins expanding without increasing evidence quality,
 - host-engine limitations materially distort intended invariants.
 
 The roadmap is doing its job when such findings change the plan.
