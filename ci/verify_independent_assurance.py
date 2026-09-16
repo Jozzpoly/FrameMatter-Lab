@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Validate P1 independent-assurance evidence.
 
-Ordinary validation accepts a structurally valid PENDING report or a completed
-read-only falsification PASS bound to the exact frozen candidate. Delivery mode
-adds the promotion-only requirements: the runtime must already be approved and
-the readiness assurance gate must be bound to the same runtime/report.
+Ordinary validation accepts three legitimate states:
+
+- a structurally valid PENDING report for an active campaign,
+- a completed read-only falsification PASS bound to the current frozen candidate,
+- a completed historical PASS explicitly marked SUPERSEDED by readiness after
+  newer Owner evidence or a versioned contract reopens the campaign.
+
+Delivery mode is intentionally stricter: it always requires a current PASS
+bound to the exact frozen/approved runtime and the active contract version.
 """
 
 from __future__ import annotations
@@ -39,14 +44,53 @@ def full_sha(value: Any) -> bool:
     return isinstance(value, str) and bool(FULL_SHA_RE.fullmatch(value.strip()))
 
 
+def _validate_completed_pass_fields(report: dict[str, Any], findings: list[Any]) -> list[str]:
+    errors: list[str] = []
+    reviewed = report.get("reviewed_runtime_commit")
+    if report.get("status") != "PASS" or report.get("disposition") != "PASS":
+        errors.append("completed assurance requires status=PASS and disposition=PASS")
+    if not full_sha(reviewed):
+        errors.append("PASS report requires a full reviewed_runtime_commit")
+    if not isinstance(report.get("review_context_id"), str) or not report.get("review_context_id", "").strip():
+        errors.append("PASS report requires a non-empty review_context_id")
+    if report.get("reviewer_context_separated_from_implementation") is not True:
+        errors.append("PASS report requires reviewer context separated from implementation")
+    if report.get("runtime_was_frozen") is not True:
+        errors.append("PASS report requires runtime_was_frozen=true")
+    if report.get("owner_goal_evaluated") is not True:
+        errors.append("PASS report requires owner_goal_evaluated=true")
+    if report.get("claim_evidence_fit_evaluated") is not True:
+        errors.append("PASS report requires claim_evidence_fit_evaluated=true")
+    if not nonempty_list(report.get("nominal_scenarios_reviewed")):
+        errors.append("PASS report requires nominal_scenarios_reviewed")
+    if not nonempty_list(report.get("off_nominal_scenarios_reviewed")):
+        errors.append("PASS report requires off_nominal_scenarios_reviewed")
+    if not nonempty_list(report.get("evidence_examined")):
+        errors.append("PASS report requires evidence_examined")
+    if findings:
+        errors.append(f"PASS report has {len(findings)} material finding(s)")
+    return errors
+
+
 def validate_report(report: dict[str, Any], readiness: dict[str, Any], require_pass: bool) -> list[str]:
     errors: list[str] = []
     if report.get("schema_version") != 1:
         errors.append("schema_version must be 1")
     if report.get("campaign_id") != readiness.get("campaign_id"):
         errors.append("campaign_id does not match readiness")
-    if report.get("campaign_contract_version") != readiness.get("campaign_contract_version"):
+
+    gate = readiness.get("required_gates", {}).get("independent_assurance_review", {})
+    gate_status = gate.get("status")
+    superseded_historical = (not require_pass and gate_status == "SUPERSEDED")
+
+    if report.get("campaign_contract_version") != readiness.get("campaign_contract_version") and not superseded_historical:
         errors.append("campaign_contract_version does not match readiness")
+    if superseded_historical:
+        report_version = report.get("campaign_contract_version")
+        readiness_version = readiness.get("campaign_contract_version")
+        if not isinstance(report_version, int) or not isinstance(readiness_version, int) or report_version >= readiness_version:
+            errors.append("SUPERSEDED assurance must belong to an older campaign contract version")
+
     if report.get("status") not in {"PENDING", "PASS", "FAIL"}:
         errors.append("status must be PENDING, PASS or FAIL")
     if report.get("disposition") not in {"PENDING", "PASS", "FAIL"}:
@@ -64,34 +108,17 @@ def validate_report(report: dict[str, Any], readiness: dict[str, Any], require_p
 
     report_claims_pass = report.get("status") == "PASS" or report.get("disposition") == "PASS"
     if report_claims_pass or require_pass:
-        candidate = readiness.get("candidate_runtime_commit")
-        reviewed = report.get("reviewed_runtime_commit")
-        if readiness.get("candidate_state") != "FROZEN":
-            errors.append("assurance PASS requires candidate_state FROZEN")
-        if not full_sha(candidate):
-            errors.append("assurance PASS requires full candidate_runtime_commit")
-        if not full_sha(reviewed) or str(reviewed).lower() != str(candidate).lower():
-            errors.append("reviewed_runtime_commit does not match the frozen candidate runtime")
-        if report.get("status") != "PASS" or report.get("disposition") != "PASS":
-            errors.append("completed assurance requires status=PASS and disposition=PASS")
-        if not isinstance(report.get("review_context_id"), str) or not report.get("review_context_id", "").strip():
-            errors.append("PASS report requires a non-empty review_context_id")
-        if report.get("reviewer_context_separated_from_implementation") is not True:
-            errors.append("PASS report requires reviewer context separated from implementation")
-        if report.get("runtime_was_frozen") is not True:
-            errors.append("PASS report requires runtime_was_frozen=true")
-        if report.get("owner_goal_evaluated") is not True:
-            errors.append("PASS report requires owner_goal_evaluated=true")
-        if report.get("claim_evidence_fit_evaluated") is not True:
-            errors.append("PASS report requires claim_evidence_fit_evaluated=true")
-        if not nonempty_list(report.get("nominal_scenarios_reviewed")):
-            errors.append("PASS report requires nominal_scenarios_reviewed")
-        if not nonempty_list(report.get("off_nominal_scenarios_reviewed")):
-            errors.append("PASS report requires off_nominal_scenarios_reviewed")
-        if not nonempty_list(report.get("evidence_examined")):
-            errors.append("PASS report requires evidence_examined")
-        if findings:
-            errors.append(f"PASS report has {len(findings)} material finding(s)")
+        errors.extend(_validate_completed_pass_fields(report, findings))
+
+        if not superseded_historical or require_pass:
+            candidate = readiness.get("candidate_runtime_commit")
+            reviewed = report.get("reviewed_runtime_commit")
+            if readiness.get("candidate_state") != "FROZEN":
+                errors.append("assurance PASS requires candidate_state FROZEN")
+            if not full_sha(candidate):
+                errors.append("assurance PASS requires full candidate_runtime_commit")
+            if not full_sha(reviewed) or str(reviewed).lower() != str(candidate).lower():
+                errors.append("reviewed_runtime_commit does not match the frozen candidate runtime")
 
     if require_pass:
         approved = readiness.get("approved_runtime_commit")
@@ -99,7 +126,6 @@ def validate_report(report: dict[str, Any], readiness: dict[str, Any], require_p
         if not full_sha(approved) or str(approved).lower() != str(candidate).lower():
             errors.append("assurance delivery requires approved_runtime_commit == frozen candidate_runtime_commit")
 
-        gate = readiness.get("required_gates", {}).get("independent_assurance_review", {})
         if gate.get("status") != "PASS":
             errors.append("readiness independent_assurance_review gate is not PASS")
         if str(gate.get("verified_runtime_commit", "")).lower() != str(candidate).lower():
@@ -125,6 +151,11 @@ def main() -> None:
         raise SystemExit(1)
     if args.mode == "delivery":
         print("INDEPENDENT_ASSURANCE_DELIVERY_PASS: frozen runtime received a separate read-only falsification review with zero material findings and is bound to the approved delivery runtime.")
+    elif readiness.get("required_gates", {}).get("independent_assurance_review", {}).get("status") == "SUPERSEDED":
+        print(
+            "INDEPENDENT_ASSURANCE_REPORT_VALID: historical PASS is preserved but SUPERSEDED; "
+            "it does not certify the active OPEN campaign or current contract."
+        )
     else:
         print(f"INDEPENDENT_ASSURANCE_REPORT_VALID: status={report['status']} disposition={report['disposition']}")
 
