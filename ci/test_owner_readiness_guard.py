@@ -21,7 +21,8 @@ import verify_owner_readiness as guard
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "quality/p1-owner-readiness.json"
-CONTRACT_PATH = ROOT / "quality/contracts/p1-owner-facing-recovery.v3.json"
+_MANIFEST_CONTRACT = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))["campaign_contract"]
+CONTRACT_PATH = ROOT / _MANIFEST_CONTRACT
 
 failures: list[str] = []
 
@@ -62,13 +63,14 @@ def make_two_blob_repo() -> tuple[set[str], list[str]]:
 def main() -> None:
     manifest = load(MANIFEST_PATH)
     contract = load(CONTRACT_PATH)
+    version = contract.get("contract_version")
 
     errors = structural_errors(manifest, contract)
-    check(not errors, "current sealed v3 contract/readiness pair is structurally valid: %s" % errors)
+    check(not errors, "current active sealed contract/readiness pair is structurally valid: %s" % errors)
 
     blobs, history_errors = guard.active_contract_blob_history(ROOT, CONTRACT_PATH)
-    check(not history_errors, "active v3 contract history can be inspected: %s" % history_errors)
-    check(len(blobs) == 1, "active v3 contract has exactly one distinct historical blob: %s" % sorted(blobs))
+    check(not history_errors, "active contract history can be inspected: %s" % history_errors)
+    check(len(blobs) == 1, "active v%s contract has exactly one distinct historical blob: %s" % (version, sorted(blobs)))
     synthetic_blobs, synthetic_errors = make_two_blob_repo()
     check(not synthetic_errors, "synthetic contract history can be inspected: %s" % synthetic_errors)
     check(len(synthetic_blobs) == 2, "in-place versioned contract edit produces two distinct blobs")
@@ -201,10 +203,10 @@ def main() -> None:
         raise SystemExit(1)
 
     print(
-        "OWNER_READINESS_GUARD_SELFTEST_PASS: guard rejects in-place sealed-contract mutation, predecessor "
-        "tampering, acceptance weakening, moving-target state, missing gates, evidence drift, stale gate evidence, "
-        "missing independent assurance, unproven scenarios and stale scenario evidence, while accepting one fully "
-        "consistent frozen runtime candidate authorized by later governance."
+        "OWNER_READINESS_GUARD_SELFTEST_PASS: guard follows the active sealed contract and rejects in-place "
+        "contract mutation, predecessor tampering, acceptance weakening, moving-target state, missing gates, "
+        "evidence drift, stale gate evidence, missing independent assurance, unproven scenarios and stale scenario "
+        "evidence, while accepting one fully consistent frozen runtime candidate authorized by later governance."
     )
 
 
