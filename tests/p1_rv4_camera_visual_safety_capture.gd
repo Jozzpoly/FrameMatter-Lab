@@ -9,7 +9,9 @@ const RING_MIN_Y := 1
 const RING_MAX_Y := 4
 const VISUAL_UNSAFE_ARM_MAX := 0.60
 const VISUAL_UNSAFE_AVATAR_GAP_MAX := 0.25
-const ALLOWED_VARIANTS := ["baseline", "near_hide"]
+const OVERHEAD_ESCAPE_PITCH := 1.48
+const RECOVERED_ARM_MIN := 2.50
+const ALLOWED_VARIANTS := ["baseline", "near_hide", "overhead_escape"]
 
 var _failures: Array[String] = []
 var _output_dir := ""
@@ -81,11 +83,13 @@ func _run() -> void:
 	await _capture("00_open_reference")
 
 	_check(_build_tight_matter_ring(), "R-V4 creates real Matter enclosure through normal PLACE edits")
+	_apply_variant_presentation()
 	await _advance_frames(SETTLE_FRAMES)
 
 	var inside_frames := 0
 	var visual_unsafe_frames := 0
 	var visible_hazard_frames := 0
+	var recovered_arm_frames := 0
 	var minimum_signed := INF
 	var maximum_signed := -INF
 	var minimum_arm := INF
@@ -103,6 +107,8 @@ func _run() -> void:
 		maximum_arm = maxf(maximum_arm, actual_arm)
 		if signed_distance < 0.0:
 			inside_frames += 1
+		if actual_arm >= RECOVERED_ARM_MIN:
+			recovered_arm_frames += 1
 		if visual_unsafe:
 			visual_unsafe_frames += 1
 			if _avatar_visible():
@@ -111,11 +117,12 @@ func _run() -> void:
 	_apply_variant_presentation()
 	_print_camera_avatar_metric("01_tight_matter_enclosure")
 	print(
-		"P1_RV4_SAFETY_WINDOW variant=%s frames=%d visual_unsafe_frames=%d visible_hazard_frames=%d inside_frames=%d min_avatar_signed=%.4f max_avatar_signed=%.4f min_actual_arm=%.4f max_actual_arm=%.4f" % [
+		"P1_RV4_SAFETY_WINDOW variant=%s frames=%d visual_unsafe_frames=%d visible_hazard_frames=%d recovered_arm_frames=%d inside_frames=%d min_avatar_signed=%.4f max_avatar_signed=%.4f min_actual_arm=%.4f max_actual_arm=%.4f" % [
 			_variant,
 			OBSERVE_FRAMES,
 			visual_unsafe_frames,
 			visible_hazard_frames,
+			recovered_arm_frames,
 			inside_frames,
 			minimum_signed,
 			maximum_signed,
@@ -125,32 +132,47 @@ func _run() -> void:
 	)
 
 	var sustained_unsafe := visual_unsafe_frames >= int(ceil(float(OBSERVE_FRAMES) * 0.8))
-	_check(sustained_unsafe, "tight real-Matter enclosure sustains the same physical near-camera stress")
+	var sustained_recovery := recovered_arm_frames >= int(ceil(float(OBSERVE_FRAMES) * 0.8))
 	if _variant == "baseline":
+		_check(sustained_unsafe, "tight real-Matter enclosure sustains the same physical near-camera stress")
 		_check(
 			visible_hazard_frames >= int(ceil(float(OBSERVE_FRAMES) * 0.8)),
 			"baseline reproduces sustained world-safe but avatar-unsafe visible framing"
 		)
-	else:
+	elif _variant == "near_hide":
+		_check(sustained_unsafe, "near-hide control retains the same physical near-camera stress")
 		_check(visible_hazard_frames == 0, "near-hide challenger suppresses visible avatar throughout unsafe near framing")
 		_check(not _avatar_visible(), "near-hide challenger leaves avatar hidden in sustained unsafe state")
+	else:
+		_check(sustained_recovery, "overhead escape restores material SpringArm distance for most observed frames")
+		_check(visual_unsafe_frames == 0, "overhead escape exits catastrophic near-avatar framing")
+		_check(_avatar_visible(), "overhead escape keeps avatar visible")
+		_check(inside_frames == 0, "overhead escape never places Camera3D inside avatar geometry")
 
 	await _capture("01_tight_matter_enclosure")
 
 	if _failures.is_empty():
 		if _variant == "baseline":
 			print("P1_RV4_BASELINE_REPRODUCED: real Matter obstruction sustained catastrophic near-avatar framing while camera remained outside the capsule; fix not yet promoted.")
-		else:
+		elif _variant == "near_hide":
 			print("P1_RV4_NEAR_HIDE_CHALLENGER_PASS: identical camera/world state retained while local avatar presentation was suppressed in the unsafe near field; diagnostic challenger only.")
+		else:
+			print("P1_RV4_OVERHEAD_ESCAPE_CHALLENGER_PASS: high presentation pitch recovered collision-clear camera distance through the open top while preserving visible avatar and control yaw; diagnostic challenger only.")
 
 	_cleanup_and_finish()
 
 
 func _apply_variant_presentation() -> void:
-	if _variant != "near_hide":
-		_set_avatar_visible(true)
+	if _variant == "near_hide":
+		_set_avatar_visible(not _is_visual_unsafe(_actual_arm_length(), _camera_avatar_signed_distance()))
 		return
-	_set_avatar_visible(not _is_visual_unsafe(_actual_arm_length(), _camera_avatar_signed_distance()))
+	_set_avatar_visible(true)
+	if _variant == "overhead_escape":
+		# Diagnostic only: prove whether a high presentation pitch can recover a
+		# collision-clear view through the open top. This intentionally does not
+		# promote an automatic production policy yet.
+		_camera_rig.set("_pitch", OVERHEAD_ESCAPE_PITCH)
+		_camera_rig.call("_apply_user_orbit_immediately")
 
 
 func _is_visual_unsafe(actual_arm: float, signed_distance: float) -> bool:
