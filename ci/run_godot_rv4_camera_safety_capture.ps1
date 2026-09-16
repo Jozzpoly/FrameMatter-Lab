@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$OutputDir,
-    [Parameter(Mandatory = $true)][ValidateSet("baseline", "near_hide")][string]$Variant
+    [Parameter(Mandatory = $true)][ValidateSet("baseline", "near_hide", "overhead_escape")][string]$Variant
 )
 
 $stdoutFile = [System.IO.Path]::GetTempFileName()
@@ -46,7 +46,11 @@ try {
         exit 1
     }
 
-    $expectedMarker = if ($Variant -eq "baseline") { "P1_RV4_BASELINE_REPRODUCED" } else { "P1_RV4_NEAR_HIDE_CHALLENGER_PASS" }
+    $expectedMarker = switch ($Variant) {
+        "baseline" { "P1_RV4_BASELINE_REPRODUCED" }
+        "near_hide" { "P1_RV4_NEAR_HIDE_CHALLENGER_PASS" }
+        "overhead_escape" { "P1_RV4_OVERHEAD_ESCAPE_CHALLENGER_PASS" }
+    }
     if (-not $content.Contains($expectedMarker)) {
         Write-Error "Expected R-V4 marker missing for variant $Variant`: $expectedMarker"
         exit 1
