@@ -14,7 +14,7 @@
   "approved_runtime_commit": "",
   "owner_attention_event": {
     "allowed": false,
-    "reason": "Direct Owner interaction falsified the delivered candidate's visual representation: Matter can read as transparent/hollow under accumulated editing, camera composition can collapse into the avatar, and the current interaction/presentation stack is not yet a professionally legible research surface."
+    "reason": "The Owner-failed winding root cause is corrected and base Matter now renders as solid opaque mass, but the full cell/state/interaction presentation, camera visual safety and chaotic-edit composition have not yet re-earned Owner-facing readiness under contract v4."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -64,11 +64,12 @@
       ]
     },
     "base_matter_surface_integrity": {
-      "status": "FAIL",
+      "status": "PASS",
       "evidence_type": "rendered_review",
-      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "verified_runtime_commit": "f01375e4e6fe09f5f559167d8be4d13e7bab01b0",
       "evidence": [
-        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md",
+        "docs/evidence/p1-rv0-base-surface-forensics.md"
       ]
     },
     "form_depth_readability": {
@@ -174,9 +175,9 @@
   },
   "scenario_coverage": {
     "default_static_matter": {
-      "status": "FAIL",
-      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
-      "evidence": ["docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"]
+      "status": "PASS",
+      "verified_runtime_commit": "f01375e4e6fe09f5f559167d8be4d13e7bab01b0",
+      "evidence": ["docs/evidence/p1-rv0-base-surface-forensics.md"]
     },
     "edit_target_remove_place_expand": {
       "status": "FAIL",
@@ -230,11 +231,9 @@
     }
   },
   "open_blockers": [
-    "Owner test visual failure: base Matter does not reliably read as solid opaque mass under accumulated editing.",
-    "R-V0 must falsify or confirm CellMesher winding/culling and shadow interaction before visual styling proceeds.",
-    "Current cell/state/interaction presentation must be re-evaluated after base-surface correction under chaotic geometry.",
+    "Current cell/state/interaction presentation must be re-evaluated on the corrected base surface under accumulated chaotic geometry.",
     "Camera must enforce actual camera-to-avatar visual safety during obstruction compression.",
-    "Chaotic accumulated edit stress must pass before another Owner package.",
+    "Chaotic accumulated edit stress must pass with the full presentation stack before another Owner package.",
     "Independent assurance and final readiness audit must be re-earned on a new frozen candidate under campaign contract v4."
   ]
 }
