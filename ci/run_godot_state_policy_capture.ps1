@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$OutputDir,
-    [Parameter(Mandatory = $true)][ValidateSet("current_contour", "top_crown")][string]$Variant
+    [Parameter(Mandatory = $true)][ValidateSet("current_contour", "top_crown", "side_rim")][string]$Variant
 )
 
 $stdoutFile = [System.IO.Path]::GetTempFileName()
