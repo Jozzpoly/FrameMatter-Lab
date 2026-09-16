@@ -198,11 +198,14 @@ func _snap_and_attach_ground() -> bool:
 	var down: Vector3 = Vector3.DOWN * ground_snap_distance
 	var cast: PackedFloat32Array = _cast_motion(down)
 	if cast.is_empty():
-		return false
+		return _attach_from_current_ground_overlap()
 	var safe: float = clampf(cast[0], 0.0, 1.0)
 	var unsafe: float = clampf(cast[1], safe, 1.0)
 	if safe >= 0.999999:
-		return false
+		# cast_motion intentionally ignores shapes the capsule already overlaps.
+		# A ground-like current intersection is therefore a second, complementary
+		# contact state rather than evidence that the floor disappeared.
+		return _attach_from_current_ground_overlap()
 
 	# `_rest_info_at_unsafe_fraction()` samples relative to the already-reached
 	# safe position (the same contract used by `_move_with_slide`). Ground snap
@@ -210,21 +213,29 @@ func _snap_and_attach_ground() -> bool:
 	var start_position: Vector3 = global_position
 	global_position += down * safe
 	var hit: Dictionary = _rest_info_at_unsafe_fraction(down, safe, unsafe)
-	if hit.is_empty():
+	if not _attach_from_ground_hit(hit):
 		global_position = start_position
+		return false
+	return true
+
+
+func _attach_from_current_ground_overlap() -> bool:
+	var hit: Dictionary = _rest_info_at_current_pose()
+	return _attach_from_ground_hit(hit)
+
+
+func _attach_from_ground_hit(hit: Dictionary) -> bool:
+	if hit.is_empty():
 		return false
 	var normal: Vector3 = Vector3(hit.get("normal", Vector3.ZERO)).normalized()
 	if normal.y < ground_normal_min_y:
-		global_position = start_position
 		return false
 
 	var collider: Node3D = _collider_from_rest_info(hit)
 	if collider == null:
-		global_position = start_position
 		return false
 	var resolved_support: Node3D = _resolve_support_frame(collider)
 	if resolved_support == null:
-		global_position = start_position
 		return false
 
 	var changed_support: bool = resolved_support != support_body
@@ -250,6 +261,17 @@ func _cast_motion(motion: Vector3) -> PackedFloat32Array:
 	query.collide_with_bodies = true
 	query.collide_with_areas = false
 	return get_world_3d().direct_space_state.cast_motion(query)
+
+
+func _rest_info_at_current_pose() -> Dictionary:
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = _shape
+	query.transform = global_transform
+	query.margin = query_margin
+	query.collision_mask = collision_mask
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	return get_world_3d().direct_space_state.get_rest_info(query)
 
 
 func _rest_info_at_unsafe_fraction(
