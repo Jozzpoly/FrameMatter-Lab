@@ -63,7 +63,7 @@ func _run() -> void:
 	_check(source.get_active_provider().get_instance_id() != static_provider_id, "provider replacement is real rather than presentation-only")
 	_check(_overlay_matches(presenter.get_state_overlay_for_space(source), P1MatterStatePresentation.DYNAMIC_COLOR), "dynamic provider receives amber contour")
 	_check(presenter.get_focus_overlay_for_space(source) != null, "focus crown survives provider replacement on logical Space identity")
-	_check(_color_close(_base_material_color(source.get_active_provider()), Color(0.74, 0.79, 0.88, 1.0)), "dynamic Matter base material remains provider-owned rather than recolored by state semantics")
+	_check(_color_close(_base_material_color(source.get_active_provider()), MatterSurfaceStyle.BASE_ALBEDO), "provider replacement preserves canonical Matter material identity rather than recoloring it by state")
 
 	_check(interactor.apply_edit_to_cell(source, Vector3i(1, 0, EDGE_Z), P1MatterInteractor.EditMode.PLACE), "probe extends connected Matter to storage edge 1")
 	_check(interactor.apply_edit_to_cell(source, Vector3i(0, 0, EDGE_Z), P1MatterInteractor.EditMode.PLACE), "probe extends connected Matter to storage edge 0")
@@ -161,7 +161,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_MATTER_STATE_PRESENTATION_PASS: restrained physical-state contours and independent focus crown remain derived presentation through edit, rebase, provider replacement, topology succession and freeze.")
+		print("P1_MATTER_STATE_PRESENTATION_PASS: restrained physical-state contours and independent focus crown remain derived presentation through edit, rebase, provider replacement, topology succession and freeze while base Matter identity remains provider-independent.")
 		quit(0)
 		return
 	for failure in _failures:
