@@ -27,9 +27,14 @@ jobs:
   windows-forward-plus-rv4-camera-safety:
     runs-on: windows-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [baseline, near_hide]
     env:
-      P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR: ${{ github.workspace }}\\artifacts\\p1-rv4-camera-safety\\baseline
       P1_RV4_CAMERA_SAFETY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      P1_RV4_CAMERA_SAFETY_VARIANT: ${{ matrix.variant }}
+      P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR: ${{ github.workspace }}\\artifacts\\p1-rv4-camera-safety\\${{ matrix.variant }}
     steps:
       - name: Checkout exact source commit
         uses: actions/checkout@v6
@@ -44,6 +49,7 @@ jobs:
             throw "R-V4 checkout mismatch: expected $env:P1_RV4_CAMERA_SAFETY_SOURCE_SHA, got $checkedOut"
           }
           "R-V4 exact source checkout: $checkedOut"
+          "R-V4 variant: $env:P1_RV4_CAMERA_SAFETY_VARIANT"
 
       - name: Setup Godot 4.7.2
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -56,9 +62,9 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_import.ps1
 
-      - name: Capture R-V4 baseline visual-safety failure
+      - name: Capture R-V4 visual-safety variant
         shell: pwsh
-        run: ./ci/run_godot_rv4_camera_safety_capture.ps1 -OutputDir $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR
+        run: ./ci/run_godot_rv4_camera_safety_capture.ps1 -OutputDir $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR -Variant $env:P1_RV4_CAMERA_SAFETY_VARIANT
 
       - name: Record R-V4 evidence provenance
         if: always()
@@ -67,24 +73,25 @@ jobs:
           New-Item -ItemType Directory -Force -Path $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR | Out-Null
           $checkedOut = (git rev-parse HEAD).Trim()
           @"
-          FrameMatter P1 R-V4 camera visual-safety baseline
+          FrameMatter P1 R-V4 camera visual-safety experiment
           workflow_run=$env:GITHUB_RUN_ID
           source_commit=$env:P1_RV4_CAMERA_SAFETY_SOURCE_SHA
           checked_out_commit=$checkedOut
           event_commit=$env:GITHUB_SHA
+          variant=$env:P1_RV4_CAMERA_SAFETY_VARIANT
           platform=windows-latest
           renderer=Godot 4.7.2 Forward+ / D3D12
           source_scene=res://p1/main.tscn
           capture_script=res://tests/p1_rv4_camera_visual_safety_capture.gd
           fixture=real Matter tight ring built through canonical P1 PLACE edit path
-          interpretation=known-defect acquisition only; no camera fix promoted
+          promotion=none; baseline/challenger evidence only
           "@ | Set-Content -Path (Join-Path $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR "RV4-CAMERA-SAFETY-EVIDENCE-INFO.txt")
 
       - name: Upload R-V4 evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P1-RV4-CameraSafety-Baseline
-          path: artifacts/p1-rv4-camera-safety/baseline
+          name: FrameMatter-P1-RV4-CameraSafety-${{ matrix.variant }}
+          path: artifacts/p1-rv4-camera-safety/${{ matrix.variant }}
           retention-days: 30
           if-no-files-found: warn
