@@ -55,6 +55,7 @@ def make_pass_report() -> dict:
     report = copy.deepcopy(REPORT)
     report.update(
         {
+            "campaign_contract_version": READINESS["campaign_contract_version"],
             "status": "PASS",
             "disposition": "PASS",
             "reviewed_runtime_commit": RUNTIME,
@@ -75,7 +76,13 @@ def make_pass_report() -> dict:
 
 def main() -> None:
     errors = guard.validate_report(REPORT, READINESS, require_pass=False)
-    check(not errors, "real PENDING assurance report is structurally valid: %s" % errors)
+    check(not errors, "historical PASS report is valid while readiness explicitly marks assurance SUPERSEDED: %s" % errors)
+
+    not_superseded = copy.deepcopy(READINESS)
+    not_superseded["required_gates"]["independent_assurance_review"]["status"] = "PENDING"
+    errors = guard.validate_report(REPORT, not_superseded, require_pass=False)
+    check(any("campaign_contract_version" in error for error in errors),
+          "older PASS report cannot silently certify a newer active contract unless explicitly SUPERSEDED")
 
     report = make_pass_report()
     blocked = make_blocked_frozen()
@@ -126,7 +133,8 @@ def main() -> None:
             print("INDEPENDENT_ASSURANCE_SELFTEST_FAIL: " + failure, file=sys.stderr)
         raise SystemExit(1)
     print(
-        "INDEPENDENT_ASSURANCE_SELFTEST_PASS: guard accepts a separated frozen-runtime falsification review before promotion, "
+        "INDEPENDENT_ASSURANCE_SELFTEST_PASS: guard preserves explicitly SUPERSEDED historical PASS evidence without "
+        "letting it certify a newer active contract, accepts a separated current frozen-runtime review before promotion, "
         "still rejects delivery until approval/gate binding, and rejects wrong-runtime, self-review, candidate mutation, "
         "material findings, happy-path-only review and omission of the Owner goal."
     )
