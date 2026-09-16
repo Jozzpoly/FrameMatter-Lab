@@ -3,8 +3,8 @@ extends Node
 
 # Derived Owner-facing semantics only. This presenter does not own Matter,
 # topology, provider lifecycle, focus selection or physics. It observes the
-# current P1 consumer state and decorates each live provider with a restrained
-# physical-state contour plus a separate focus crown.
+# current P1 consumer state and decorates each live provider with a selective
+# side-surface state rim plus a separate top-surface focus crown.
 
 const STATE_OVERLAY_NAME := "P1MatterStateContour"
 const FOCUS_OVERLAY_NAME := "P1MatterFocusCrown"
@@ -105,7 +105,7 @@ func refresh_space(space: LocalMatterSpace) -> void:
 
 	var state_overlay := MeshInstance3D.new()
 	state_overlay.name = STATE_OVERLAY_NAME
-	state_overlay.mesh = build_surface_contour(space.volume)
+	state_overlay.mesh = build_side_surface_contour(space.volume)
 	state_overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var state_material := StandardMaterial3D.new()
 	state_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -172,6 +172,56 @@ func get_focus_overlay_count() -> int:
 	return count
 
 
+# Promoted R-V3 policy: state semantics stay on side-surface boundaries so they
+# remain visible from shallow camera angles without drawing a permanent network
+# across horizontal Matter surfaces. Focus remains a separate top-surface crown.
+static func build_side_surface_contour(volume: CellVolume) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	if volume == null or volume.count_solid() == 0:
+		return mesh
+
+	var edge_records: Dictionary = {}
+	for z in range(volume.size.z):
+		for y in range(volume.size.y):
+			for x in range(volume.size.x):
+				var cell := Vector3i(x, y, z)
+				if volume.get_cell(cell) == CellVolume.EMPTY:
+					continue
+				var origin := Vector3(cell)
+				for face_index in range(CellMesher.FACE_DIRECTIONS.size()):
+					var normal: Vector3 = CellMesher.FACE_NORMALS[face_index]
+					if absf(normal.dot(Vector3.UP)) > 0.01:
+						continue
+					if volume.get_cell(cell + CellMesher.FACE_DIRECTIONS[face_index]) != CellVolume.EMPTY:
+						continue
+					var corners := _face_corners(origin, face_index)
+					for edge_index in range(4):
+						var a: Vector3 = corners[edge_index]
+						var b: Vector3 = corners[(edge_index + 1) % 4]
+						var key := _oriented_edge_key(face_index, a, b)
+						if not edge_records.has(key):
+							edge_records[key] = {"count": 0, "a": a, "b": b, "face": face_index}
+						var record: Dictionary = edge_records[key]
+						record["count"] = int(record["count"]) + 1
+						edge_records[key] = record
+
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_LINES)
+	for record_variant in edge_records.values():
+		var record: Dictionary = record_variant
+		if int(record["count"]) != 1:
+			continue
+		var normal: Vector3 = CellMesher.FACE_NORMALS[int(record["face"])]
+		_add_segment(
+			surface,
+			Vector3(record["a"]) + normal * CONTOUR_OFFSET,
+			Vector3(record["b"]) + normal * CONTOUR_OFFSET
+		)
+	return surface.commit(mesh)
+
+
+# Retained as a diagnostic/full-contour reference for evidence and future
+# challengers. Production state presentation no longer uses this geometry.
 static func build_surface_contour(volume: CellVolume) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	if volume == null or volume.count_solid() == 0:
