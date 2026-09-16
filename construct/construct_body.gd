@@ -97,7 +97,5 @@ func _ensure_mesh_node() -> void:
 	_mesh_instance.name = "DerivedMesh"
 	add_child(_mesh_instance)
 
-	_material = StandardMaterial3D.new()
-	_material.albedo_color = Color(0.74, 0.79, 0.88)
-	_material.roughness = 0.78
+	_material = MatterSurfaceStyle.create_material()
 	_mesh_instance.material_override = _material
