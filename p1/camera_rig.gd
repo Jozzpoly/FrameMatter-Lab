@@ -2,7 +2,8 @@ class_name P1CameraRig
 extends Node3D
 
 const ESCAPE_YAW_OFFSETS := [0.0, -0.45, 0.45, -0.90, 0.90, -1.35, 1.35]
-const ESCAPE_PITCH_ADDS := [0.0, 0.18, 0.36]
+const ESCAPE_PITCH_ADDS := [0.0, 0.18, 0.36, 0.72, 1.00]
+const ESCAPE_PRESENTATION_PITCH_MAX := 1.50
 
 @export var focus_height: float = 0.65
 @export var default_yaw: float = 0.72
@@ -214,7 +215,11 @@ func _update_presentation_orbit(
 			for pitch_add_variant in ESCAPE_PITCH_ADDS:
 				var pitch_add := float(pitch_add_variant)
 				var candidate_yaw := target_yaw + yaw_offset
-				var candidate_pitch := clampf(target_pitch + pitch_add, 0.12, 1.35)
+				var candidate_pitch := clampf(
+					target_pitch + pitch_add,
+					0.12,
+					ESCAPE_PRESENTATION_PITCH_MAX
+				)
 				var clearance := _probe_orbit_clearance(
 					focus,
 					candidate_yaw,
