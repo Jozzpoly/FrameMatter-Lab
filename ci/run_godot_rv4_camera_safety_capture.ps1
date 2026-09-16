@@ -1,5 +1,6 @@
 param(
-    [Parameter(Mandatory = $true)][string]$OutputDir
+    [Parameter(Mandatory = $true)][string]$OutputDir,
+    [Parameter(Mandatory = $true)][ValidateSet("baseline", "near_hide")][string]$Variant
 )
 
 $stdoutFile = [System.IO.Path]::GetTempFileName()
@@ -14,6 +15,7 @@ try {
 
     New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
     $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR = $OutputDir
+    $env:P1_RV4_CAMERA_SAFETY_VARIANT = $Variant
 
     $process = Start-Process `
         -FilePath $godotExecutable `
@@ -43,8 +45,10 @@ try {
         Write-Error "R-V4 camera-safety capture emitted an engine/script/failure error despite process exit 0."
         exit 1
     }
-    if (-not $content.Contains("P1_RV4_BASELINE_REPRODUCED")) {
-        Write-Error "Expected R-V4 baseline reproduction marker missing."
+
+    $expectedMarker = if ($Variant -eq "baseline") { "P1_RV4_BASELINE_REPRODUCED" } else { "P1_RV4_NEAR_HIDE_CHALLENGER_PASS" }
+    if (-not $content.Contains($expectedMarker)) {
+        Write-Error "Expected R-V4 marker missing for variant $Variant`: $expectedMarker"
         exit 1
     }
     if (-not $content.Contains("D3D12") -or -not $content.Contains("Forward+")) {
