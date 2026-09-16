@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [baseline, near_hide]
+        variant: [baseline, near_hide, overhead_escape]
     env:
       P1_RV4_CAMERA_SAFETY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       P1_RV4_CAMERA_SAFETY_VARIANT: ${{ matrix.variant }}
