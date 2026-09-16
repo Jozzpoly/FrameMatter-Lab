@@ -9,9 +9,11 @@ const RING_MIN_Y := 1
 const RING_MAX_Y := 4
 const VISUAL_UNSAFE_ARM_MAX := 0.60
 const VISUAL_UNSAFE_AVATAR_GAP_MAX := 0.25
+const ALLOWED_VARIANTS := ["baseline", "near_hide"]
 
 var _failures: Array[String] = []
 var _output_dir := ""
+var _variant := "baseline"
 var _p1: Node
 var _space: LocalMatterSpace
 var _player: SpaceQueryCharacter
@@ -29,8 +31,16 @@ func _run() -> void:
 		_output_dir = ProjectSettings.globalize_path("res://artifacts/p1-rv4-camera-safety")
 	DirAccess.make_dir_recursive_absolute(_output_dir)
 
+	_variant = OS.get_environment("P1_RV4_CAMERA_SAFETY_VARIANT").strip_edges().to_lower()
+	if _variant.is_empty():
+		_variant = "baseline"
+	_check(ALLOWED_VARIANTS.has(_variant), "R-V4 variant is supported: %s" % _variant)
+	if not ALLOWED_VARIANTS.has(_variant):
+		_finish()
+		return
+
 	var packed := load("res://p1/main.tscn") as PackedScene
-	_check(packed != null, "R-V4 baseline loads canonical P1 scene")
+	_check(packed != null, "R-V4 capture loads canonical P1 scene")
 	if packed == null:
 		_finish()
 		return
@@ -46,14 +56,12 @@ func _run() -> void:
 	_interactor = _p1.call("get_interactor") as P1MatterInteractor
 	_check(
 		_space != null and _player != null and _camera_rig != null and _interactor != null,
-		"R-V4 baseline resolves canonical Space/player/camera/interactor"
+		"R-V4 capture resolves canonical Space/player/camera/interactor"
 	)
 	if _space == null or _player == null or _camera_rig == null or _interactor == null:
 		_cleanup_and_finish()
 		return
 
-	# Isolate the camera/avatar question. Matter surface/state remain canonical,
-	# while target/HUD feedback are unrelated to this visual-safety falsifier.
 	var target_presenter := _p1.get_node_or_null("P1MatterTargetPresentation") as P1MatterTargetPresentation
 	if target_presenter != null:
 		target_presenter.set_enabled(false)
@@ -61,16 +69,15 @@ func _run() -> void:
 	if hud != null:
 		hud.visible = false
 
-	# This is a presentation stress, not an actor-motion test. Keep the actor at
-	# an exact world point while real Matter is built around it through the normal
-	# edit path.
 	_player.set_physics_process(false)
 	_move_player_to_space_local(ACTOR_LOCAL)
+	_set_avatar_visible(true)
 	_camera_rig.reset_view()
 	await _advance_frames(SETTLE_FRAMES)
 	_print_camera_avatar_metric("00_open_reference")
 	_check(_camera_avatar_signed_distance() > 0.0, "open reference keeps Camera3D outside visible avatar capsule")
 	_check(_actual_arm_length() > VISUAL_UNSAFE_ARM_MAX, "open reference is not already in catastrophic near-avatar framing")
+	_check(_avatar_visible(), "open reference keeps avatar visible")
 	await _capture("00_open_reference")
 
 	_check(_build_tight_matter_ring(), "R-V4 creates real Matter enclosure through normal PLACE edits")
@@ -78,6 +85,7 @@ func _run() -> void:
 
 	var inside_frames := 0
 	var visual_unsafe_frames := 0
+	var visible_hazard_frames := 0
 	var minimum_signed := INF
 	var maximum_signed := -INF
 	var minimum_arm := INF
@@ -85,22 +93,29 @@ func _run() -> void:
 	for _frame in range(OBSERVE_FRAMES):
 		await physics_frame
 		await process_frame
+		_apply_variant_presentation()
 		var signed_distance := _camera_avatar_signed_distance()
 		var actual_arm := _actual_arm_length()
+		var visual_unsafe := _is_visual_unsafe(actual_arm, signed_distance)
 		minimum_signed = minf(minimum_signed, signed_distance)
 		maximum_signed = maxf(maximum_signed, signed_distance)
 		minimum_arm = minf(minimum_arm, actual_arm)
 		maximum_arm = maxf(maximum_arm, actual_arm)
 		if signed_distance < 0.0:
 			inside_frames += 1
-		if actual_arm <= VISUAL_UNSAFE_ARM_MAX and signed_distance <= VISUAL_UNSAFE_AVATAR_GAP_MAX:
+		if visual_unsafe:
 			visual_unsafe_frames += 1
+			if _avatar_visible():
+				visible_hazard_frames += 1
 
+	_apply_variant_presentation()
 	_print_camera_avatar_metric("01_tight_matter_enclosure")
 	print(
-		"P1_RV4_BASELINE_WINDOW frames=%d visual_unsafe_frames=%d inside_frames=%d min_avatar_signed=%.4f max_avatar_signed=%.4f min_actual_arm=%.4f max_actual_arm=%.4f" % [
+		"P1_RV4_SAFETY_WINDOW variant=%s frames=%d visual_unsafe_frames=%d visible_hazard_frames=%d inside_frames=%d min_avatar_signed=%.4f max_avatar_signed=%.4f min_actual_arm=%.4f max_actual_arm=%.4f" % [
+			_variant,
 			OBSERVE_FRAMES,
 			visual_unsafe_frames,
+			visible_hazard_frames,
 			inside_frames,
 			minimum_signed,
 			maximum_signed,
@@ -109,23 +124,55 @@ func _run() -> void:
 		]
 	)
 
-	# The first falsifier run proved that literal mesh penetration is an overly
-	# narrow model of the Owner failure: the camera can remain ~20 cm outside the
-	# capsule while the opaque avatar fills almost the whole rendered frame. The
-	# R-V4 invariant is therefore perceptual near-field safety, with exact capsule
-	# signed distance retained as a diagnostic rather than the sole verdict.
-	_check(
-		visual_unsafe_frames >= int(ceil(float(OBSERVE_FRAMES) * 0.8)),
-		"tight real-Matter enclosure reproduces sustained world-safe but avatar-unsafe near framing"
-	)
+	var sustained_unsafe := visual_unsafe_frames >= int(ceil(float(OBSERVE_FRAMES) * 0.8))
+	_check(sustained_unsafe, "tight real-Matter enclosure sustains the same physical near-camera stress")
+	if _variant == "baseline":
+		_check(
+			visible_hazard_frames >= int(ceil(float(OBSERVE_FRAMES) * 0.8)),
+			"baseline reproduces sustained world-safe but avatar-unsafe visible framing"
+		)
+	else:
+		_check(visible_hazard_frames == 0, "near-hide challenger suppresses visible avatar throughout unsafe near framing")
+		_check(not _avatar_visible(), "near-hide challenger leaves avatar hidden in sustained unsafe state")
+
 	await _capture("01_tight_matter_enclosure")
 
 	if _failures.is_empty():
-		print(
-			"P1_RV4_BASELINE_REPRODUCED: real Matter obstruction sustained catastrophic near-avatar framing while camera remained outside the capsule; fix not yet promoted."
-		)
+		if _variant == "baseline":
+			print("P1_RV4_BASELINE_REPRODUCED: real Matter obstruction sustained catastrophic near-avatar framing while camera remained outside the capsule; fix not yet promoted.")
+		else:
+			print("P1_RV4_NEAR_HIDE_CHALLENGER_PASS: identical camera/world state retained while local avatar presentation was suppressed in the unsafe near field; diagnostic challenger only.")
 
 	_cleanup_and_finish()
+
+
+func _apply_variant_presentation() -> void:
+	if _variant != "near_hide":
+		_set_avatar_visible(true)
+		return
+	_set_avatar_visible(not _is_visual_unsafe(_actual_arm_length(), _camera_avatar_signed_distance()))
+
+
+func _is_visual_unsafe(actual_arm: float, signed_distance: float) -> bool:
+	return actual_arm <= VISUAL_UNSAFE_ARM_MAX and signed_distance <= VISUAL_UNSAFE_AVATAR_GAP_MAX
+
+
+func _avatar_body() -> MeshInstance3D:
+	return _player.get_node_or_null("Body") as MeshInstance3D
+
+
+func _avatar_visible() -> bool:
+	var body := _avatar_body()
+	return body != null and body.visible
+
+
+func _set_avatar_visible(value: bool) -> void:
+	var body := _avatar_body()
+	if body != null:
+		body.visible = value
+	var facing_marker := _player.get_node_or_null("FacingMarker") as MeshInstance3D
+	if facing_marker != null:
+		facing_marker.visible = value
 
 
 func _build_tight_matter_ring() -> bool:
@@ -158,7 +205,7 @@ func _move_player_to_space_local(local_position: Vector3) -> void:
 
 
 func _camera_avatar_signed_distance() -> float:
-	var body := _player.get_node_or_null("Body") as MeshInstance3D
+	var body := _avatar_body()
 	var camera := _camera_rig.get_camera()
 	if body == null or camera == null or not (body.mesh is CapsuleMesh):
 		return INF
@@ -175,7 +222,7 @@ func _actual_arm_length() -> float:
 
 
 func _print_camera_avatar_metric(label: String) -> void:
-	var body := _player.get_node_or_null("Body") as MeshInstance3D
+	var body := _avatar_body()
 	var camera := _camera_rig.get_camera()
 	var spring_arm := _camera_rig.get_node("YawPivot/PitchPivot/SpringArm3D") as SpringArm3D
 	var local_camera := body.to_local(camera.global_position) if body != null else Vector3.ZERO
@@ -183,7 +230,8 @@ func _print_camera_avatar_metric(label: String) -> void:
 	var actual_arm := _actual_arm_length()
 	var desired_arm := spring_arm.spring_length
 	print(
-		"P1_RV4_CAMERA_AVATAR_METRIC label=%s desired_arm=%.4f actual_arm=%.4f camera_body_local=(%.4f,%.4f,%.4f) avatar_signed=%.4f inside=%s visual_unsafe=%s" % [
+		"P1_RV4_CAMERA_AVATAR_METRIC variant=%s label=%s desired_arm=%.4f actual_arm=%.4f camera_body_local=(%.4f,%.4f,%.4f) avatar_signed=%.4f inside=%s visual_unsafe=%s avatar_visible=%s" % [
+			_variant,
 			label,
 			desired_arm,
 			actual_arm,
@@ -192,7 +240,8 @@ func _print_camera_avatar_metric(label: String) -> void:
 			local_camera.z,
 			signed_distance,
 			str(signed_distance < 0.0),
-			str(actual_arm <= VISUAL_UNSAFE_ARM_MAX and signed_distance <= VISUAL_UNSAFE_AVATAR_GAP_MAX),
+			str(_is_visual_unsafe(actual_arm, signed_distance)),
+			str(_avatar_visible()),
 		]
 	)
 
@@ -208,7 +257,7 @@ func _capture(label: String) -> void:
 	var save_error := image.save_png(path)
 	_check(save_error == OK, "R-V4 capture %s saved PNG" % label)
 	if save_error == OK:
-		print("P1_RV4_CAMERA_SAFETY_FRAME: label=%s %dx%d -> %s" % [label, image.get_width(), image.get_height(), path])
+		print("P1_RV4_CAMERA_SAFETY_FRAME: variant=%s label=%s %dx%d -> %s" % [_variant, label, image.get_width(), image.get_height(), path])
 
 
 func _advance_frames(count: int) -> void:
