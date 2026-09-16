@@ -52,6 +52,9 @@ jobs:
       - name: Run P1 volumetric actor challenger
         run: bash ci/run_godot_probe.sh res://tests/p1_volumetric_actor_challenger.gd P1_VOLUMETRIC_ACTOR_PASS
 
+      - name: Guard actor shallow-overlap ground semantics
+        run: bash ci/run_godot_probe.sh res://tests/p1_actor_overlap_ground_regression.gd P1_ACTOR_OVERLAP_GROUND_PASS
+
       - name: Run P1 composed scene foundation smoke
         run: bash ci/run_godot_probe.sh res://tests/p1_scene_foundation_smoke.gd P1_SCENE_FOUNDATION_PASS
 
