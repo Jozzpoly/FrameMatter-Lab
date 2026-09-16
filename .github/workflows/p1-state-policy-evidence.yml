@@ -43,7 +43,7 @@ jobs:
       - name: Checkout exact source commit
         uses: actions/checkout@v6
         with:
-          ref: ${{ env:P1_STATE_POLICY_SOURCE_SHA }}
+          ref: ${{ env.P1_STATE_POLICY_SOURCE_SHA }}
 
       - name: Verify exact source checkout
         shell: pwsh
