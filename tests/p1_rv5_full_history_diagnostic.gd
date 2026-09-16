@@ -30,6 +30,12 @@ func _monitor_post_freeze_frames() -> void:
 	for frame_index in range(160):
 		await physics_frame
 		await process_frame
+		if (
+			_player == null or not is_instance_valid(_player)
+			or _space == null or not is_instance_valid(_space)
+		):
+			print("P1_RV5_POST_FREEZE_MONITOR stopped=scene_teardown frame=%d" % frame_index)
+			return
 		var grounded_now := _player.grounded
 		var support_same_now := _player.support_space == _space
 		var state_changed := (
