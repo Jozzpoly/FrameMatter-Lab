@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$OutputDir,
-    [Parameter(Mandatory = $true)][ValidateSet("baseline", "near_hide", "overhead_escape")][string]$Variant
+    [Parameter(Mandatory = $true)][ValidateSet("baseline", "near_hide", "overhead_escape", "production")][string]$Variant
 )
 
 $stdoutFile = [System.IO.Path]::GetTempFileName()
@@ -50,6 +50,7 @@ try {
         "baseline" { "P1_RV4_BASELINE_REPRODUCED" }
         "near_hide" { "P1_RV4_NEAR_HIDE_CHALLENGER_PASS" }
         "overhead_escape" { "P1_RV4_OVERHEAD_ESCAPE_CHALLENGER_PASS" }
+        "production" { "P1_RV4_PRODUCTION_POLICY_PASS" }
     }
     if (-not $content.Contains($expectedMarker)) {
         Write-Error "Expected R-V4 marker missing for variant $Variant`: $expectedMarker"
@@ -60,7 +61,11 @@ try {
         exit 1
     }
 
-    foreach ($file in @("00_open_reference.png", "01_tight_matter_enclosure.png")) {
+    $required = @("00_open_reference.png", "01_tight_matter_enclosure.png")
+    if ($Variant -eq "production") {
+        $required += "02_post_obstruction_recovery.png"
+    }
+    foreach ($file in $required) {
         $path = Join-Path $OutputDir $file
         if (-not (Test-Path $path)) {
             Write-Error "R-V4 rendered evidence file missing: $path"
