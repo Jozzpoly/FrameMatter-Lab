@@ -40,6 +40,9 @@ jobs:
       - name: Compile P1 dependency graph
         run: bash ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
 
+      - name: Verify procedural Matter front-face orientation
+        run: bash ci/run_godot_probe.sh res://tests/p1_cell_mesher_front_face_probe.gd P1_CELL_MESHER_FRONT_FACE_PASS
+
       - name: Verify canonical P1 startup
         run: bash ci/run_godot_probe.sh res://tests/p1_canonical_startup_smoke.gd P1_CANONICAL_STARTUP_PASS
 
