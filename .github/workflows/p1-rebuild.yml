@@ -43,6 +43,9 @@ jobs:
       - name: Verify procedural Matter front-face orientation
         run: bash ci/run_godot_probe.sh res://tests/p1_cell_mesher_front_face_probe.gd P1_CELL_MESHER_FRONT_FACE_PASS
 
+      - name: Verify Matter visual identity across provider kinds
+        run: bash ci/run_godot_probe.sh res://tests/p1_matter_surface_identity_probe.gd P1_MATTER_SURFACE_IDENTITY_PASS
+
       - name: Verify canonical P1 startup
         run: bash ci/run_godot_probe.sh res://tests/p1_canonical_startup_smoke.gd P1_CANONICAL_STARTUP_PASS
 
