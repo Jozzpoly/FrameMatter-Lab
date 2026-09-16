@@ -102,6 +102,9 @@ func _hide_unrelated_instrumentation() -> void:
 	var marker := _p1.get_node_or_null("WorldOriginMarker") as MeshInstance3D
 	if marker != null:
 		marker.visible = false
+	var target_presenter := _p1.get_node_or_null("P1MatterTargetPresentation") as P1MatterTargetPresentation
+	if target_presenter != null:
+		target_presenter.set_enabled(false)
 
 
 func _apply_variant() -> void:
@@ -217,7 +220,7 @@ func _cleanup_and_finish() -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_STATE_POLICY_CAPTURE_PASS: variant=%s completed real STATIC, DYNAMIC, split and mixed-state rendered evidence." % _variant)
+		print("P1_STATE_POLICY_CAPTURE_PASS: variant=%s completed isolated real STATIC, DYNAMIC, split and mixed-state rendered evidence." % _variant)
 		quit(0)
 		return
 	for failure in _failures:
