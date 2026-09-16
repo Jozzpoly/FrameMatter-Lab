@@ -27,14 +27,10 @@ jobs:
   windows-forward-plus-rv4-camera-safety:
     runs-on: windows-latest
     timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        variant: [baseline, near_hide, overhead_escape]
     env:
       P1_RV4_CAMERA_SAFETY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      P1_RV4_CAMERA_SAFETY_VARIANT: ${{ matrix.variant }}
-      P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR: ${{ github.workspace }}\\artifacts\\p1-rv4-camera-safety\\${{ matrix.variant }}
+      P1_RV4_CAMERA_SAFETY_VARIANT: production
+      P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR: ${{ github.workspace }}\\artifacts\\p1-rv4-camera-safety\\production
     steps:
       - name: Checkout exact source commit
         uses: actions/checkout@v6
@@ -62,7 +58,7 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_import.ps1
 
-      - name: Capture R-V4 visual-safety variant
+      - name: Capture R-V4 production visual-safety policy
         shell: pwsh
         run: ./ci/run_godot_rv4_camera_safety_capture.ps1 -OutputDir $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR -Variant $env:P1_RV4_CAMERA_SAFETY_VARIANT
 
@@ -73,7 +69,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR | Out-Null
           $checkedOut = (git rev-parse HEAD).Trim()
           @"
-          FrameMatter P1 R-V4 camera visual-safety experiment
+          FrameMatter P1 R-V4 camera visual-safety production evidence
           workflow_run=$env:GITHUB_RUN_ID
           source_commit=$env:P1_RV4_CAMERA_SAFETY_SOURCE_SHA
           checked_out_commit=$checkedOut
@@ -83,15 +79,15 @@ jobs:
           renderer=Godot 4.7.2 Forward+ / D3D12
           source_scene=res://p1/main.tscn
           capture_script=res://tests/p1_rv4_camera_visual_safety_capture.gd
-          fixture=real Matter tight ring built through canonical P1 PLACE edit path
-          promotion=none; baseline/challenger evidence only
+          fixture=real Matter tight ring built and removed through canonical P1 edit path
+          policy=canonical collision-clear escape search with high-pitch presentation candidates
           "@ | Set-Content -Path (Join-Path $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR "RV4-CAMERA-SAFETY-EVIDENCE-INFO.txt")
 
       - name: Upload R-V4 evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P1-RV4-CameraSafety-${{ matrix.variant }}
-          path: artifacts/p1-rv4-camera-safety/${{ matrix.variant }}
+          name: FrameMatter-P1-RV4-CameraSafety-Production
+          path: artifacts/p1-rv4-camera-safety/production
           retention-days: 30
           if-no-files-found: warn
