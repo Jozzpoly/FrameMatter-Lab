@@ -43,18 +43,22 @@ func _orientation_stats(mesh: Mesh) -> Dictionary:
 	var arrays: Array = mesh.surface_get_arrays(0)
 	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var indices := PackedInt32Array()
+	var index_variant: Variant = arrays[Mesh.ARRAY_INDEX]
+	if index_variant is PackedInt32Array:
+		indices = index_variant as PackedInt32Array
 	var positive := 0
 	var negative := 0
 	var degenerate := 0
 	var triangle_count := 0
-	var index_count := indices.size() if not indices.is_empty() else vertices.size()
+	var indexed := not indices.is_empty()
+	var index_count := indices.size() if indexed else vertices.size()
 	for offset in range(0, index_count, 3):
 		if offset + 2 >= index_count:
 			break
-		var ia := int(indices[offset]) if not indices.is_empty() else offset
-		var ib := int(indices[offset + 1]) if not indices.is_empty() else offset + 1
-		var ic := int(indices[offset + 2]) if not indices.is_empty() else offset + 2
+		var ia := int(indices[offset]) if indexed else offset
+		var ib := int(indices[offset + 1]) if indexed else offset + 1
+		var ic := int(indices[offset + 2]) if indexed else offset + 2
 		var a: Vector3 = vertices[ia]
 		var b: Vector3 = vertices[ib]
 		var c: Vector3 = vertices[ic]
