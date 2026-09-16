@@ -15,6 +15,7 @@ try {
     New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
     $output = (Resolve-Path -LiteralPath $OutputDir).Path
     $env:P1_RV5_REFREEZE_DIAG_DIR = $output
+    $moviePath = Join-Path $output "p1-rv5-refreeze-diagnostic.avi"
 
     $process = Start-Process `
         -FilePath $godotExecutable `
@@ -23,6 +24,7 @@ try {
             "--audio-driver", "Dummy",
             "--rendering-method", "forward_plus",
             "--rendering-driver", "d3d12",
+            "--write-movie", $moviePath,
             "--fixed-fps", "30",
             "--script", "res://tests/p1_rv5_refreeze_continuity_diagnostic.gd"
         ) `
@@ -75,7 +77,18 @@ try {
         }
     }
 
+    if (-not (Test-Path -LiteralPath $moviePath)) {
+        Write-Error "R-V5 refreeze diagnostic movie evidence missing: $moviePath"
+        exit 1
+    }
+    $movie = Get-Item -LiteralPath $moviePath
+    if ($movie.Length -lt 1048576) {
+        Write-Error "R-V5 refreeze diagnostic movie is unexpectedly small: $($movie.Length) bytes"
+        exit 1
+    }
+
     Set-Content -Path (Join-Path $output "R-V5-REFREEZE-DIAGNOSTIC-LOG.txt") -Value $content
+    Write-Host "P1_RV5_REFREEZE_DIAGNOSTIC_MOVIE_PASS path=$moviePath bytes=$($movie.Length) nominal_fps=30"
     Write-Host "P1_RV5_REFREEZE_DIAGNOSTIC_EVIDENCE_PASS path=$output"
 }
 finally {
