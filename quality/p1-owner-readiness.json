@@ -14,7 +14,7 @@
   "approved_runtime_commit": "",
   "owner_attention_event": {
     "allowed": false,
-    "reason": "The post-R-V5 runtime candidate has re-earned pre-freeze mechanical and rendered evidence on one exact SHA, but recorded G8 adversarial rehearsal, independent read-only assurance and final cross-plane readiness audit are still required before Owner attention can be authorized."
+    "reason": "The post-R-V5 frozen runtime has re-earned exact-candidate evidence and passed the recorded G8 adversarial rehearsal with rendered review, but fresh independent read-only assurance and the final cross-plane readiness audit are still required before Owner attention can be authorized."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -148,10 +148,11 @@
       ]
     },
     "adversarial_rehearsal": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "recorded_adversarial_rehearsal",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
       "evidence": [
+        "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md",
         "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md"
       ]
     },
@@ -161,7 +162,10 @@
       "verified_runtime_commit": "",
       "evidence": [
         "docs/INDEPENDENT-ASSURANCE.md",
-        "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md"
+        "docs/evidence/p1-independent-assurance-review-packet.md",
+        "quality/assurance/p1-independent-review.json",
+        "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md",
+        "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md"
       ]
     },
     "final_readiness_audit": {
@@ -170,7 +174,8 @@
       "verified_runtime_commit": "",
       "evidence": [
         "docs/QUALITY-SYSTEM.md",
-        "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md"
+        "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md",
+        "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md"
       ]
     }
   },
@@ -254,6 +259,7 @@
       "verified_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
       "evidence": [
         "docs/evidence/p1-g4-camera-composition.md",
+        "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md",
         "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md"
       ]
     },
@@ -262,13 +268,13 @@
       "verified_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
       "evidence": [
         "docs/evidence/p1-rv5-chaotic-owner-surface-rehearsal.md",
+        "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md",
         "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md"
       ]
     }
   },
   "open_blockers": [
-    "Recorded G8 adversarial rehearsal must pass on frozen candidate 337716db303e94e459cad2b9bcdbfcb8b6c0474b.",
-    "Independent read-only assurance must pass on the same frozen candidate under campaign contract v4.",
+    "Independent read-only assurance must pass on frozen candidate 337716db303e94e459cad2b9bcdbfcb8b6c0474b under campaign contract v4.",
     "Final cross-plane readiness audit must pass and explicitly authorize promotion; Owner attention remains blocked until then."
   ]
 }
