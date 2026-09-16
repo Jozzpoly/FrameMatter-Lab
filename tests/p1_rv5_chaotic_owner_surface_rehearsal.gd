@@ -232,17 +232,26 @@ func _run() -> void:
 	_check(_persistent_edits >= MIN_PERSISTENT_EDITS, "R-V5 final state still represents accumulated session rather than reset")
 	_camera_rig.reset_view()
 	await _advance_frames(60)
+	var final_provider := _space.get_active_provider()
+	_check(_player.grounded, "R-V5 actor remains grounded through the full final refreeze dwell")
+	_check(_player.support_space == _space, "R-V5 actor retains logical Space support through the full final refreeze dwell")
+	_check(_player.support_body == final_provider, "R-V5 actor retains the current STATIC provider through the full final refreeze dwell")
+	var final_support_error := INF
+	if _player.grounded and _player.support_space == _space and final_provider != null:
+		final_support_error = final_provider.to_global(_player.support_local_center).distance_to(_player.global_position)
+	_check(final_support_error < 0.001, "R-V5 final actor/support anchor remains coherent after prolonged refreeze")
 	_print_camera_metric("09_refrozen_irregular_final")
 	await _capture("09_refrozen_irregular_final")
 
 	print(
-		"P1_RV5_CHAOS_METRIC persistent_edits=%d removes=%d places=%d initial_solid=%d final_solid=%d revision_delta=%d movie_nominal_fps=30" % [
+		"P1_RV5_CHAOS_METRIC persistent_edits=%d removes=%d places=%d initial_solid=%d final_solid=%d revision_delta=%d final_support_error=%.8f movie_nominal_fps=30" % [
 			_persistent_edits,
 			REMOVE_CELLS.size(),
 			PLACE_CELLS.size(),
 			_initial_solid_count,
 			_space.volume.count_solid(),
 			_space.volume.revision - _initial_revision,
+			final_support_error,
 		]
 	)
 
