@@ -1,0 +1,85 @@
+name: P1 R-V5 Full History Diagnostic
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/p1-rv5-full-history-diagnostic.yml'
+      - 'ci/run_godot_rv5_full_history_diagnostic.ps1'
+      - 'tests/p1_rv5_full_history_diagnostic.gd'
+      - 'tests/p1_rv5_chaotic_owner_surface_rehearsal.gd'
+      - 'p1/**'
+      - 'actor/**'
+      - 'space/**'
+      - 'matter/**'
+      - 'construct/**'
+      - 'project.godot'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-forward-plus-full-history-diagnostic:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      P1_RV5_FULL_HISTORY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      P1_RV5_FULL_HISTORY_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-rv5-full-history-diagnostic
+
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_RV5_FULL_HISTORY_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          if ($checkedOut -ne $env:P1_RV5_FULL_HISTORY_SOURCE_SHA) {
+            throw "R-V5 full-history diagnostic checkout mismatch: expected $env:P1_RV5_FULL_HISTORY_SOURCE_SHA, got $checkedOut"
+          }
+          "R-V5 full-history diagnostic exact source checkout: $checkedOut"
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Import project
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Run full R-V5 history diagnostic
+        shell: pwsh
+        run: ./ci/run_godot_rv5_full_history_diagnostic.ps1 -OutputDir $env:P1_RV5_FULL_HISTORY_EVIDENCE_DIR
+
+      - name: Write evidence provenance
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:P1_RV5_FULL_HISTORY_EVIDENCE_DIR | Out-Null
+          $checkedOut = (git rev-parse HEAD).Trim()
+          @"
+          FrameMatter P1 R-V5 full-history diagnostic
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:P1_RV5_FULL_HISTORY_SOURCE_SHA
+          checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
+          platform=windows-latest
+          renderer=Godot 4.7.2 Forward+ / D3D12
+          source_scene=res://p1/main.tscn
+          diagnostic_script=res://tests/p1_rv5_full_history_diagnostic.gd
+          inherited_rehearsal=res://tests/p1_rv5_chaotic_owner_surface_rehearsal.gd
+          scope=diagnostic only; exact full R-V5 inherited scenario with enriched 07/08/09 actor-support-camera-world telemetry
+          "@ | Set-Content -Path (Join-Path $env:P1_RV5_FULL_HISTORY_EVIDENCE_DIR "R-V5-FULL-HISTORY-DIAGNOSTIC-INFO.txt")
+
+      - name: Upload full-history diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-RV5-Full-History-Diagnostic-Windows
+          path: artifacts/p1-rv5-full-history-diagnostic
+          retention-days: 30
