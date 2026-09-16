@@ -1,35 +1,57 @@
-name: Deliver P0.5 Owner Test
+name: Deliver P1 Owner Candidate
 
+# Delivery materializes an already-approved frozen runtime candidate. The
+# governance/evidence commit that authorizes delivery may be newer than the
+# runtime commit. Manual dispatch is never authorization by itself.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "lab/**"
-      - "actor/**"
-      - "construct/**"
-      - "matter/**"
-      - "space/**"
-      - "tests/p0_interactive_lab_smoke.gd"
-      - "tests/p05_interaction_baseline_smoke.gd"
-      - "project.godot"
-      - "export_presets.cfg"
-      - ".github/workflows/deliver-owner-test.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: "p05-owner-delivery"
+  group: "p1-owner-candidate-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build browser + Windows Owner test
+    name: Materialize approved P1 Owner candidate
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
-      - name: Checkout
+      - name: Checkout governance and evidence state
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Enforce Owner-readiness authorization
+        id: readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python ci/verify_owner_readiness.py --mode delivery
+          python ci/verify_independent_assurance.py --mode delivery
+          runtime_commit=$(python ci/verify_owner_readiness.py --mode approved-runtime)
+          echo "runtime_commit=$runtime_commit" >> "$GITHUB_OUTPUT"
+          echo "governance_commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          echo "Approved frozen runtime: $runtime_commit"
+          echo "Governance/evidence commit: $GITHUB_SHA"
+
+      - name: Checkout the exact approved runtime separately
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.readiness.outputs.runtime_commit }}
+          path: runtime
+          fetch-depth: 1
+
+      - name: Prove runtime checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual=$(git -C runtime rev-parse HEAD)
+          expected='${{ steps.readiness.outputs.runtime_commit }}'
+          test "$actual" = "$expected"
+          echo "APPROVED_RUNTIME_CHECKOUT_PASS: $actual"
 
       - name: Setup Godot 4.7.2 with export templates
         uses: chickensoft-games/setup-godot@v2.4.1
@@ -38,52 +60,79 @@ jobs:
           use-dotnet: false
           include-templates: true
 
-      - name: Prime project import
-        run: godot --headless --path . --editor --quit
+      # Packaging-environment sanity checks use the current governance wrappers
+      # against the frozen runtime checkout. They do not substitute for G8 evidence.
+      - name: Strict import of approved runtime
+        run: cd runtime && bash ../ci/run_godot_import.sh
 
-      - name: Verify defended P0 before packaging
-        run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
+      - name: Compile approved runtime dependency graph
+        run: cd runtime && bash ../ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
 
-      - name: Verify P0.5 interaction baseline before packaging
-        run: godot --headless --path . --script res://tests/p05_interaction_baseline_smoke.gd
+      - name: Verify approved runtime canonical startup
+        run: cd runtime && bash ../ci/run_godot_probe.sh res://tests/p1_canonical_startup_smoke.gd P1_CANONICAL_STARTUP_PASS
 
-      - name: Export browser build
+      - name: Rehearse approved runtime integrated causal loop
+        run: cd runtime && bash ../ci/run_godot_probe.sh res://tests/p1_integrated_causal_loop_probe.gd P1_INTEGRATED_CAUSAL_LOOP_PASS
+
+      - name: Export browser candidate from approved runtime
         run: |
-          mkdir -p build/web
+          mkdir -p runtime/build/web
+          cd runtime
           godot --headless --path . --export-release "Web" build/web/index.html
           test -f build/web/index.html
           test -f build/web/index.wasm
           test -f build/web/index.pck
+          touch build/web/.nojekyll
 
-      - name: Export Windows build
+      - name: Export Windows candidate from approved runtime
         run: |
-          mkdir -p build/windows
-          godot --headless --path . --export-release "Windows Desktop" build/windows/FrameMatter-P05.exe
-          test -f build/windows/FrameMatter-P05.exe
+          mkdir -p runtime/build/windows
+          cd runtime
+          godot --headless --path . --export-release "Windows Desktop" build/windows/FrameMatter-P1-Owner-Candidate.exe
+          test -f build/windows/FrameMatter-P1-Owner-Candidate.exe
 
-      - name: Add no-Jekyll marker
-        run: touch build/web/.nojekyll
+      - name: Record dual-layer provenance
+        shell: bash
+        run: |
+          cat > runtime/build/P1-BUILD-INFO.txt <<EOF
+          FrameMatter P1 Owner Candidate
+          approved_runtime_commit=${{ steps.readiness.outputs.runtime_commit }}
+          governance_evidence_commit=${{ steps.readiness.outputs.governance_commit }}
+          workflow_run=${GITHUB_RUN_ID}
+          godot=4.7.2
+          governance_ref=${GITHUB_REF}
+          canonical_main_scene=res://p1/main.tscn
+          readiness_manifest=quality/p1-owner-readiness.json
+          independent_assurance=PASS
+          delivery_model=frozen_runtime_authorized_by_later_governance
+          EOF
+          cp runtime/build/P1-BUILD-INFO.txt runtime/build/web/P1-BUILD-INFO.txt
+          cp runtime/build/P1-BUILD-INFO.txt runtime/build/windows/P1-BUILD-INFO.txt
 
-      - name: Upload browser download artifact
+      - name: Upload browser candidate artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P05-Web
-          path: build/web
+          name: FrameMatter-P1-Web
+          path: runtime/build/web
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload Windows download artifact
+      - name: Upload Windows candidate artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FrameMatter-P05-Windows
-          path: build/windows/FrameMatter-P05.exe
+          name: FrameMatter-P1-Windows
+          path: runtime/build/windows
           if-no-files-found: error
           retention-days: 30
 
       - name: Delivery summary
         run: |
-          echo "Defended P0 smoke PASS"
-          echo "P0.5 interaction baseline smoke PASS"
+          echo "Owner-readiness authorization PASS"
+          echo "Independent assurance PASS"
+          echo "Approved runtime checkout identity PASS"
+          echo "Approved runtime packaging sanity PASS"
           echo "Browser export PASS"
           echo "Windows export PASS"
-          echo "Download artifacts: FrameMatter-P05-Web and FrameMatter-P05-Windows"
+          echo "Runtime: ${{ steps.readiness.outputs.runtime_commit }}"
+          echo "Governance: ${{ steps.readiness.outputs.governance_commit }}"
+          echo "Artifacts: FrameMatter-P1-Web and FrameMatter-P1-Windows"

@@ -1,0 +1,155 @@
+[gd_scene load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://p1/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://p1/camera_rig.tscn" id="3_camera"]
+[ext_resource type="Script" path="res://p1/space_registry.gd" id="4_registry"]
+[ext_resource type="PackedScene" path="res://p1/matter_interactor.tscn" id="5_interactor"]
+[ext_resource type="Script" path="res://p1/space_control.gd" id="6_space_control"]
+[ext_resource type="Script" path="res://p1/matter_surface_grid.gd" id="7_surface_grid"]
+[ext_resource type="Script" path="res://p1/matter_state_presentation.gd" id="8_state_presentation"]
+[ext_resource type="Script" path="res://p1/matter_target_presentation.gd" id="9_target_presentation"]
+[ext_resource type="Script" path="res://p1/interaction_feedback.gd" id="10_interaction_feedback"]
+[ext_resource type="Script" path="res://p1/world_reference_presentation.gd" id="11_world_reference_presentation"]
+[ext_resource type="Script" path="res://p1/hud_presentation.gd" id="12_hud_presentation"]
+
+[sub_resource type="Environment" id="Environment_P1"]
+background_mode = 1
+background_color = Color(0.10, 0.16, 0.23, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.56, 0.65, 0.76, 1)
+ambient_light_energy = 0.42
+ambient_light_sky_contribution = 0.0
+
+[sub_resource type="BoxMesh" id="GroundMesh"]
+size = Vector3(64, 0.5, 64)
+
+[sub_resource type="StandardMaterial3D" id="GroundMaterial"]
+albedo_color = Color(0.20, 0.23, 0.27, 1)
+roughness = 0.95
+
+[sub_resource type="BoxShape3D" id="GroundShape"]
+size = Vector3(64, 0.5, 64)
+
+[sub_resource type="StyleBoxFlat" id="HUDPanelStyle"]
+bg_color = Color(0.025, 0.035, 0.05, 0.88)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.32, 0.48, 0.64, 0.72)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StandardMaterial3D" id="OriginMaterial"]
+albedo_color = Color(0.85, 0.48, 0.10, 1)
+emission_enabled = true
+emission = Color(0.18, 0.055, 0.005, 1)
+emission_energy_multiplier = 0.6
+
+[sub_resource type="BoxMesh" id="OriginMesh"]
+size = Vector3(0.25, 2.0, 0.25)
+
+[node name="P1Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_P1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-52, -32, 0)
+light_energy = 0.88
+shadow_enabled = true
+
+[node name="FillLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-52, 148, 0)
+light_color = Color(0.72, 0.80, 0.92, 1)
+light_energy = 0.24
+light_specular = 0.0
+shadow_enabled = false
+
+[node name="WorldReference" type="StaticBody3D" parent="."]
+position = Vector3(0, -1.25, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="WorldReference"]
+mesh = SubResource("GroundMesh")
+material_override = SubResource("GroundMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="WorldReference"]
+shape = SubResource("GroundShape")
+
+[node name="P1WorldReferencePresentation" type="Node3D" parent="WorldReference"]
+script = ExtResource("11_world_reference_presentation")
+
+[node name="WorldOriginMarker" type="MeshInstance3D" parent="."]
+position = Vector3(-7.25, 0, -7.25)
+mesh = SubResource("OriginMesh")
+material_override = SubResource("OriginMaterial")
+cast_shadow = 0
+
+[node name="Spaces" type="Node3D" parent="."]
+
+[node name="P1SpaceRegistry" type="Node" parent="."]
+script = ExtResource("4_registry")
+
+[node name="P1SpaceControl" type="Node" parent="."]
+script = ExtResource("6_space_control")
+
+[node name="P1Player" parent="." instance=ExtResource("2_player")]
+
+[node name="P1CameraRig" parent="." instance=ExtResource("3_camera")]
+
+[node name="P1MatterInteractor" parent="." instance=ExtResource("5_interactor")]
+
+[node name="P1MatterSurfaceGrid" type="Node" parent="."]
+script = ExtResource("7_surface_grid")
+
+[node name="P1MatterStatePresentation" type="Node" parent="."]
+script = ExtResource("8_state_presentation")
+
+[node name="P1MatterTargetPresentation" type="Node" parent="."]
+script = ExtResource("9_target_presentation")
+
+[node name="P1HudPresentation" type="Node" parent="."]
+script = ExtResource("12_hud_presentation")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="PanelContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 346.0
+offset_bottom = 74.0
+clip_contents = true
+theme_override_styles/panel = SubResource("HUDPanelStyle")
+
+[node name="MarginContainer" type="MarginContainer" parent="HUD/Panel"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD/Panel/MarginContainer"]
+theme_override_constants/separation = 5
+
+[node name="Status" type="Label" parent="HUD/Panel/MarginContainer/VBoxContainer"]
+theme_override_font_sizes/font_size = 15
+text = "STATIC   ·   REMOVE   ·   1 SPACE"
+
+[node name="Hint" type="Label" parent="HUD/Panel/MarginContainer/VBoxContainer"]
+theme_override_colors/font_color = Color(0.68, 0.76, 0.84, 1)
+theme_override_font_sizes/font_size = 11
+text = "WASD move   ·   T state   ·   E edit   ·   LMB apply"
+
+[node name="P1InteractionFeedback" type="Control" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("10_interaction_feedback")

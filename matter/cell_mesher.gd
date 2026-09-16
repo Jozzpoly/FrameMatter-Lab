@@ -19,6 +19,13 @@ const FACE_NORMALS := [
 	Vector3(0, 0, -1),
 ]
 
+# FACE_VERTICES remains the shared logical face/triangle template used by
+# presentation consumers as well as this mesher. Its stored triangle order has
+# geometric cross products aligned with FACE_NORMALS, while Godot renders
+# clockwise triangle winding as the front side. build_mesh() therefore reverses
+# each stored triangle at emission time so the visible front face and authored
+# outward normal agree without silently changing the presentation consumers'
+# face-corner assumptions.
 const FACE_VERTICES := [
 	[Vector3(1, 0, 0), Vector3(1, 1, 0), Vector3(1, 1, 1), Vector3(1, 0, 0), Vector3(1, 1, 1), Vector3(1, 0, 1)],
 	[Vector3(0, 0, 1), Vector3(0, 1, 1), Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(0, 1, 0), Vector3(0, 0, 0)],
@@ -27,6 +34,8 @@ const FACE_VERTICES := [
 	[Vector3(1, 0, 1), Vector3(1, 1, 1), Vector3(0, 1, 1), Vector3(1, 0, 1), Vector3(0, 1, 1), Vector3(0, 0, 1)],
 	[Vector3(0, 0, 0), Vector3(0, 1, 0), Vector3(1, 1, 0), Vector3(0, 0, 0), Vector3(1, 1, 0), Vector3(1, 0, 0)],
 ]
+
+const TRIANGLE_FRONT_ORDER := [0, 2, 1]
 
 
 static func count_exposed_faces(volume: CellVolume) -> int:
@@ -61,8 +70,10 @@ static func build_mesh(volume: CellVolume) -> ArrayMesh:
 				for face_index in range(FACE_DIRECTIONS.size()):
 					if volume.get_cell(cell + FACE_DIRECTIONS[face_index]) != CellVolume.EMPTY:
 						continue
-					for vertex in FACE_VERTICES[face_index]:
-						surface.set_normal(FACE_NORMALS[face_index])
-						surface.add_vertex(origin + vertex)
+					var face_vertices: Array = FACE_VERTICES[face_index]
+					for triangle_start in [0, 3]:
+						for local_index in TRIANGLE_FRONT_ORDER:
+							surface.set_normal(FACE_NORMALS[face_index])
+							surface.add_vertex(origin + Vector3(face_vertices[triangle_start + local_index]))
 
 	return surface.commit(mesh)

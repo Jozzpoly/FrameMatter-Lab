@@ -4,10 +4,16 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: research-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   current-campaign-validation:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -19,17 +25,22 @@ jobs:
           use-dotnet: false
           include-templates: false
 
-      - name: Parse/import project
-        run: godot --headless --path . --editor --quit
+      - name: Strict import / compile gate
+        run: bash ci/run_godot_import.sh
 
-      - name: Run interactive lifecycle LAB smoke test
-        run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
-
-      - name: Run P0 interactive consumer smoke test
-        run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
+      - name: Run historical interactive regression controls
+        run: |
+          set -e
+          for script in \
+            tests/lab_lifecycle_smoke.gd \
+            tests/p0_interactive_lab_smoke.gd
+          do
+            bash ci/run_godot_clean.sh "res://$script"
+          done
 
   fast-invariant-validation:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -41,86 +52,46 @@ jobs:
           use-dotnet: false
           include-templates: false
 
-      - name: Parse/import project
-        run: godot --headless --path . --editor --quit
+      - name: Strict import / compile gate
+        run: bash ci/run_godot_import.sh
 
-      - name: Run G0 smoke test
-        run: godot --headless --path . --script res://tests/g0_smoke.gd
-
-      - name: Run G1 dynamic construct smoke test
-        run: godot --headless --path . --script res://tests/g1_dynamic_construct.gd
-
-      - name: Run G2 live mutation smoke test
-        run: godot --headless --path . --script res://tests/g2_live_mutation.gd
-
-      - name: Run I0A freeze/unfreeze host-semantics probe
-        run: godot --headless --path . --script res://tests/lifecycle_freeze_semantics_probe.gd
-
-      - name: Run I0B provider replacement lifecycle challenger
-        run: godot --headless --path . --script res://tests/lifecycle_provider_replacement_probe.gd
-
-      - name: Run interactive lifecycle LAB smoke test
-        run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
-
-      - name: Run P0 interactive consumer smoke test
-        run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
-
-      - name: Run I2 actor provider-transition challenger
-        run: godot --headless --path . --script res://tests/lifecycle_actor_provider_transition_probe.gd
-
-      - name: Run I3 shared topology split challenger
-        run: godot --headless --path . --script res://tests/lifecycle_shared_topology_split_probe.gd
-
-      - name: Run G3 frame-aware query controller challenger
-        run: godot --headless --path . --script res://tests/g3_frame_challenger.gd
-
-      - name: Run topology rebased split probe
-        run: godot --headless --path . --script res://tests/topology_rebased_split_probe.gd
-
-      - name: Run topology lineage challenger
-        run: godot --headless --path . --script res://tests/topology_lineage_probe.gd
-
-      - name: Run integrated binding transaction challenger
-        run: godot --headless --path . --script res://tests/topology_binding_transaction_probe.gd
-
-      - name: Run multi-frame pin-joint mechanics probe
-        run: godot --headless --path . --script res://tests/multiframe_pin_joint_probe.gd
-
-      - name: Run actor-on-joint multi-frame integration probe
-        run: godot --headless --path . --script res://tests/multiframe_actor_joint_probe.gd
-
-      - name: Run live-mutation joint integration probe
-        run: godot --headless --path . --script res://tests/multiframe_live_mutation_joint_probe.gd
-
-      - name: Run joint split succession integration probe
-        run: godot --headless --path . --script res://tests/multiframe_joint_split_succession_probe.gd
-
-      - name: Run multi-anchor graph partition integration probe
-        run: godot --headless --path . --script res://tests/multiframe_multi_anchor_split_partition_probe.gd
-
-      - name: Run mechanical anchor destruction semantics probe
-        run: godot --headless --path . --script res://tests/multiframe_anchor_destruction_probe.gd
-
-      - name: Run mixed mechanical anchor split probe
-        run: godot --headless --path . --script res://tests/multiframe_mixed_anchor_split_probe.gd
-
-      - name: Run merge graph contraction probe
-        run: godot --headless --path . --script res://tests/multiframe_merge_graph_contraction_probe.gd
-
-      - name: Run hinge split succession probe
-        run: godot --headless --path . --script res://tests/multiframe_hinge_split_succession_probe.gd
-
-      - name: Run stateful hinge motor-limit succession probe
-        run: godot --headless --path . --script res://tests/multiframe_hinge_motor_limit_succession_probe.gd
-
-      - name: Run stateful hinge graph partition probe
-        run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_partition_probe.gd
-
-      - name: Run stateful hinge graph contraction capstone
-        run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_contraction_probe.gd
+      - name: Run defended fast invariant set
+        run: |
+          set -e
+          for script in \
+            tests/g0_smoke.gd \
+            tests/g1_dynamic_construct.gd \
+            tests/g2_live_mutation.gd \
+            tests/lifecycle_freeze_semantics_probe.gd \
+            tests/lifecycle_provider_replacement_probe.gd \
+            tests/lab_lifecycle_smoke.gd \
+            tests/p0_interactive_lab_smoke.gd \
+            tests/lifecycle_actor_provider_transition_probe.gd \
+            tests/lifecycle_shared_topology_split_probe.gd \
+            tests/g3_frame_challenger.gd \
+            tests/topology_rebased_split_probe.gd \
+            tests/topology_lineage_probe.gd \
+            tests/topology_binding_transaction_probe.gd \
+            tests/multiframe_pin_joint_probe.gd \
+            tests/multiframe_actor_joint_probe.gd \
+            tests/multiframe_live_mutation_joint_probe.gd \
+            tests/multiframe_joint_split_succession_probe.gd \
+            tests/multiframe_multi_anchor_split_partition_probe.gd \
+            tests/multiframe_anchor_destruction_probe.gd \
+            tests/multiframe_mixed_anchor_split_probe.gd \
+            tests/multiframe_merge_graph_contraction_probe.gd \
+            tests/multiframe_hinge_split_succession_probe.gd \
+            tests/multiframe_hinge_motor_limit_succession_probe.gd \
+            tests/multiframe_stateful_hinge_partition_probe.gd \
+            tests/multiframe_stateful_hinge_contraction_probe.gd
+          do
+            bash ci/run_godot_clean.sh "res://$script"
+          done
 
   research-validation:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -135,149 +106,61 @@ jobs:
       - name: Verify Godot
         run: godot --version
 
-      - name: Parse/import project
-        run: godot --headless --path . --editor --quit
+      - name: Strict import / compile gate
+        run: bash ci/run_godot_import.sh
 
-      - name: Run G0 smoke test
-        run: godot --headless --path . --script res://tests/g0_smoke.gd
-
-      - name: Run G0 campaign
-        run: godot --headless --path . --script res://tests/g0_campaign.gd
-
-      - name: Run G1 dynamic construct smoke test
-        run: godot --headless --path . --script res://tests/g1_dynamic_construct.gd
-
-      - name: Run G1 campaign
-        run: godot --headless --path . --script res://tests/g1_campaign.gd
-
-      - name: Run G2 live mutation smoke test
-        run: godot --headless --path . --script res://tests/g2_live_mutation.gd
-
-      - name: Run G2 mutation campaign
-        run: godot --headless --path . --script res://tests/g2_campaign.gd
-
-      - name: Run I0A freeze/unfreeze host-semantics probe
-        run: godot --headless --path . --script res://tests/lifecycle_freeze_semantics_probe.gd
-
-      - name: Run I0B provider replacement lifecycle challenger
-        run: godot --headless --path . --script res://tests/lifecycle_provider_replacement_probe.gd
-
-      - name: Run interactive lifecycle LAB smoke test
-        run: godot --headless --path . --script res://tests/lab_lifecycle_smoke.gd
-
-      - name: Run P0 interactive consumer smoke test
-        run: godot --headless --path . --script res://tests/p0_interactive_lab_smoke.gd
-
-      - name: Run I2 actor provider-transition challenger
-        run: godot --headless --path . --script res://tests/lifecycle_actor_provider_transition_probe.gd
-
-      - name: Run I3 shared topology split challenger
-        run: godot --headless --path . --script res://tests/lifecycle_shared_topology_split_probe.gd
-
-      - name: Run G3 stock CharacterBody3D controlled-platform probe
-        run: godot --headless --path . --script res://tests/g3_baseline_probe.gd
-
-      - name: Run G3 free-dynamic contact probe
-        run: godot --headless --path . --script res://tests/g3_dynamic_contact_probe.gd
-
-      - name: Run G3 frame-aware query controller challenger
-        run: godot --headless --path . --script res://tests/g3_frame_challenger.gd
-
-      - name: Run G3 frame-aware campaign
-        run: godot --headless --path . --script res://tests/g3_frame_campaign.gd
-
-      - name: Run topology split probe
-        run: godot --headless --path . --script res://tests/topology_split_probe.gd
-
-      - name: Run topology actor split probe
-        run: godot --headless --path . --script res://tests/topology_actor_split_probe.gd
-
-      - name: Run topology rebased split probe
-        run: godot --headless --path . --script res://tests/topology_rebased_split_probe.gd
-
-      - name: Run topology compatible merge probe
-        run: godot --headless --path . --script res://tests/topology_compatible_merge_probe.gd
-
-      - name: Run Matter mass-properties probe
-        run: godot --headless --path . --script res://tests/matter_mass_properties_probe.gd
-
-      - name: Run topology inelastic merge probe
-        run: godot --headless --path . --script res://tests/topology_inelastic_merge_probe.gd
-
-      - name: Run topology free split divergence probe
-        run: godot --headless --path . --script res://tests/topology_free_split_divergence_probe.gd
-
-      - name: Run topology actor inelastic merge probe
-        run: godot --headless --path . --script res://tests/topology_actor_inelastic_merge_probe.gd
-
-      - name: Run topology round-trip campaign
-        run: godot --headless --path . --script res://tests/topology_roundtrip_campaign.gd
-
-      - name: Run rigid replacement timing probe
-        run: godot --headless --path . --script res://tests/rigid_replacement_timing_probe.gd
-
-      - name: Run fresh rigid-body lifecycle visibility probe
-        run: godot --headless --path . --script res://tests/rigid_creation_lifecycle_probe.gd
-
-      - name: Run topology lineage challenger
-        run: godot --headless --path . --script res://tests/topology_lineage_probe.gd
-
-      - name: Run topology lineage campaign
-        run: godot --headless --path . --script res://tests/topology_lineage_campaign.gd
-
-      - name: Run topology binding policy challenger
-        run: godot --headless --path . --script res://tests/topology_binding_policy_probe.gd
-
-      - name: Run integrated binding transaction challenger
-        run: godot --headless --path . --script res://tests/topology_binding_transaction_probe.gd
-
-      - name: Run multi-frame pin-joint mechanics probe
-        run: godot --headless --path . --script res://tests/multiframe_pin_joint_probe.gd
-
-      - name: Run actor-on-joint multi-frame integration probe
-        run: godot --headless --path . --script res://tests/multiframe_actor_joint_probe.gd
-
-      - name: Run live-mutation joint integration probe
-        run: godot --headless --path . --script res://tests/multiframe_live_mutation_joint_probe.gd
-
-      - name: Run joint split succession integration probe
-        run: godot --headless --path . --script res://tests/multiframe_joint_split_succession_probe.gd
-
-      - name: Run multi-anchor graph partition integration probe
-        run: godot --headless --path . --script res://tests/multiframe_multi_anchor_split_partition_probe.gd
-
-      - name: Run mechanical anchor destruction semantics probe
-        run: godot --headless --path . --script res://tests/multiframe_anchor_destruction_probe.gd
-
-      - name: Run mixed mechanical anchor split probe
-        run: godot --headless --path . --script res://tests/multiframe_mixed_anchor_split_probe.gd
-
-      - name: Run merge graph contraction probe
-        run: godot --headless --path . --script res://tests/multiframe_merge_graph_contraction_probe.gd
-
-      - name: Run hinge split succession probe
-        run: godot --headless --path . --script res://tests/multiframe_hinge_split_succession_probe.gd
-
-      - name: Run stateful hinge motor-limit succession probe
-        run: godot --headless --path . --script res://tests/multiframe_hinge_motor_limit_succession_probe.gd
-
-      - name: Run stateful hinge graph partition probe
-        run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_partition_probe.gd
-
-      - name: Run stateful hinge graph contraction capstone
-        run: godot --headless --path . --script res://tests/multiframe_stateful_hinge_contraction_probe.gd
-
-      - name: Run R0 representation/scale baseline
-        run: godot --headless --path . --script res://tests/r0_representation_scale_baseline.gd
-
-      - name: Run R1 collision aggregation challenger
-        run: godot --headless --path . --script res://tests/r1_collision_aggregation_challenger.gd
-
-      - name: Run R1 merged lifecycle integration gate
-        run: godot --headless --path . --script res://tests/r1_merged_lifecycle_integration_probe.gd
-
-      - name: Run R2P post-aggregation profile
-        run: godot --headless --path . --script res://tests/r2p_post_aggregation_profile.gd
-
-      - name: Run R2A derived-region locality challenger
-        run: godot --headless --path . --script res://tests/r2a_derived_region_locality_challenger.gd
+      - name: Run full historical research campaign
+        run: |
+          set -e
+          for script in \
+            tests/g0_smoke.gd \
+            tests/g0_campaign.gd \
+            tests/g1_dynamic_construct.gd \
+            tests/g1_campaign.gd \
+            tests/g2_live_mutation.gd \
+            tests/g2_campaign.gd \
+            tests/lifecycle_freeze_semantics_probe.gd \
+            tests/lifecycle_provider_replacement_probe.gd \
+            tests/lab_lifecycle_smoke.gd \
+            tests/p0_interactive_lab_smoke.gd \
+            tests/lifecycle_actor_provider_transition_probe.gd \
+            tests/lifecycle_shared_topology_split_probe.gd \
+            tests/g3_baseline_probe.gd \
+            tests/g3_dynamic_contact_probe.gd \
+            tests/g3_frame_challenger.gd \
+            tests/g3_frame_campaign.gd \
+            tests/topology_split_probe.gd \
+            tests/topology_actor_split_probe.gd \
+            tests/topology_rebased_split_probe.gd \
+            tests/topology_compatible_merge_probe.gd \
+            tests/matter_mass_properties_probe.gd \
+            tests/topology_inelastic_merge_probe.gd \
+            tests/topology_free_split_divergence_probe.gd \
+            tests/topology_actor_inelastic_merge_probe.gd \
+            tests/topology_roundtrip_campaign.gd \
+            tests/rigid_replacement_timing_probe.gd \
+            tests/rigid_creation_lifecycle_probe.gd \
+            tests/topology_lineage_probe.gd \
+            tests/topology_lineage_campaign.gd \
+            tests/topology_binding_policy_probe.gd \
+            tests/topology_binding_transaction_probe.gd \
+            tests/multiframe_pin_joint_probe.gd \
+            tests/multiframe_actor_joint_probe.gd \
+            tests/multiframe_live_mutation_joint_probe.gd \
+            tests/multiframe_joint_split_succession_probe.gd \
+            tests/multiframe_multi_anchor_split_partition_probe.gd \
+            tests/multiframe_anchor_destruction_probe.gd \
+            tests/multiframe_mixed_anchor_split_probe.gd \
+            tests/multiframe_merge_graph_contraction_probe.gd \
+            tests/multiframe_hinge_split_succession_probe.gd \
+            tests/multiframe_hinge_motor_limit_succession_probe.gd \
+            tests/multiframe_stateful_hinge_partition_probe.gd \
+            tests/multiframe_stateful_hinge_contraction_probe.gd \
+            tests/r0_representation_scale_baseline.gd \
+            tests/r1_collision_aggregation_challenger.gd \
+            tests/r1_merged_lifecycle_integration_probe.gd \
+            tests/r2p_post_aggregation_profile.gd \
+            tests/r2a_derived_region_locality_challenger.gd
+          do
+            bash ci/run_godot_clean.sh "res://$script"
+          done

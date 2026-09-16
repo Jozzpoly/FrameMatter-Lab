@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""Adversarial self-test for the Owner-readiness guard.
+
+The test attacks contract/readiness drift, predecessor tampering, in-place
+contract edits, moving-candidate confusion, scenario gaps, missing independent
+assurance and stale runtime evidence. It also proves that later governance can
+authorize one frozen runtime candidate without confusing governance with the
+artifact being delivered.
+"""
+
+from __future__ import annotations
+
+import copy
+import json
+import pathlib
+import subprocess
+import sys
+import tempfile
+
+import verify_owner_readiness as guard
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+MANIFEST_PATH = ROOT / "quality/p1-owner-readiness.json"
+_MANIFEST_CONTRACT = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))["campaign_contract"]
+CONTRACT_PATH = ROOT / _MANIFEST_CONTRACT
+
+failures: list[str] = []
+
+
+def check(condition: bool, description: str) -> None:
+    if not condition:
+        failures.append(description)
+
+
+def load(path: pathlib.Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def structural_errors(manifest: dict, contract: dict) -> list[str]:
+    errors = guard.validate_contract(contract, ROOT, CONTRACT_PATH)
+    manifest_errors, _ = guard.validate_manifest(manifest, contract, ROOT)
+    errors.extend(manifest_errors)
+    return errors
+
+
+def make_two_blob_repo() -> tuple[set[str], list[str]]:
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp)
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.email", "quality@example.invalid"], cwd=root, check=True)
+        subprocess.run(["git", "config", "user.name", "Quality Selftest"], cwd=root, check=True)
+        path = root / "quality/contracts/test.v3.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"contract_version":3,"state":"first"}\n', encoding="utf-8")
+        subprocess.run(["git", "add", path.relative_to(root).as_posix()], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "create sealed contract"], cwd=root, check=True)
+        path.write_text('{"contract_version":3,"state":"mutated"}\n', encoding="utf-8")
+        subprocess.run(["git", "add", path.relative_to(root).as_posix()], cwd=root, check=True)
+        subprocess.run(["git", "commit", "-q", "-m", "mutate sealed contract"], cwd=root, check=True)
+        return guard.active_contract_blob_history(root, path)
+
+
+def main() -> None:
+    manifest = load(MANIFEST_PATH)
+    contract = load(CONTRACT_PATH)
+    version = contract.get("contract_version")
+
+    errors = structural_errors(manifest, contract)
+    check(not errors, "current active sealed contract/readiness pair is structurally valid: %s" % errors)
+
+    blobs, history_errors = guard.active_contract_blob_history(ROOT, CONTRACT_PATH)
+    check(not history_errors, "active contract history can be inspected: %s" % history_errors)
+    check(len(blobs) == 1, "active v%s contract has exactly one distinct historical blob: %s" % (version, sorted(blobs)))
+    synthetic_blobs, synthetic_errors = make_two_blob_repo()
+    check(not synthetic_errors, "synthetic contract history can be inspected: %s" % synthetic_errors)
+    check(len(synthetic_blobs) == 2, "in-place versioned contract edit produces two distinct blobs")
+
+    missing_gate = copy.deepcopy(manifest)
+    missing_gate["required_gates"].pop("camera_composition")
+    errors = structural_errors(missing_gate, contract)
+    check(any("missing contract gates" in error and "camera_composition" in error for error in errors),
+          "missing contracted gate is rejected")
+
+    wrong_type = copy.deepcopy(manifest)
+    wrong_type["required_gates"]["camera_composition"]["evidence_type"] = "mechanical_runtime"
+    errors = structural_errors(wrong_type, contract)
+    check(any("camera_composition" in error and "evidence_type" in error for error in errors),
+          "evidence-type drift is rejected")
+
+    wrong_goal = copy.deepcopy(manifest)
+    wrong_goal["owner_goal"] = "Ship something mechanically green."
+    errors = structural_errors(wrong_goal, contract)
+    check(any("owner_goal" in error for error in errors), "Owner-goal drift is rejected")
+
+    expanded_contract = copy.deepcopy(contract)
+    expanded_contract["required_gates"].append({"id": "new_required_plane", "evidence_type": "new_evidence_type"})
+    errors = structural_errors(manifest, expanded_contract)
+    check(any("new_required_plane" in error for error in errors),
+          "new contract requirement cannot be silently ignored by readiness")
+
+    weakened_contract = copy.deepcopy(contract)
+    weakened_contract["required_gates"] = [row for row in weakened_contract["required_gates"] if row["id"] != "camera_composition"]
+    errors = guard.validate_contract(weakened_contract, ROOT, CONTRACT_PATH)
+    check(any("acceptance regression" in error and "camera_composition" in error for error in errors),
+          "new contract version cannot silently remove inherited acceptance gate")
+
+    bad_chain = copy.deepcopy(contract)
+    bad_chain["previous_contract_git_blob_sha1"] = "0" * 40
+    errors = structural_errors(manifest, bad_chain)
+    check(any("previous contract integrity mismatch" in error for error in errors),
+          "tampered predecessor binding is rejected")
+
+    # This synthetic case must stay OPEN even when the live campaign has
+    # legitimately advanced to FROZEN; otherwise the self-test accidentally
+    # inherits live state and stops exercising the rule it names.
+    moving_open = copy.deepcopy(manifest)
+    moving_open["candidate_state"] = "OPEN"
+    moving_open["candidate_runtime_commit"] = "0123456789abcdef0123456789abcdef01234567"
+    errors = structural_errors(moving_open, contract)
+    check(any("OPEN candidate_state" in error for error in errors),
+          "OPEN development cannot pretend to be a frozen runtime candidate")
+
+    contract_gates, contract_gate_errors = guard.parse_contract_gates(contract)
+    check(not contract_gate_errors, "campaign contract gate parsing succeeds: %s" % contract_gate_errors)
+    check(bool(contract_gates), "campaign contract exposes a non-empty promotion gate set")
+    check("independent_assurance_review" in contract_gates,
+          "sealed contract explicitly requires independent assurance")
+
+    # The negative-control fixture must be synthetic rather than inheriting the
+    # live campaign status. Once the real campaign legitimately reaches
+    # READY_FOR_OWNER, using the live manifest here would make the self-test fail
+    # because the fixture stopped being BLOCKED, not because delivery enforcement
+    # became weaker.
+    blocked = copy.deepcopy(manifest)
+    blocked["status"] = "BLOCKED"
+    blocked["promotion_authorized"] = False
+    blocked["approved_runtime_commit"] = ""
+    blocked["owner_attention_event"] = {"allowed": False, "reason": "synthetic blocked negative control"}
+    blocked["open_blockers"] = ["synthetic readiness blocker"]
+    errors = guard.enforce_delivery(blocked, contract, contract_gates)
+    check(bool(errors), "synthetic BLOCKED state is rejected by delivery enforcement")
+    check(any("not READY_FOR_OWNER" in error for error in errors),
+          "BLOCKED state fails for explicit readiness reason")
+
+    candidate_runtime = "0123456789abcdef0123456789abcdef01234567"
+    stale_runtime = "89abcdef0123456789abcdef0123456789abcdef"
+
+    ready = copy.deepcopy(manifest)
+    ready["status"] = "READY_FOR_OWNER"
+    ready["candidate_state"] = "FROZEN"
+    ready["candidate_runtime_commit"] = candidate_runtime
+    ready["promotion_authorized"] = True
+    ready["approved_runtime_commit"] = candidate_runtime
+    ready["owner_attention_event"] = {"allowed": True, "reason": "synthetic guard test"}
+    ready["open_blockers"] = []
+    for gate in ready["required_gates"].values():
+        gate["status"] = "PASS"
+        gate["verified_runtime_commit"] = candidate_runtime
+        if not gate["evidence"]:
+            gate["evidence"] = ["docs/QUALITY-SYSTEM.md"]
+    for scenario in ready["scenario_coverage"].values():
+        scenario["status"] = "PASS"
+        scenario["verified_runtime_commit"] = candidate_runtime
+        scenario["evidence"] = ["docs/QUALITY-SYSTEM.md"]
+
+    stale_gate = copy.deepcopy(ready)
+    stale_gate["required_gates"]["camera_composition"]["verified_runtime_commit"] = stale_runtime
+    errors = guard.enforce_delivery(stale_gate, contract, contract_gates)
+    check(any("camera_composition" in error and "not approved runtime" in error for error in errors),
+          "stale per-gate runtime evidence is rejected")
+
+    no_assurance = copy.deepcopy(ready)
+    no_assurance["required_gates"]["independent_assurance_review"]["status"] = "PENDING"
+    no_assurance["required_gates"]["independent_assurance_review"]["evidence"] = []
+    no_assurance["required_gates"]["independent_assurance_review"]["verified_runtime_commit"] = ""
+    errors = guard.enforce_delivery(no_assurance, contract, contract_gates)
+    check(any("independent_assurance_review" in error for error in errors),
+          "missing independent assurance blocks promotion")
+
+    missing_scenario = copy.deepcopy(ready)
+    missing_scenario["scenario_coverage"]["close_camera_obstacle_stress"]["status"] = "PENDING"
+    missing_scenario["scenario_coverage"]["close_camera_obstacle_stress"]["evidence"] = []
+    missing_scenario["scenario_coverage"]["close_camera_obstacle_stress"]["verified_runtime_commit"] = ""
+    errors = guard.enforce_delivery(missing_scenario, contract, contract_gates)
+    check(any("close_camera_obstacle_stress" in error for error in errors),
+          "one unproven representative scenario blocks promotion")
+
+    stale_scenario = copy.deepcopy(ready)
+    stale_scenario["scenario_coverage"]["close_camera_obstacle_stress"]["verified_runtime_commit"] = stale_runtime
+    errors = guard.enforce_delivery(stale_scenario, contract, contract_gates)
+    check(any("close_camera_obstacle_stress" in error and "not approved runtime" in error for error in errors),
+          "scenario evidence from an older runtime cannot bless the frozen candidate")
+
+    errors = structural_errors(ready, contract)
+    check(not errors, "synthetic frozen runtime candidate is structurally valid: %s" % errors)
+    errors = guard.enforce_delivery(ready, contract, contract_gates)
+    check(not errors,
+          "fully consistent frozen-runtime candidate and full scenario matrix are accepted: %s" % errors)
+
+    if failures:
+        for failure in failures:
+            print("OWNER_READINESS_GUARD_SELFTEST_FAIL: " + failure, file=sys.stderr)
+        raise SystemExit(1)
+
+    print(
+        "OWNER_READINESS_GUARD_SELFTEST_PASS: guard follows the active sealed contract and rejects in-place "
+        "contract mutation, predecessor tampering, acceptance weakening, moving-target state, missing gates, "
+        "evidence drift, stale gate evidence, missing independent assurance, unproven scenarios and stale scenario "
+        "evidence, while accepting one fully consistent frozen runtime candidate authorized by later governance."
+    )
+
+
+if __name__ == "__main__":
+    main()

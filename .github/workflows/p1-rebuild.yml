@@ -1,0 +1,106 @@
+name: P1 rebuild validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "actor/**"
+      - "matter/**"
+      - "construct/**"
+      - "space/**"
+      - "p1/**"
+      - "tests/p1_*.gd"
+      - "ci/**"
+      - "project.godot"
+      - ".github/workflows/p1-rebuild.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-rebuild-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  p1-foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict project import
+        run: bash ci/run_godot_import.sh
+
+      - name: Compile P1 dependency graph
+        run: bash ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
+
+      - name: Verify procedural Matter front-face orientation
+        run: bash ci/run_godot_probe.sh res://tests/p1_cell_mesher_front_face_probe.gd P1_CELL_MESHER_FRONT_FACE_PASS
+
+      - name: Verify canonical P1 startup
+        run: bash ci/run_godot_probe.sh res://tests/p1_canonical_startup_smoke.gd P1_CANONICAL_STARTUP_PASS
+
+      - name: Run P1 volumetric actor challenger
+        run: bash ci/run_godot_probe.sh res://tests/p1_volumetric_actor_challenger.gd P1_VOLUMETRIC_ACTOR_PASS
+
+      - name: Run P1 composed scene foundation smoke
+        run: bash ci/run_godot_probe.sh res://tests/p1_scene_foundation_smoke.gd P1_SCENE_FOUNDATION_PASS
+
+      - name: Run P1 multi-Space registry probe
+        run: bash ci/run_godot_probe.sh res://tests/p1_space_registry_probe.gd P1_SPACE_REGISTRY_PASS
+
+      - name: Run P1 live topology consumer probe
+        run: bash ci/run_godot_probe.sh res://tests/p1_live_topology_consumer_probe.gd P1_LIVE_TOPOLOGY_PASS
+
+      - name: Run promoted Matter surface grid lifecycle probe
+        run: bash ci/run_godot_probe.sh res://tests/p1_matter_surface_grid_probe.gd P1_MATTER_SURFACE_GRID_PASS
+
+      - name: Run promoted Matter state presentation lifecycle probe
+        run: bash ci/run_godot_probe.sh res://tests/p1_matter_state_presentation_probe.gd P1_MATTER_STATE_PRESENTATION_PASS
+
+      - name: Run P1 storage rebase probe
+        run: bash ci/run_godot_probe.sh res://tests/p1_storage_rebase_probe.gd P1_STORAGE_REBASE_PASS
+
+      - name: Challenge actor/camera storage-frame continuity
+        run: bash ci/run_godot_probe.sh res://tests/p1_storage_actor_context_challenger.gd P1_STORAGE_ACTOR_CONTEXT_PASS
+
+      - name: Verify camera presentation/control frame separation
+        run: bash ci/run_godot_probe.sh res://tests/p1_camera_control_frame_probe.gd P1_CAMERA_CONTROL_FRAME_PASS
+
+      - name: Run P1 finite Space control probe
+        run: bash ci/run_godot_probe.sh res://tests/p1_finite_space_control_probe.gd P1_FINITE_CONTROL_PASS
+
+      - name: Run integrated P1 causal loop pressure gate
+        run: bash ci/run_godot_probe.sh res://tests/p1_integrated_causal_loop_probe.gd P1_INTEGRATED_CAUSAL_LOOP_PASS
+
+  p1-windows-scene-diagnostic:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict synchronous project import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Verify canonical P1 startup
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_canonical_startup_smoke.gd -PassMarker P1_CANONICAL_STARTUP_PASS
+
+      - name: Run real P1 composed scene foundation smoke
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_scene_foundation_smoke.gd -PassMarker P1_SCENE_FOUNDATION_PASS

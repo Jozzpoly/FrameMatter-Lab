@@ -1,0 +1,174 @@
+name: P1 rendered visual evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "p1/**"
+      - "matter/**"
+      - "construct/**"
+      - "actor/**"
+      - "space/**"
+      - "tests/p1_visual_capture.gd"
+      - "tests/support/**"
+      - "ci/run_godot_visual_capture.ps1"
+      - "project.godot"
+      - ".github/workflows/p1-visual-evidence.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-visual-evidence-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-compatibility:
+    name: rendered-linux-gl-compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}/artifacts/p1-visual-evidence/linux-gl-compatibility
+      P1_VISUAL_VARIANT: canonical
+      P1_VISUAL_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_VISUAL_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          checked_out=$(git rev-parse HEAD)
+          test "$checked_out" = "$P1_VISUAL_SOURCE_SHA"
+          echo "P1 rendered exact source checkout: $checked_out"
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict import / compile preflight
+        run: bash ci/run_godot_import.sh
+
+      - name: Capture rendered P1 evidence under Xvfb
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$P1_VISUAL_EVIDENCE_DIR"
+          set +e
+          xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/p1_visual_capture.gd 2>&1 | tee /tmp/p1_visual_capture.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "Rendered capture process failed with exit code $status"
+            exit "$status"
+          fi
+          if grep -Eq 'SCRIPT ERROR:|ERROR:' /tmp/p1_visual_capture.log; then
+            echo "Rendered capture emitted engine/script ERROR output"
+            exit 1
+          fi
+          if ! grep -q 'P1_VISUAL_CAPTURE_PASS' /tmp/p1_visual_capture.log; then
+            echo "Rendered capture did not emit the expected PASS marker"
+            exit 1
+          fi
+          test -f "$P1_VISUAL_EVIDENCE_DIR/00_initial_static.png"
+          test -f "$P1_VISUAL_EVIDENCE_DIR/20_granularity_near.png"
+          test -f "$P1_VISUAL_EVIDENCE_DIR/22_granularity_far.png"
+          test -f "$P1_VISUAL_EVIDENCE_DIR/02_dynamic_motion.png"
+          test -f "$P1_VISUAL_EVIDENCE_DIR/04_split_successors.png"
+
+      - name: Record Linux rendered evidence provenance
+        shell: bash
+        run: |
+          checked_out=$(git rev-parse HEAD)
+          {
+            echo "FrameMatter P1 rendered visual evidence"
+            echo "workflow_run=${GITHUB_RUN_ID}"
+            echo "source_commit=${P1_VISUAL_SOURCE_SHA}"
+            echo "checked_out_commit=${checked_out}"
+            echo "event_commit=${GITHUB_SHA}"
+            echo "platform=ubuntu-latest"
+            echo "renderer=Godot 4.7.2 gl_compatibility under Xvfb / Mesa llvmpipe"
+            echo "variant=canonical"
+            echo "audio_driver=Dummy"
+            echo "source_scene=res://p1/main.tscn"
+            echo "capture_script=res://tests/p1_visual_capture.gd"
+          } > "$P1_VISUAL_EVIDENCE_DIR/VISUAL-EVIDENCE-INFO.txt"
+
+      - name: Upload Linux rendered visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-Rendered-Evidence-Linux-Compatibility
+          path: artifacts/p1-visual-evidence/linux-gl-compatibility
+          retention-days: 30
+
+  windows-forward-plus:
+    name: rendered-windows-${{ matrix.variant }}
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [canonical]
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      P1_VISUAL_VARIANT: ${{ matrix.variant }}
+      P1_VISUAL_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-visual-evidence\windows-${{ matrix.variant }}
+      P1_VISUAL_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_VISUAL_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          if ($checkedOut -ne $env:P1_VISUAL_SOURCE_SHA) {
+            throw "P1 rendered evidence checkout mismatch: expected $env:P1_VISUAL_SOURCE_SHA, got $checkedOut"
+          }
+          "P1 rendered exact source checkout: $checkedOut"
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict synchronous project import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Capture D3D12 Forward+ rendered P1 evidence
+        shell: pwsh
+        run: ./ci/run_godot_visual_capture.ps1 -OutputDir $env:P1_VISUAL_EVIDENCE_DIR
+
+      - name: Record Windows rendered evidence provenance
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          @"
+          FrameMatter P1 rendered visual evidence
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:P1_VISUAL_SOURCE_SHA
+          checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
+          platform=windows-latest
+          renderer=Godot 4.7.2 Forward+ / D3D12
+          variant=$env:P1_VISUAL_VARIANT
+          audio_driver=Dummy
+          source_scene=res://p1/main.tscn
+          capture_script=res://tests/p1_visual_capture.gd
+          "@ | Set-Content -Path (Join-Path $env:P1_VISUAL_EVIDENCE_DIR "VISUAL-EVIDENCE-INFO.txt")
+
+      - name: Upload Windows rendered visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-Rendered-Evidence-Windows-${{ matrix.variant }}
+          path: artifacts/p1-visual-evidence/windows-${{ matrix.variant }}
+          retention-days: 30
