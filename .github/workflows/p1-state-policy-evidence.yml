@@ -15,10 +15,16 @@ on:
       - "construct/**"
       - "space/**"
       - "project.godot"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/p1-state-policy-evidence.yml"
+      - "tests/p1_state_policy_visual_capture.gd"
+      - "ci/run_godot_state_policy_capture.ps1"
   workflow_dispatch:
 
 concurrency:
-  group: p1-rv3a-state-policy-${{ github.ref }}
+  group: p1-rv3a-state-policy-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -30,7 +36,7 @@ jobs:
       matrix:
         variant: [current_contour, top_crown]
     env:
-      P1_STATE_POLICY_SOURCE_SHA: ${{ github.sha }}
+      P1_STATE_POLICY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       P1_STATE_POLICY_VARIANT: ${{ matrix.variant }}
       P1_STATE_POLICY_EVIDENCE_DIR: ${{ github.workspace }}\\artifacts\\p1-state-policy\\${{ matrix.variant }}
     steps:
@@ -75,6 +81,7 @@ jobs:
           workflow_run=$env:GITHUB_RUN_ID
           source_commit=$env:P1_STATE_POLICY_SOURCE_SHA
           checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
           variant=$env:P1_STATE_POLICY_VARIANT
           platform=windows-latest
           renderer=Godot 4.7.2 Forward+ / D3D12
