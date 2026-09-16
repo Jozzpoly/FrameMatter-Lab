@@ -1,20 +1,20 @@
 {
   "schema_version": 5,
   "campaign_id": "p1-owner-facing-recovery",
-  "campaign_contract": "quality/contracts/p1-owner-facing-recovery.v3.json",
-  "campaign_contract_version": 3,
+  "campaign_contract": "quality/contracts/p1-owner-facing-recovery.v4.json",
+  "campaign_contract_version": 4,
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
-  "status": "READY_FOR_OWNER",
-  "candidate_state": "FROZEN",
-  "candidate_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+  "status": "BLOCKED",
+  "candidate_state": "OPEN",
+  "candidate_runtime_commit": "",
   "owner_goal": "Provide a professional, physically legible sandbox research surface where the Owner can directly see and judge editable Matter, moving/static local Spaces, actor relations, editing, topology consequences and motion without reconstructing hidden mechanics from debug output.",
   "owner_visible_surface": "Windows desktop P1 runtime, rendered scene, camera, interaction feedback and default UI",
-  "promotion_authorized": true,
-  "approved_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+  "promotion_authorized": false,
+  "approved_runtime_commit": "",
   "owner_attention_event": {
-    "allowed": true,
-    "reason": "Exact frozen runtime passed candidate-wide revalidation, recorded G8 adversarial rehearsal, separate read-only independent assurance and final cross-plane readiness audit with zero material blockers."
+    "allowed": false,
+    "reason": "Direct Owner interaction falsified the delivered candidate's visual representation: Matter can read as transparent/hollow under accumulated editing, camera composition can collapse into the avatar, and the current interaction/presentation stack is not yet a professionally legible research surface."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -24,18 +24,25 @@
       "docs/evidence/p1-g1-rendered-baseline.md"
     ]
   },
+  "superseded_owner_candidate": {
+    "status": "FAIL",
+    "runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+    "evidence": [
+      "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
+    ]
+  },
   "required_gates": {
     "owner_intent_contract": {
       "status": "PASS",
       "evidence_type": "campaign_contract",
-      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "verified_runtime_commit": "",
       "evidence": [
-        "quality/contracts/p1-owner-facing-recovery.v3.json",
-        "docs/evidence/p1-campaign-contract-v3.md",
+        "quality/contracts/p1-owner-facing-recovery.v4.json",
+        "docs/evidence/p1-campaign-contract-v4.md",
         "docs/p1-owner-facing-recovery-campaign.md",
         "docs/p1-visual-acceptance-contract.md",
         "docs/QUALITY-SYSTEM.md",
-        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     },
     "mechanical_integrated_runtime": {
@@ -56,22 +63,30 @@
         "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
       ]
     },
+    "base_matter_surface_integrity": {
+      "status": "FAIL",
+      "evidence_type": "rendered_review",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": [
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
+      ]
+    },
     "form_depth_readability": {
-      "status": "PASS",
+      "status": "FAIL",
       "evidence_type": "rendered_review",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
         "docs/evidence/p1-g2-lighting-form.md",
-        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     },
     "matter_granularity": {
-      "status": "PASS",
+      "status": "FAIL",
       "evidence_type": "rendered_review",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
         "docs/evidence/p1-g3-matter-granularity.md",
-        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     },
     "system_state_semantics": {
@@ -84,21 +99,21 @@
       ]
     },
     "camera_composition": {
-      "status": "PASS",
+      "status": "FAIL",
       "evidence_type": "rendered_stress_sequence",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
         "docs/evidence/p1-g4-camera-composition.md",
-        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     },
     "interaction_hierarchy": {
-      "status": "PASS",
+      "status": "FAIL",
       "evidence_type": "interactive_rehearsal",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
         "docs/evidence/p1-g5-interaction-hierarchy.md",
-        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     },
     "world_motion_causality": {
@@ -120,50 +135,53 @@
       ]
     },
     "cross_layer_visible_composition": {
-      "status": "PASS",
+      "status": "FAIL",
       "evidence_type": "composed_rehearsal",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
         "docs/evidence/p1-cross-layer-visible-composition.md",
-        "docs/evidence/p1-g8-candidate-freeze-revalidation.md"
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     },
     "adversarial_rehearsal": {
-      "status": "PASS",
+      "status": "FAIL",
       "evidence_type": "recorded_adversarial_rehearsal",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-g8-adversarial-rehearsal.md"
+        "docs/evidence/p1-g8-adversarial-rehearsal.md",
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     },
     "independent_assurance_review": {
-      "status": "PASS",
+      "status": "SUPERSEDED",
       "evidence_type": "independent_assurance_review",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
         "quality/assurance/p1-independent-review.json",
-        "docs/evidence/p1-independent-assurance.md"
+        "docs/evidence/p1-independent-assurance.md",
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     },
     "final_readiness_audit": {
-      "status": "PASS",
+      "status": "SUPERSEDED",
       "evidence_type": "final_cross_plane_audit",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": [
-        "docs/evidence/p1-final-readiness-audit.md"
+        "docs/evidence/p1-final-readiness-audit.md",
+        "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"
       ]
     }
   },
   "scenario_coverage": {
     "default_static_matter": {
-      "status": "PASS",
+      "status": "FAIL",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
-      "evidence": ["docs/evidence/p1-ui-hierarchy.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+      "evidence": ["docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"]
     },
     "edit_target_remove_place_expand": {
-      "status": "PASS",
+      "status": "FAIL",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
-      "evidence": ["docs/evidence/p1-g5-interaction-hierarchy.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+      "evidence": ["docs/evidence/p1-g5-interaction-hierarchy.md", "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"]
     },
     "zero_launch_release": {
       "status": "PASS",
@@ -191,9 +209,9 @@
       "evidence": ["docs/evidence/p1-g6-world-motion-causality.md", "docs/evidence/p1-cross-layer-visible-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
     },
     "close_camera_obstacle_stress": {
-      "status": "PASS",
+      "status": "FAIL",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
-      "evidence": ["docs/evidence/p1-g4-camera-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+      "evidence": ["docs/evidence/p1-g4-camera-composition.md", "docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"]
     },
     "actor_near_space_edge": {
       "status": "PASS",
@@ -204,7 +222,19 @@
       "status": "PASS",
       "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
       "evidence": ["docs/evidence/p1-g4-camera-composition.md", "docs/evidence/p1-g8-candidate-freeze-revalidation.md"]
+    },
+    "chaotic_edit_visual_stress": {
+      "status": "FAIL",
+      "verified_runtime_commit": "b5050b669ec4101226095183929f5790f0a034fc",
+      "evidence": ["docs/evidence/p1-owner-test-visual-failure-and-rebuild.md"]
     }
   },
-  "open_blockers": []
+  "open_blockers": [
+    "Owner test visual failure: base Matter does not reliably read as solid opaque mass under accumulated editing.",
+    "R-V0 must falsify or confirm CellMesher winding/culling and shadow interaction before visual styling proceeds.",
+    "Current cell/state/interaction presentation must be re-evaluated after base-surface correction under chaotic geometry.",
+    "Camera must enforce actual camera-to-avatar visual safety during obstruction compression.",
+    "Chaotic accumulated edit stress must pass before another Owner package.",
+    "Independent assurance and final readiness audit must be re-earned on a new frozen candidate under campaign contract v4."
+  ]
 }
