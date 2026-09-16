@@ -1,0 +1,91 @@
+name: P1 base Matter surface forensics
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "matter/**"
+      - "construct/**"
+      - "p1/**"
+      - "tests/p1_base_surface_forensics_capture.gd"
+      - "ci/run_godot_base_surface_forensics.ps1"
+      - "project.godot"
+      - ".github/workflows/p1-base-surface-forensics.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-base-surface-forensics-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-forward-plus-base-surface:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [current, cull_front, corrected_winding]
+    env:
+      P1_BASE_SURFACE_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      P1_BASE_SURFACE_VARIANT: ${{ matrix.variant }}
+      P1_BASE_SURFACE_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-base-surface\${{ matrix.variant }}
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_BASE_SURFACE_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          if ($checkedOut -ne $env:P1_BASE_SURFACE_SOURCE_SHA) {
+            throw "Base-surface checkout mismatch: expected $env:P1_BASE_SURFACE_SOURCE_SHA, got $checkedOut"
+          }
+          "Base-surface exact source checkout: $checkedOut"
+          "Base-surface variant: $env:P1_BASE_SURFACE_VARIANT"
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict synchronous project import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Capture base Matter surface forensics
+        shell: pwsh
+        run: ./ci/run_godot_base_surface_forensics.ps1 -OutputDir $env:P1_BASE_SURFACE_EVIDENCE_DIR -Variant $env:P1_BASE_SURFACE_VARIANT
+
+      - name: Record base-surface evidence provenance
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:P1_BASE_SURFACE_EVIDENCE_DIR | Out-Null
+          $checkedOut = (git rev-parse HEAD).Trim()
+          @"
+          FrameMatter P1 base Matter surface forensics
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:P1_BASE_SURFACE_SOURCE_SHA
+          checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
+          platform=windows-latest
+          renderer=Godot 4.7.2 Forward+ / D3D12
+          source_scene=res://p1/main.tscn
+          capture_script=res://tests/p1_base_surface_forensics_capture.gd
+          variant=$env:P1_BASE_SURFACE_VARIANT
+          overlays=surface-grid OFF / state presentation OFF / HUD OFF / player visual OFF
+          geometry=canonical clean + deterministic accumulated chaotic edits
+          "@ | Set-Content -Path (Join-Path $env:P1_BASE_SURFACE_EVIDENCE_DIR "BASE-SURFACE-EVIDENCE-INFO.txt")
+
+      - name: Upload base-surface evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-Base-Surface-${{ matrix.variant }}
+          path: artifacts/p1-base-surface/${{ matrix.variant }}
+          retention-days: 30
+          if-no-files-found: warn
