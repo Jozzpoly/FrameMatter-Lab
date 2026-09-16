@@ -1,6 +1,6 @@
 # P1 visual representation architecture rebuild
 
-Status: **ACTIVE / R-V4 CAMERA VISUAL SAFETY NEXT**
+Status: **ACTIVE / R-V5 CHAOTIC OWNER-SURFACE REHEARSAL NEXT**
 
 Owner-failed baseline: `b5050b669ec4101226095183929f5790f0a034fc`
 
@@ -8,7 +8,7 @@ Primary failure record: `docs/evidence/p1-owner-test-visual-failure-and-rebuild.
 
 Active acceptance contract: `quality/contracts/p1-owner-facing-recovery.v4.json`
 
-Latest closed presentation tranche: `docs/evidence/p1-rv3-state-presentation-policy.md`
+Latest closed presentation tranche: `docs/evidence/p1-rv4-camera-visual-safety.md`
 
 ## Live truth
 
@@ -20,8 +20,8 @@ Defended results now include:
 - **R-V1 PASS** — STATIC/DYNAMIC providers share one neutral Matter surface identity instead of changing base material merely because the physics host changes.
 - **R-V2 DEFERRED** — greedy/macro-surface meshing remains a valid future challenger, but corrected per-cell Matter is visually coherent and there is no current evidence pressure strong enough to displace higher-value visual risks.
 - **R-V3 PASS** — persistent state presentation was reduced from a full exposed-surface contour to selective side-surface boundaries; focus remains a separate top crown. The promoted policy preserves shallow-angle STATIC/DYNAMIC readability while cutting state-line geometry by about 44% in the representative corpus.
-- **R-V4 ACTIVE NEXT** — camera/avatar visual safety is the next demonstrated risk.
-- **R-V5 PENDING** — accumulated chaotic Owner-surface rehearsal still has to prove the composed result under sustained geometry entropy.
+- **R-V4 PASS** — the Owner-observed obstruction failure was reproduced with real Matter and shown to be severe visual compression without actual avatar penetration. Avatar-hide alone was rejected. Production now extends the existing collision-clear escape search to high-pitch presentation candidates, preserving Owner pitch/control intent and returning to ordinary composition when obstruction clears.
+- **R-V5 ACTIVE NEXT** — accumulated chaotic Owner-surface rehearsal must now prove the composed result under sustained geometry entropy.
 
 This document is current synthesis. Historical evidence remains in `docs/evidence/` and should not be rewritten to match newer architecture.
 
@@ -213,32 +213,39 @@ Introduce it only if independent presenters demonstrably overdraw or conflict in
 
 # R-V4 — camera / visual safety rebuild
 
-Status: **ACTIVE NEXT**
+Status: **PASS / COLLISION-CLEAR HIGH-PITCH ESCAPE PROMOTED**
 
-Owner recording demonstrated that the current camera can collapse into/through the avatar under obstruction. Earlier G4 evidence protects camera/control-frame separation and several recovery behaviors, but it does not close this newly demonstrated visual-safety failure.
+Evidence: `docs/evidence/p1-rv4-camera-visual-safety.md`
 
-R-V4 must add explicit visual invariants beyond desired SpringArm distance.
+The Owner recording was reproduced deterministically with real Matter built through the canonical edit path. The original working hypothesis — that `Camera3D` physically enters the visible CapsuleMesh — was falsified: the camera remained about `0.195 m` outside the capsule while SpringArm compressed to about `0.479 m`, yet the avatar still filled almost the entire frame.
 
-At minimum investigate and prove:
+The defended problem statement is therefore stronger and more useful:
 
-- actual final camera-to-avatar / camera-to-relevant-geometry clearance, not only requested boom length,
-- no normal obstruction solution may leave the camera inside opaque avatar geometry,
-- real Matter obstruction and user-created/freeform geometry, not only authored walls,
-- near-obstacle transitions without violent composition discontinuity,
-- preservation of user movement control frame while automatic presentation recovery acts,
-- preservation of a useful interaction surface when the camera is forced near the player.
+> a world-collision-safe camera can still be visually unsafe if severe compression destroys useful third-person world context.
 
-Candidate fallback mechanisms may include avatar fade, partial hide, alternate near presentation or another bounded mechanism, but no fallback is preselected merely because it is conventional.
+A near-avatar hide challenger was mechanically effective at removing the blue capsule but was rejected by rendered review because the camera remained pressed against Matter and the image was still unusable.
 
-The experiment should first reproduce the Owner-observed failure deterministically, then compare bounded challengers against that exact stress case.
+A high-pitch diagnostic challenger proved that the open-top real-Matter fixture had a genuine collision-clear route that restored the full camera arm and readable world context. Production then extended the existing escape-orbit search rather than adding a new camera mode:
 
-Do not let R-V4 become a general camera rewrite unless the evidence actually demands one.
+- ordinary lower/side candidates remain preferred when they are sufficiently clear,
+- higher presentation-pitch candidates are eligible only as part of the same collision-clear search,
+- Owner `_pitch` is not mutated,
+- movement/control yaw remains derived from Owner `_yaw`,
+- presentation-only `_runtime_pitch` returns to Owner intent after obstruction clears.
+
+Exact-source production proof at `ee810585184680c5f6de975ecbd8945c845885aa` recovered `8.2603 m` actual arm for `30 / 30` stress frames with zero visual-unsafe or inside-avatar frames, then returned to the ordinary `8.1869 m` view after the ring was removed.
+
+Production tight-obstruction pixels are effectively equivalent to the accepted overhead challenger (`0.029048%` changed pixels, maximum RGB delta `1`). Post-obstruction recovery is likewise effectively equivalent to the open reference (`0.099033%` changed pixels; only `0.002162%` exceed RGB delta `2`). Manual review confirms both compositions.
+
+Historical G4 evidence and the full P1 rebuild also remain GREEN at the production source.
+
+R-V4 does not claim a universal third-person solution for fully sealed geometry. A different fallback should be introduced only when a real active scenario proves that no collision-clear camera route exists.
 
 ---
 
 # R-V5 — accumulated chaotic Owner-surface rehearsal
 
-Status: **PENDING / REQUIRED BEFORE RE-PROMOTION**
+Status: **ACTIVE NEXT / REQUIRED BEFORE RE-PROMOTION**
 
 This gate exists because the old G8 did not accumulate enough geometry entropy to expose the failed composed image.
 
@@ -256,12 +263,14 @@ Acceptance is deliberately gestalt-heavy:
 
 - Matter still reads as solid rather than hollow/wireframe,
 - no unexplained diagonal surface breakup,
-- camera never enters the avatar or loses the useful interaction surface for a sustained interval,
+- camera never loses useful world/interaction composition for a sustained interval,
 - semantic presentation becomes more selective rather than denser as geometry becomes complex,
 - state, focus, target and cell cues remain distinguishable when they coexist,
 - the final scene remains understandable without knowing the scripted test.
 
 The rehearsal cannot immediately restore every edit merely to keep the authored shape tidy.
+
+R-V5 is allowed to reopen earlier presentation decisions if accumulated evidence falsifies them. It should not protect R-V0/R-V1/R-V3/R-V4 implementations merely because they each passed bounded tests.
 
 ---
 
@@ -272,8 +281,8 @@ A future Owner candidate requires:
 1. R-V0 root-cause/corrected-surface PASS — **done**,
 2. provider-independent base-surface identity — **done**,
 3. bounded presentation policy re-earned against the rebuilt surface — **R-V3 state policy done; remaining composed policy still falsifiable**,
-4. R-V4 camera visual-safety PASS — **open**,
-5. R-V5 chaotic-edit scenario PASS — **open**,
+4. R-V4 camera visual-safety PASS — **done**,
+5. R-V5 chaotic-edit scenario PASS — **open / next**,
 6. candidate freeze on one exact runtime,
 7. exact-candidate reruns,
 8. independent assurance against the active contract,
@@ -282,8 +291,10 @@ A future Owner candidate requires:
 
 The previous `b5050b669...` package remains a negative comparison baseline. It must never regain authority simply because it was once frozen.
 
+The legacy frozen-candidate G8 workflow is expected to reject the current campaign while `quality/p1-owner-readiness.json` has `candidate_state=OPEN`; that pre-runtime governance stop is not current runtime evidence and must not be confused with an R-V4 regression.
+
 ## Current next move
 
-Begin **R-V4 camera / visual safety** from a deterministic reproduction of the Owner-observed camera-inside-avatar failure.
+Begin **R-V5 accumulated chaotic Owner-surface rehearsal**.
 
-Preserve the defended substrate and current R-V0/R-V1/R-V3 evidence, but treat camera presentation implementation as replaceable. The immediate objective is not a prettier orbit; it is a camera that cannot lie about the world by placing the view inside opaque player geometry while still preserving useful interaction composition.
+The next experiment should accumulate materially messy geometry rather than replaying tidy isolated frames, then exercise near/mid camera work, interaction overlays and at least one state/motion transition on top of that entropy. The question is no longer whether each local mechanism can pass alone, but whether the composed P1 research instrument remains visually truthful and usable after the world has been worked on for long enough to become ugly.
