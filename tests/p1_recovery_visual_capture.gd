@@ -54,24 +54,52 @@ func _run() -> void:
 	# receives after startup, including the world-scoped HUD language.
 	await _capture("00_first_contact")
 
-	# Widen only the evidence view so the material neck, raised ordinary Matter and
-	# surrounding world can be read together. No Matter/physics state changes here.
-	camera_rig.set("_yaw", 0.88)
-	camera_rig.set("_pitch", 0.54)
-	camera_rig.set("_distance", 9.5)
-	camera_rig.call("_apply_user_orbit_immediately")
-	await _advance_frames(COMPOSITION_FRAMES)
+	# Prove the causal neck through the same camera ray / registry / cell resolver
+	# used by Owner pointer input. No exact-cell mutation is allowed below: the
+	# projected top face must be visibly targetable from the default startup view.
+	var camera := camera_rig.get_camera() as Camera3D
+	var provider := world.get_active_provider()
+	_check(camera != null and provider != null, "capture resolves live camera and canonical world provider")
+	if camera == null or provider == null:
+		_root.free()
+		_finish()
+		return
+	var bridge_face_world := provider.to_global(
+		Vector3(bridge_cell) + Vector3(0.5, 1.001, 0.5)
+	)
+	var bridge_screen := camera.unproject_position(bridge_face_world)
+	var visible_rect := camera.get_viewport().get_visible_rect()
+	_check(not camera.is_position_behind(bridge_face_world), "causal bridge top face is in front of the default camera")
+	_check(visible_rect.has_point(bridge_screen), "causal bridge top face projects inside the Owner viewport")
+
+	interactor.set_mode(P1MatterInteractor.EditMode.REMOVE)
+	# Freeze only the automatic pointer polling inside this evidence script so the
+	# synthetic pointer position remains stable long enough for the normal target
+	# presentation to render. The resolver itself is production P1MatterInteractor.
+	interactor.set_process(false)
+	interactor.update_target_from_pointer_position(bridge_screen)
+	_check(interactor.target_space == world, "default-view pointer ray resolves canonical world Matter")
+	_check(interactor.target_valid, "default-view pointer ray resolves a valid REMOVE target")
+	_check(interactor.remove_cell == bridge_cell, "default-view pointer ray resolves the exact causal neck cell")
+	if interactor.target_space != world or not interactor.target_valid or interactor.remove_cell != bridge_cell:
+		_root.free()
+		_finish()
+		return
+
+	# Frame 01 is what the normal hover cue looks like on the actual causal neck.
 	await _capture("01_causal_bridge_before_cut")
 
 	var acquisitions_before := player.observed_ground_acquisitions
 	var transfers_before := player.observed_support_transfers
 	var actor_before := player.global_position
 
-	interactor.set_mode(P1MatterInteractor.EditMode.REMOVE)
-	var edit_applied := interactor.apply_edit_to_cell(world, bridge_cell, P1MatterInteractor.EditMode.REMOVE)
-	_check(edit_applied, "shared Matter interaction removes the ordinary causal bridge")
+	var edit_applied := interactor.apply_current_edit()
+	_check(edit_applied, "shared pointer-resolved Matter interaction removes the ordinary causal bridge")
 	_check(world.volume.get_cell(bridge_cell) == CellVolume.EMPTY, "causal bridge Matter is visibly/logically removed")
-	_check(world.is_authority_partition_pending(), "the same ordinary edit queues causal ownership transfer")
+	_check(world.is_authority_partition_pending(), "the same ordinary pointer edit queues causal ownership transfer")
+	# Clear the now-consumed hover deterministically; later frames should show the
+	# changed world, not a stale cue left behind by the evidence harness.
+	interactor.update_target_from_screen_position(Vector2(-1.0, -1.0))
 	if not world.is_authority_partition_pending():
 		_root.free()
 		_finish()
@@ -121,8 +149,9 @@ func _run() -> void:
 	await _advance_frames(COMPOSITION_FRAMES)
 	await _capture("04_alternate_riding_view")
 
-	print("P1_RECOVERY_VISUAL_METRIC bridge=%s active_spaces=%d detached_fall=%.6f actor_fall=%.6f transfers=%d acquisitions=%d" % [
+	print("P1_RECOVERY_VISUAL_METRIC bridge=%s screen=%s active_spaces=%d detached_fall=%.6f actor_fall=%.6f transfers=%d acquisitions=%d" % [
 		str(bridge_cell),
+		str(bridge_screen),
 		registry.get_active_count(),
 		detached_fall,
 		actor_fall,
@@ -161,7 +190,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_RECOVERY_VISUAL_PASS: recovery Owner surface rendered one causal sequence from ordinary world Matter through destructive detachment to actor-supported dynamic motion.")
+		print("P1_RECOVERY_VISUAL_PASS: default-view camera-ray interaction cut ordinary world Matter, detached it causally and rendered actor-supported dynamic motion.")
 		quit(0)
 		return
 	for failure in _failures:
