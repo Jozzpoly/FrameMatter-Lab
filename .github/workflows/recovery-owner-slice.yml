@@ -86,9 +86,32 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path $env:OUTPUT_DIR | Out-Null
-          godot --headless --path . --export-release "Windows Desktop" "$env:OUTPUT_DIR/FrameMatter-Recovery-Owner.exe"
+          $godotExecutable = (Get-Command godot -ErrorAction Stop).Source
+          $outputPath = "$env:OUTPUT_DIR/FrameMatter-Recovery-Owner.exe"
+          $stdoutFile = [System.IO.Path]::GetTempFileName()
+          $stderrFile = [System.IO.Path]::GetTempFileName()
+          try {
+            $argumentLine = "--headless --path . --export-release `"Windows Desktop`" `"$outputPath`""
+            $process = Start-Process `
+              -FilePath $godotExecutable `
+              -ArgumentList $argumentLine `
+              -NoNewWindow `
+              -Wait `
+              -PassThru `
+              -RedirectStandardOutput $stdoutFile `
+              -RedirectStandardError $stderrFile
+            $stdout = Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue
+            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            Write-Host ($stdout + [Environment]::NewLine + $stderr)
+            if ($process.ExitCode -ne 0) {
+              throw "Godot Windows recovery export exited with status $($process.ExitCode)"
+            }
+          }
+          finally {
+            Remove-Item -Path $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+          }
           $exe = Join-Path $env:OUTPUT_DIR "FrameMatter-Recovery-Owner.exe"
-          if (-not (Test-Path $exe)) { throw "Windows recovery export missing: $exe" }
+          if (-not (Test-Path $exe)) { throw "Windows recovery export missing after Godot exited: $exe" }
           if ((Get-Item $exe).Length -lt 1000000) { throw "Windows recovery export is implausibly small" }
 
       - name: Record Owner-test provenance and controls
