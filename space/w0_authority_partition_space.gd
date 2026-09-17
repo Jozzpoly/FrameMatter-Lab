@@ -51,7 +51,6 @@ func request_authority_partition(
 		return false
 
 	var unique: Dictionary = {}
-	var selection := CellVolume.new(volume.size)
 	var snapshot: Dictionary = {}
 	for cell in selected_cells:
 		if unique.has(cell) or not volume.in_bounds(cell):
@@ -61,13 +60,12 @@ func request_authority_partition(
 		if material_id == CellVolume.EMPTY or token == MatterLineageMap.NONE:
 			return false
 		unique[cell] = true
-		selection.set_cell(cell, material_id)
 		snapshot[cell] = {
 			"material": material_id,
 			"lineage": token,
 		}
 
-	if MatterTopology.extract_connected_components(selection).size() != 1:
+	if not MatterTopology.cells_form_single_component(selected_cells):
 		return false
 
 	_pending_authority_partition_cells = selected_cells.duplicate()
@@ -227,7 +225,6 @@ func _partition_request_is_current() -> bool:
 	if _pending_authority_partition_cells.size() >= volume.count_solid():
 		return false
 
-	var selection := CellVolume.new(volume.size)
 	for cell in _pending_authority_partition_cells:
 		if not volume.in_bounds(cell) or not _pending_authority_partition_snapshot.has(cell):
 			return false
@@ -236,8 +233,7 @@ func _partition_request_is_current() -> bool:
 			return false
 		if lineage.get_lineage(cell) != int(expected["lineage"]):
 			return false
-		selection.set_cell(cell, volume.get_cell(cell))
-	return MatterTopology.extract_connected_components(selection).size() == 1
+	return MatterTopology.cells_form_single_component(_pending_authority_partition_cells)
 
 
 func _clear_pending_authority_partition() -> void:

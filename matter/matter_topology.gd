@@ -58,6 +58,34 @@ static func extract_connected_cell_components(source: CellVolume) -> Array:
 	return components
 
 
+static func cells_form_single_component(cells: Array[Vector3i]) -> bool:
+	if cells.is_empty():
+		return false
+
+	var selected: Dictionary = {}
+	for cell in cells:
+		if selected.has(cell):
+			return false
+		selected[cell] = true
+
+	var visited: Dictionary = {}
+	var queue: Array[Vector3i] = [cells[0]]
+	var cursor := 0
+	visited[cells[0]] = true
+
+	while cursor < queue.size():
+		var cell: Vector3i = queue[cursor]
+		cursor += 1
+		for offset in AXIAL_NEIGHBORS:
+			var neighbor := cell + offset
+			if not selected.has(neighbor) or visited.has(neighbor):
+				continue
+			visited[neighbor] = true
+			queue.append(neighbor)
+
+	return visited.size() == selected.size()
+
+
 static func extract_connected_components(source: CellVolume) -> Array[CellVolume]:
 	var components: Array[CellVolume] = []
 	var visited: Dictionary = {}
