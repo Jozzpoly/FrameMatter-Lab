@@ -37,6 +37,9 @@ var _shape: CapsuleShape3D
 var _previous_support_point_world := Vector3.ZERO
 var _has_support_sample := false
 var _topology_validation_grace_steps := 0
+var _support_contact_local_point := Vector3.ZERO
+var _support_contact_local_normal := Vector3.ZERO
+var _has_support_contact_witness := false
 
 
 func _ready() -> void:
@@ -49,6 +52,51 @@ func request_jump() -> void:
 	jump_requested = true
 
 
+func get_support_contact_witness() -> Dictionary:
+	var invalid := {"valid": false}
+	if (
+		not grounded
+		or not _has_support_contact_witness
+		or support_body == null
+		or not is_instance_valid(support_body)
+		or support_space == null
+		or not is_instance_valid(support_space)
+		or support_space.get_active_provider() != support_body
+		or support_space.volume == null
+	):
+		return invalid
+
+	var local_normal: Vector3 = _support_contact_local_normal.normalized()
+	if local_normal.is_zero_approx():
+		return invalid
+	# get_rest_info() reports a point on the contacted surface. Move a tiny
+	# amount into the support material before flooring to a logical cell so a
+	# top-face contact at y=N resolves to the occupied cell below rather than
+	# the empty cell above. Ambiguous/empty results fail closed.
+	var inset: float = maxf(query_margin * 2.0, 0.002)
+	var sample_local: Vector3 = _support_contact_local_point - local_normal * inset
+	var cell := Vector3i(
+		floori(sample_local.x),
+		floori(sample_local.y),
+		floori(sample_local.z)
+	)
+	if not support_space.volume.in_bounds(cell):
+		return invalid
+	if support_space.volume.get_cell(cell) == CellVolume.EMPTY:
+		return invalid
+
+	return {
+		"valid": true,
+		"cell": cell,
+		"world_point": support_body.to_global(_support_contact_local_point),
+		"world_normal": (support_body.global_transform.basis * local_normal).normalized(),
+		"local_point": _support_contact_local_point,
+		"local_normal": local_normal,
+		"space_id": support_space.get_instance_id(),
+		"provider_id": support_body.get_instance_id(),
+	}
+
+
 func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -> bool:
 	if not grounded:
 		return false
@@ -56,10 +104,23 @@ func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -
 	if resolved_support == null or not is_instance_valid(resolved_support):
 		return false
 
+	var witness_world_point := Vector3.ZERO
+	var witness_world_normal := Vector3.ZERO
+	var preserve_witness := _has_support_contact_witness and support_body != null and is_instance_valid(support_body)
+	if preserve_witness:
+		witness_world_point = support_body.to_global(_support_contact_local_point)
+		witness_world_normal = (support_body.global_transform.basis * _support_contact_local_normal).normalized()
+
 	support_body = resolved_support
 	support_space = _resolve_support_space(resolved_support)
 	support_local_center = mapped_local_center
 	global_position = resolved_support.to_global(mapped_local_center)
+	if preserve_witness:
+		_support_contact_local_point = resolved_support.to_local(witness_world_point)
+		_support_contact_local_normal = (
+			resolved_support.global_transform.basis.inverse() * witness_world_normal
+		).normalized()
+		_has_support_contact_witness = not _support_contact_local_normal.is_zero_approx()
 	_previous_support_point_world = global_position
 	_has_support_sample = true
 	world_velocity = _rigid_velocity_at_point(resolved_support, global_position)
@@ -80,6 +141,8 @@ func rebase_support_local_coordinates(local_shift: Vector3) -> bool:
 		return false
 
 	support_local_center += local_shift
+	if _has_support_contact_witness:
+		_support_contact_local_point += local_shift
 	global_position = support_body.to_global(support_local_center)
 	_previous_support_point_world = global_position
 	_has_support_sample = true
@@ -243,6 +306,16 @@ func _attach_from_ground_hit(hit: Dictionary) -> bool:
 	support_space = _resolve_support_space(resolved_support)
 	grounded = true
 	support_local_center = resolved_support.to_local(global_position)
+	var contact_world: Vector3 = Vector3(hit.get("point", global_position))
+	_support_contact_local_point = resolved_support.to_local(contact_world)
+	_support_contact_local_normal = (
+		resolved_support.global_transform.basis.inverse() * normal
+	).normalized()
+	_has_support_contact_witness = (
+		support_space != null
+		and is_instance_valid(support_space)
+		and not _support_contact_local_normal.is_zero_approx()
+	)
 	_previous_support_point_world = global_position
 	_has_support_sample = true
 	observed_support_velocity = _rigid_velocity_at_point(resolved_support, global_position)
@@ -320,6 +393,9 @@ func _detach_from_support(preserve_velocity: bool = true) -> void:
 	support_space = null
 	observed_support_velocity = Vector3.ZERO
 	_has_support_sample = false
+	_has_support_contact_witness = false
+	_support_contact_local_point = Vector3.ZERO
+	_support_contact_local_normal = Vector3.ZERO
 	_topology_validation_grace_steps = 0
 
 
@@ -330,8 +406,20 @@ func _refresh_support_provider_from_space() -> void:
 	if current_provider == null or current_provider == support_body:
 		return
 
+	var witness_world_point := Vector3.ZERO
+	var witness_world_normal := Vector3.ZERO
+	var preserve_witness := _has_support_contact_witness and support_body != null and is_instance_valid(support_body)
+	if preserve_witness:
+		witness_world_point = support_body.to_global(_support_contact_local_point)
+		witness_world_normal = (support_body.global_transform.basis * _support_contact_local_normal).normalized()
+
 	support_body = current_provider
 	global_position = current_provider.to_global(support_local_center)
+	if preserve_witness:
+		_support_contact_local_point = current_provider.to_local(witness_world_point)
+		_support_contact_local_normal = (
+			current_provider.global_transform.basis.inverse() * witness_world_normal
+		).normalized()
 	_previous_support_point_world = global_position
 	_has_support_sample = true
 	world_velocity = _rigid_velocity_at_point(current_provider, global_position)
