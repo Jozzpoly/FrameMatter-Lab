@@ -50,6 +50,9 @@ jobs:
       - name: Run W0B2 causal detachment policy probe
         run: bash ci/run_godot_probe.sh res://tests/w0b2_causal_detachment_policy_probe.gd W0B2_CAUSAL_DETACH_PASS
 
+      - name: Run W0C actor causal detach probe
+        run: bash ci/run_godot_probe.sh res://tests/w0c_actor_causal_detach_probe.gd W0C_ACTOR_CAUSAL_DETACH_PASS
+
       - name: Verify procedural Matter front-face orientation
         run: bash ci/run_godot_probe.sh res://tests/p1_cell_mesher_front_face_probe.gd P1_CELL_MESHER_FRONT_FACE_PASS
 
