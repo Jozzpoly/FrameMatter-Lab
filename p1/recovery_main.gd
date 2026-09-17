@@ -132,6 +132,27 @@ func _find_safe_spawn_local(space: LocalMatterSpace) -> Vector3:
 	return super._find_safe_spawn_local(space)
 
 
+func _toggle_focused_space_state() -> bool:
+	if _focus_space == _recovery_world_space:
+		_last_event = "world Matter stays canonical; detach Matter by editing support"
+		return false
+	return super._toggle_focused_space_state()
+
+
+func _apply_focused_central_impulse(local_impulse: Vector3) -> bool:
+	if _focus_space == _recovery_world_space:
+		_last_event = "world Matter is not a controllable rigid body; detach Matter first"
+		return false
+	return super._apply_focused_central_impulse(local_impulse)
+
+
+func _apply_focused_torque_impulse(local_impulse: Vector3) -> bool:
+	if _focus_space == _recovery_world_space:
+		_last_event = "world Matter is not a controllable rigid body; detach Matter first"
+		return false
+	return super._apply_focused_torque_impulse(local_impulse)
+
+
 func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_queued: bool) -> void:
 	super._on_edit_applied(space, cell, mode, split_queued)
 	if mode != P1MatterInteractor.EditMode.REMOVE:
