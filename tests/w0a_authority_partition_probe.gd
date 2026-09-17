@@ -35,6 +35,7 @@ func _run() -> void:
 	]
 	var truth_before := _snapshot_truth(source.volume, source.lineage)
 	var tokens_before := _token_set(source.lineage)
+	var source_revision_before := source.volume.revision
 	var source_space_id := source.get_instance_id()
 
 	if not source.has_method("request_authority_partition"):
@@ -74,6 +75,10 @@ func _run() -> void:
 
 	_check(source.get_instance_id() == source_space_id and not source.is_retired(), "canonical source Space survives the partition")
 	_check(source.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "canonical source remains statically represented")
+	_check(
+		source.volume.revision == source_revision_before + selected.size(),
+		"authority transfer advances canonical source revision exactly once per transferred cell"
+	)
 	_check(target.get_instance_id() != source_space_id and not target.is_retired(), "detached Matter receives fresh Space identity")
 	_check(target.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "W0A isolates ownership transfer from dynamic physics")
 	_check(target.lineage_issuer == issuer and source.lineage_issuer == issuer, "source and target share one lineage issuer domain")

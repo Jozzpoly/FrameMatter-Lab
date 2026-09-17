@@ -107,35 +107,38 @@ func _commit_authority_partition() -> void:
 		return
 
 	var staging_started_usec := Time.get_ticks_usec()
-	var selection := CellVolume.new(volume.size)
-	var selected_lookup: Dictionary = {}
-	for cell in _pending_authority_partition_cells:
-		selection.set_cell(cell, volume.get_cell(cell))
-		selected_lookup[cell] = true
+	var source_origin := _pending_authority_partition_cells[0]
+	var max_selected := source_origin
+	for source_cell in _pending_authority_partition_cells:
+		source_origin.x = mini(source_origin.x, source_cell.x)
+		source_origin.y = mini(source_origin.y, source_cell.y)
+		source_origin.z = mini(source_origin.z, source_cell.z)
+		max_selected.x = maxi(max_selected.x, source_cell.x)
+		max_selected.y = maxi(max_selected.y, source_cell.y)
+		max_selected.z = maxi(max_selected.z, source_cell.z)
 
-	var compact_info: Dictionary = MatterTopology.compact_volume(selection)
-	var source_origin: Vector3i = compact_info["origin"]
-	var target_volume: CellVolume = compact_info["volume"]
-	var target_lineage := MatterLineageMap.new(target_volume.size)
-	for target_cell in _occupied_cells(target_volume):
-		var source_cell := target_cell + source_origin
-		var token: int = lineage.get_lineage(source_cell)
-		assert(token != MatterLineageMap.NONE)
-		target_lineage.set_lineage(target_cell, token)
+	var target_size := max_selected - source_origin + Vector3i.ONE
+	var target_volume := CellVolume.new(target_size)
+	var target_lineage := MatterLineageMap.new(target_size)
+	var source_after_volume := volume.duplicate_volume()
+	var source_after_lineage := lineage.duplicate_map()
 
-	var source_after_volume := CellVolume.new(volume.size)
-	var source_after_lineage := MatterLineageMap.new(volume.size)
-	for source_cell in _occupied_cells(volume):
-		if selected_lookup.has(source_cell):
-			continue
-		var material_id: int = volume.get_cell(source_cell)
-		var token: int = lineage.get_lineage(source_cell)
+	for source_cell in _pending_authority_partition_cells:
+		var material_id := volume.get_cell(source_cell)
+		var token := lineage.get_lineage(source_cell)
+		assert(material_id != CellVolume.EMPTY)
 		assert(token != MatterLineageMap.NONE)
-		source_after_volume.set_cell(source_cell, material_id)
-		source_after_lineage.set_lineage(source_cell, token)
-	# This is a logical Matter ownership change, unlike storage-coordinate
-	# maintenance. Preserve monotonic revision meaning without counting the clone.
-	source_after_volume.revision = volume.revision + _pending_authority_partition_cells.size()
+		var target_cell := source_cell - source_origin
+		assert(target_volume.set_cell(target_cell, material_id))
+		assert(target_lineage.set_lineage(target_cell, token))
+		assert(source_after_volume.set_cell(source_cell, CellVolume.EMPTY))
+		assert(source_after_lineage.clear_lineage(source_cell))
+
+	# duplicate_volume() preserves the source revision. Clearing the k transferred
+	# cells advances it by exactly k through the normal mutation primitive, so the
+	# existing monotonic logical-revision contract is preserved without a manual
+	# revision override or a full GDScript source scan.
+	assert(source_after_volume.revision == volume.revision + _pending_authority_partition_cells.size())
 
 	var source_provider: Node3D = get_active_provider()
 	var source_transform: Transform3D = source_provider.global_transform

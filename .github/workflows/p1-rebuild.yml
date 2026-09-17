@@ -44,6 +44,9 @@ jobs:
       - name: Verify CellVolume cached occupancy invariant
         run: bash ci/run_godot_probe.sh res://tests/p1_cell_volume_solid_count_probe.gd P1_CELL_VOLUME_SOLID_COUNT_PASS
 
+      - name: Verify authority state deep-clone primitive
+        run: bash ci/run_godot_probe.sh res://tests/p1_authority_state_clone_probe.gd P1_AUTHORITY_STATE_CLONE_PASS
+
       - name: Verify direct selected-cell connectivity
         run: bash ci/run_godot_probe.sh res://tests/w0_selected_connectivity_probe.gd W0_SELECTED_CONNECTIVITY_PASS
 

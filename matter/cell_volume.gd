@@ -68,3 +68,11 @@ func count_solid() -> int:
 
 func duplicate_cells() -> PackedInt32Array:
 	return _cells.duplicate()
+
+
+func duplicate_volume() -> CellVolume:
+	var result := CellVolume.new(size)
+	result._cells = _cells.duplicate()
+	result._solid_count = _solid_count
+	result.revision = revision
+	return result
