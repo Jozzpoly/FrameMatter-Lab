@@ -494,10 +494,3 @@ func _on_authority_partition_committed(result: Dictionary) -> void:
 		"pre_signal_total_usec": _last_authority_timing["pre_signal_total_usec"],
 		"recovery_publication_usec": publication_usec,
 	})
-func _on_authority_partition_committed(result: Dictionary) -> void:
-	var target := result.get("target_space") as LocalMatterSpace
-	var source_cells: Array = result.get("source_cells", [])
-	_record("authority_partition_committed", {
-		"target_space_id": target.get_instance_id() if target != null and is_instance_valid(target) else 0,
-		"transferred_cell_count": source_cells.size(),
-	})
