@@ -1,7 +1,6 @@
 extends SceneTree
 
-const ACQUIRE_FRAMES := 16
-const MOTION_FRAMES := 12
+const ACQUIRE_FRAMES := 20
 const EXPECTED_MAIN_SCENE := "res://p1/recovery_main.tscn"
 
 var _failures: Array[String] = []
@@ -49,7 +48,8 @@ func _run() -> void:
 	var interactor := main.get_node_or_null("P1MatterInteractor") as P1MatterInteractor
 	var direct_edit := main.get_node_or_null("P1RecoveryDirectEdit") as P1RecoveryDirectEdit
 	var world := main.call("get_recovery_world_space") as LocalMatterSpace
-	var moving := main.call("get_recovery_demo_space") as LocalMatterSpace
+	var old_demo := main.call("get_recovery_demo_space") as LocalMatterSpace
+	var bridge_cell: Vector3i = main.call("get_recovery_causal_bridge_cell_for_test") if main.has_method("get_recovery_causal_bridge_cell_for_test") else Vector3i(-1, -1, -1)
 
 	_check(player != null, "canonical startup composes volumetric P1 player")
 	_check(camera_rig != null, "canonical startup composes P1 camera rig")
@@ -57,30 +57,28 @@ func _run() -> void:
 	_check(space_control != null, "canonical startup composes finite P1 Space control")
 	_check(interactor != null, "canonical startup composes shared P1 Matter interaction")
 	_check(direct_edit != null, "canonical startup composes direct sandbox edit controls")
-	_check(world != null, "canonical startup creates ordinary world Matter")
-	_check(moving != null, "canonical startup creates a second moving Matter Space")
+	_check(world is W0AuthorityPartitionSpace, "canonical startup creates one causal ordinary-Matter world")
+	_check(old_demo == null, "canonical startup has no pre-authored moving demo Space")
 	_check(main.get_node_or_null("WorldReference") == null, "canonical Owner surface has no fake non-Matter terrain")
+	_check(registry != null and registry.get_active_count() == 1, "canonical startup begins with exactly one ordinary world Space")
+	_check(world != null and world.volume.in_bounds(bridge_cell) and world.volume.get_cell(bridge_cell) != CellVolume.EMPTY, "canonical startup contains the ordinary-Matter causal bridge")
 
-	var moving_start := moving.get_active_provider().global_position if moving != null else Vector3.ZERO
 	await _advance_frames(ACQUIRE_FRAMES)
 	_check(player != null and player.grounded and player.support_space == world, "canonical startup actor acquires ordinary world Matter")
 	_check(player != null and player.support_body == world.get_active_provider(), "canonical startup actor resolves world Matter provider")
 	_check(camera_rig != null and camera_rig.target == player, "canonical startup camera targets actor")
 	_check(camera_rig != null and camera_rig.context_target == null, "large ordinary world does not force whole-world camera framing")
-	_check(registry != null and registry.get_active_count() == 2, "canonical startup exposes world Matter plus moving Matter")
-
-	await _advance_frames(MOTION_FRAMES)
-	var moving_delta := moving.get_active_provider().global_position.distance_to(moving_start) if moving != null else 0.0
-	_check(moving_delta > 0.02, "canonical startup contains visible Matter motion without a setup sequence")
+	var witness: Dictionary = player.get_support_contact_witness() if player != null else {}
+	_check(bool(witness.get("valid", false)), "canonical startup establishes exact actor↔Matter contact witness")
 
 	print(
-		"P1_CANONICAL_STARTUP_METRIC main_scene=%s world_space_id=%d moving_space_id=%d active_spaces=%d moving_delta=%.6f"
+		"P1_CANONICAL_STARTUP_METRIC main_scene=%s world_space_id=%d active_spaces=%d bridge=%s witness=%s"
 		% [
 			configured_main,
 			world.get_instance_id() if world != null else 0,
-			moving.get_instance_id() if moving != null else 0,
 			registry.get_active_count() if registry != null else 0,
-			moving_delta,
+			str(bridge_cell),
+			str(witness.get("cell", Vector3i(-1, -1, -1))),
 		]
 	)
 
@@ -101,7 +99,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_CANONICAL_STARTUP_PASS: project startup now resolves to the bounded recovery surface with editable world Matter, direct interaction and live moving Matter.")
+		print("P1_CANONICAL_STARTUP_PASS: project startup resolves to one editable causal Matter world with direct interaction and exact actor support; motion is no longer pre-authored beside the world.")
 		quit(0)
 		return
 	for failure in _failures:
