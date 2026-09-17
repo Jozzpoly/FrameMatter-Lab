@@ -42,8 +42,13 @@ func _run() -> void:
 	var source_state_id := source_state.get_instance_id()
 	var source_focus_id := source_focus.get_instance_id()
 
-	var other := _make_one_cell_space(source, Vector3(40.0, 0.0, 0.0))
+	var other := LocalMatterSpace.new()
+	other.name = "InvalidationSibling"
+	other.lineage_issuer = source.lineage_issuer
+	other.mass_per_cell = source.mass_per_cell
+	other.collision_mode = source.collision_mode
 	spaces.add_child(other)
+	_initialize_one_cell_space(other, source, Vector3(40.0, 0.0, 0.0))
 	var registration_started := Time.get_ticks_usec()
 	registry.register_space(other)
 	var registration_usec := Time.get_ticks_usec() - registration_started
@@ -87,20 +92,13 @@ func _run() -> void:
 	_finish(root)
 
 
-func _make_one_cell_space(source: LocalMatterSpace, origin: Vector3) -> LocalMatterSpace:
+func _initialize_one_cell_space(space: LocalMatterSpace, source: LocalMatterSpace, origin: Vector3) -> void:
 	var volume := CellVolume.new(Vector3i.ONE)
 	volume.set_cell(Vector3i.ZERO, CellVolume.SOLID)
 	var lineage := MatterLineageMap.new(Vector3i.ONE)
 	var token := source.allocate_lineage_token()
 	lineage.set_lineage(Vector3i.ZERO, token)
-
-	var space := LocalMatterSpace.new()
-	space.name = "InvalidationSibling"
-	space.lineage_issuer = source.lineage_issuer
-	space.mass_per_cell = source.mass_per_cell
-	space.collision_mode = source.collision_mode
 	space.initialize_static(volume, lineage, Transform3D(Basis.IDENTITY, origin))
-	return space
 
 
 func _advance_frames(count: int) -> void:
