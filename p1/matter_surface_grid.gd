@@ -16,6 +16,8 @@ var enabled := true
 var last_refresh_usec := 0
 var last_refresh_space_id := 0
 
+var _overlay_signatures: Dictionary = {}
+
 
 func _ready() -> void:
 	var parent := get_parent()
@@ -65,20 +67,25 @@ func refresh_all() -> void:
 
 func refresh_space(space: LocalMatterSpace) -> void:
 	var started_usec := Time.get_ticks_usec()
-	last_refresh_space_id = (
+	var space_id := (
 		space.get_instance_id()
 		if space != null and is_instance_valid(space)
 		else 0
 	)
+	last_refresh_space_id = space_id
 	if space == null or not is_instance_valid(space) or space.is_retired() or space.volume == null:
+		if space_id != 0:
+			_overlay_signatures.erase(space_id)
 		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 	var provider: Node3D = space.get_active_provider()
 	if provider == null or not is_instance_valid(provider):
+		_overlay_signatures.erase(space_id)
 		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 
 	_remove_overlay_from_provider(provider)
+	_overlay_signatures.erase(space_id)
 	if not enabled or space.volume.count_solid() == 0:
 		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
@@ -96,19 +103,52 @@ func refresh_space(space: LocalMatterSpace) -> void:
 	# x-ray/debug overlay.
 	overlay.material_override = material
 	provider.add_child(overlay)
+	_overlay_signatures[space_id] = _overlay_signature(space)
 	last_refresh_usec = Time.get_ticks_usec() - started_usec
 
-
 func clear_all() -> void:
+	if registry != null and is_instance_valid(registry):
+		for space in registry.get_active_spaces():
+			if space == null or not is_instance_valid(space):
+				continue
+			var provider: Node3D = space.get_active_provider()
+			if provider != null and is_instance_valid(provider):
+				_remove_overlay_from_provider(provider)
+	_overlay_signatures.clear()
+
+
+func _ensure_active_spaces() -> void:
 	if registry == null or not is_instance_valid(registry):
 		return
+	var live_ids: Dictionary = {}
 	for space in registry.get_active_spaces():
-		if space == null or not is_instance_valid(space):
+		if space == null or not is_instance_valid(space) or space.is_retired():
 			continue
-		var provider: Node3D = space.get_active_provider()
-		if provider != null and is_instance_valid(provider):
-			_remove_overlay_from_provider(provider)
+		live_ids[space.get_instance_id()] = true
+		_ensure_space(space)
+	for cached_id in _overlay_signatures.keys():
+		if not live_ids.has(cached_id):
+			_overlay_signatures.erase(cached_id)
 
+
+func _ensure_space(space: LocalMatterSpace) -> void:
+	if space == null or not is_instance_valid(space) or space.is_retired() or space.volume == null:
+		return
+	var provider := space.get_active_provider()
+	if provider == null or not is_instance_valid(provider):
+		return
+	var space_id := space.get_instance_id()
+	var overlay := provider.get_node_or_null(OVERLAY_NAME) as MeshInstance3D
+	var signature := _overlay_signature(space)
+	if overlay != null and str(_overlay_signatures.get(space_id, "")) == signature:
+		return
+	refresh_space(space)
+
+
+func _overlay_signature(space: LocalMatterSpace) -> String:
+	var provider := space.get_active_provider()
+	var provider_id := provider.get_instance_id() if provider != null and is_instance_valid(provider) else 0
+	return "%d:%d" % [provider_id, space.volume.revision]
 
 func get_overlay_for_space(space: LocalMatterSpace) -> MeshInstance3D:
 	if space == null or not is_instance_valid(space) or space.is_retired():
@@ -227,7 +267,7 @@ func _disconnect_interactor(value: P1MatterInteractor) -> void:
 
 
 func _on_active_spaces_changed() -> void:
-	refresh_all()
+	_ensure_active_spaces()
 
 
 func _on_provider_changed(space: LocalMatterSpace) -> void:
@@ -239,7 +279,7 @@ func _on_storage_rebased(space: LocalMatterSpace, _report: Dictionary) -> void:
 
 
 func _on_split_committed(_source: LocalMatterSpace, _result: LocalMatterSplitResult) -> void:
-	refresh_all()
+	_ensure_active_spaces()
 
 
 func _on_edit_applied(space: LocalMatterSpace, _cell: Vector3i, _mode: int, _split_queued: bool) -> void:

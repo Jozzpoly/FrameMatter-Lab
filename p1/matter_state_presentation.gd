@@ -22,6 +22,8 @@ var last_refresh_usec := 0
 var last_refresh_space_id := 0
 
 var _focus_space: LocalMatterSpace
+var _state_signatures: Dictionary = {}
+var _focus_signatures: Dictionary = {}
 
 
 func _ready() -> void:
@@ -67,10 +69,9 @@ func set_focus_space(space: LocalMatterSpace) -> void:
 	var previous := _focus_space
 	_focus_space = space
 	if _is_live_space(previous):
-		refresh_space(previous)
+		_ensure_focus(previous)
 	if _is_live_space(_focus_space):
-		refresh_space(_focus_space)
-
+		_ensure_focus(_focus_space)
 
 func get_focus_space() -> LocalMatterSpace:
 	return _focus_space
@@ -107,10 +108,73 @@ func refresh_space(space: LocalMatterSpace) -> void:
 	if not _is_live_space(space) or space.volume == null:
 		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
-	var provider: Node3D = space.get_active_provider()
-	_remove_overlays_from_provider(provider)
+	_refresh_state(space)
+	_refresh_focus(space)
+	last_refresh_usec = Time.get_ticks_usec() - started_usec
+
+func clear_all() -> void:
+	if registry != null and is_instance_valid(registry):
+		for space in registry.get_active_spaces():
+			if not _is_live_space(space):
+				continue
+			_remove_overlays_from_provider(space.get_active_provider())
+	_state_signatures.clear()
+	_focus_signatures.clear()
+
+
+func _ensure_active_spaces() -> void:
+	if registry == null or not is_instance_valid(registry):
+		return
+	var live_ids: Dictionary = {}
+	for space in registry.get_active_spaces():
+		if not _is_live_space(space):
+			continue
+		live_ids[space.get_instance_id()] = true
+		_ensure_state(space)
+		_ensure_focus(space)
+	for cached_id in _state_signatures.keys():
+		if not live_ids.has(cached_id):
+			_state_signatures.erase(cached_id)
+	for cached_id in _focus_signatures.keys():
+		if not live_ids.has(cached_id):
+			_focus_signatures.erase(cached_id)
+
+
+func _ensure_state(space: LocalMatterSpace) -> void:
+	if not _is_live_space(space) or space.volume == null:
+		return
+	var provider := space.get_active_provider()
+	var overlay := provider.get_node_or_null(STATE_OVERLAY_NAME) as MeshInstance3D
+	var space_id := space.get_instance_id()
+	var signature := _state_signature(space)
+	if overlay != null and str(_state_signatures.get(space_id, "")) == signature:
+		return
+	_refresh_state(space)
+
+
+func _ensure_focus(space: LocalMatterSpace) -> void:
+	if not _is_live_space(space) or space.volume == null:
+		return
+	var provider := space.get_active_provider()
+	var existing := provider.get_node_or_null(FOCUS_OVERLAY_NAME) as MeshInstance3D
+	var space_id := space.get_instance_id()
+	if space != _focus_space:
+		if existing != null:
+			existing.free()
+		_focus_signatures.erase(space_id)
+		return
+	var signature := _focus_signature(space)
+	if existing != null and str(_focus_signatures.get(space_id, "")) == signature:
+		return
+	_refresh_focus(space)
+
+
+func _refresh_state(space: LocalMatterSpace) -> void:
+	var provider := space.get_active_provider()
+	_remove_overlay_from_provider(provider, STATE_OVERLAY_NAME)
+	var space_id := space.get_instance_id()
+	_state_signatures.erase(space_id)
 	if not enabled or space.volume.count_solid() == 0:
-		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 
 	var state_overlay := MeshInstance3D.new()
@@ -123,13 +187,18 @@ func refresh_space(space: LocalMatterSpace) -> void:
 	state_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	state_overlay.material_override = state_material
 	provider.add_child(state_overlay)
+	_state_signatures[space_id] = _state_signature(space)
 
-	if space != _focus_space:
-		last_refresh_usec = Time.get_ticks_usec() - started_usec
+
+func _refresh_focus(space: LocalMatterSpace) -> void:
+	var provider := space.get_active_provider()
+	_remove_overlay_from_provider(provider, FOCUS_OVERLAY_NAME)
+	var space_id := space.get_instance_id()
+	_focus_signatures.erase(space_id)
+	if not enabled or space != _focus_space or space.volume.count_solid() == 0:
 		return
 	var focus_mesh := build_top_surface_perimeter(space.volume)
 	if focus_mesh.get_surface_count() == 0:
-		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 	var focus_overlay := MeshInstance3D.new()
 	focus_overlay.name = FOCUS_OVERLAY_NAME
@@ -141,17 +210,19 @@ func refresh_space(space: LocalMatterSpace) -> void:
 	focus_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	focus_overlay.material_override = focus_material
 	provider.add_child(focus_overlay)
-	last_refresh_usec = Time.get_ticks_usec() - started_usec
+	_focus_signatures[space_id] = _focus_signature(space)
 
 
-func clear_all() -> void:
-	if registry == null or not is_instance_valid(registry):
-		return
-	for space in registry.get_active_spaces():
-		if not _is_live_space(space):
-			continue
-		_remove_overlays_from_provider(space.get_active_provider())
+func _state_signature(space: LocalMatterSpace) -> String:
+	var provider := space.get_active_provider()
+	var provider_id := provider.get_instance_id() if provider != null and is_instance_valid(provider) else 0
+	return "%d:%d:%d" % [provider_id, space.volume.revision, space.get_provider_kind()]
 
+
+func _focus_signature(space: LocalMatterSpace) -> String:
+	var provider := space.get_active_provider()
+	var provider_id := provider.get_instance_id() if provider != null and is_instance_valid(provider) else 0
+	return "%d:%d" % [provider_id, space.volume.revision]
 
 func get_state_overlay_for_space(space: LocalMatterSpace) -> MeshInstance3D:
 	if not _is_live_space(space):
@@ -331,22 +402,13 @@ func _bind_from_scene() -> void:
 	set_focus_source(scene_root)
 
 
-func _sync_focus_from_source(force: bool) -> void:
+func _sync_focus_from_source(_force: bool) -> void:
 	var candidate: LocalMatterSpace
 	if focus_source != null and is_instance_valid(focus_source) and focus_source.has_method("get_space"):
 		candidate = focus_source.call("get_space") as LocalMatterSpace
 	if candidate != null and (not is_instance_valid(candidate) or candidate.is_retired()):
 		candidate = null
-	if force:
-		var previous := _focus_space
-		_focus_space = candidate
-		if _is_live_space(previous) and previous != candidate:
-			refresh_space(previous)
-		if _is_live_space(candidate):
-			refresh_space(candidate)
-		return
 	set_focus_space(candidate)
-
 
 func _connect_registry(value: P1SpaceRegistry) -> void:
 	if not value.active_spaces_changed.is_connected(_on_active_spaces_changed):
@@ -382,7 +444,7 @@ func _disconnect_interactor(value: P1MatterInteractor) -> void:
 
 func _on_active_spaces_changed() -> void:
 	_sync_focus_from_source(true)
-	refresh_all()
+	_ensure_active_spaces()
 
 
 func _on_provider_changed(space: LocalMatterSpace) -> void:
@@ -395,7 +457,7 @@ func _on_storage_rebased(space: LocalMatterSpace, _report: Dictionary) -> void:
 
 func _on_split_committed(_source: LocalMatterSpace, _result: LocalMatterSplitResult) -> void:
 	_sync_focus_from_source(true)
-	refresh_all()
+	_ensure_active_spaces()
 
 
 func _on_edit_applied(space: LocalMatterSpace, _cell: Vector3i, _mode: int, _split_queued: bool) -> void:
@@ -406,9 +468,15 @@ func _remove_overlays_from_provider(provider: Node3D) -> void:
 	if provider == null or not is_instance_valid(provider):
 		return
 	for node_name in [STATE_OVERLAY_NAME, FOCUS_OVERLAY_NAME]:
-		var existing := provider.get_node_or_null(node_name)
-		if existing != null:
-			existing.free()
+		_remove_overlay_from_provider(provider, node_name)
+
+
+func _remove_overlay_from_provider(provider: Node3D, node_name: String) -> void:
+	if provider == null or not is_instance_valid(provider):
+		return
+	var existing := provider.get_node_or_null(node_name)
+	if existing != null:
+		existing.free()
 
 
 func _is_live_space(space: LocalMatterSpace) -> bool:

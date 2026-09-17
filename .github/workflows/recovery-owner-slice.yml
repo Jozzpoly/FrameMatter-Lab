@@ -20,6 +20,7 @@ on:
       - "tests/p1_split_actor_witness_probe.gd"
       - "tests/p1_recovery_observer_probe.gd"
       - "tests/p1_spark_cost_scaling_probe.gd"
+      - "tests/p1_presentation_invalidation_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -109,6 +110,10 @@ jobs:
       - name: Characterize Spark cost scaling
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_spark_cost_scaling_probe.gd -PassMarker P1_SPARK_COST_SCALING_PASS
+
+      - name: Verify presentation invalidation granularity
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_presentation_invalidation_probe.gd -PassMarker P1_PRESENTATION_INVALIDATION_PASS
 
       - name: Export exact Windows recovery slice
         shell: pwsh
