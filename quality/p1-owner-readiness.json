@@ -14,7 +14,7 @@
   "approved_runtime_commit": "",
   "owner_attention_event": {
     "allowed": false,
-    "reason": "The post-R-V5 frozen runtime has re-earned exact-candidate evidence and passed the recorded G8 adversarial rehearsal with rendered review, but fresh independent read-only assurance and the final cross-plane readiness audit are still required before Owner attention can be authorized."
+    "reason": "The exact post-R-V5 frozen runtime has passed candidate-wide evidence, recorded G8 adversarial rehearsal and a separate read-only independent assurance review with zero material findings. The final cross-plane readiness audit remains the only required gate before Owner attention can be authorized."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -157,13 +157,14 @@
       ]
     },
     "independent_assurance_review": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "independent_assurance_review",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
       "evidence": [
+        "quality/assurance/p1-independent-review.json",
+        "docs/evidence/p1-independent-assurance-post-rv5.md",
         "docs/INDEPENDENT-ASSURANCE.md",
         "docs/evidence/p1-independent-assurance-review-packet.md",
-        "quality/assurance/p1-independent-review.json",
         "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md",
         "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md"
       ]
@@ -175,7 +176,9 @@
       "evidence": [
         "docs/QUALITY-SYSTEM.md",
         "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md",
-        "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md"
+        "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md",
+        "quality/assurance/p1-independent-review.json",
+        "docs/evidence/p1-independent-assurance-post-rv5.md"
       ]
     }
   },
@@ -274,7 +277,6 @@
     }
   },
   "open_blockers": [
-    "Independent read-only assurance must pass on frozen candidate 337716db303e94e459cad2b9bcdbfcb8b6c0474b under campaign contract v4.",
     "Final cross-plane readiness audit must pass and explicitly authorize promotion; Owner attention remains blocked until then."
   ]
 }
