@@ -35,6 +35,7 @@ func _run() -> void:
 		"physics_active_objects", "physics_collision_pairs", "physics_islands",
 		"fps_sampled", "frame_process_ms_sampled", "physics_process_ms_sampled",
 		"occupied_cells", "collision_shapes", "max_provider_rebuild_usec",
+		"observer_sample_usec",
 	]:
 		_check(snapshot.has(key), "snapshot exposes %s" % key)
 	_check(int(snapshot.get("logical_spaces", 0)) == 1, "instrumented Spark still starts as one logical world Space")
@@ -43,6 +44,7 @@ func _run() -> void:
 	_check(int(snapshot.get("physics_active_objects", -1)) >= 0, "PhysicsServer active-object census is readable")
 	_check(int(snapshot.get("physics_collision_pairs", -1)) >= 0, "PhysicsServer collision-pair census is readable")
 	_check(int(snapshot.get("physics_islands", -1)) >= 0, "PhysicsServer island census is readable")
+	_check(int(snapshot.get("observer_sample_usec", -1)) >= 0, "observer measures its own periodic census cost")
 
 	var trace_path := observer.get_trace_path_for_test()
 	_check(not trace_path.is_empty(), "observer publishes a session trace path")

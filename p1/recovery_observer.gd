@@ -54,7 +54,9 @@ func _process(delta: float) -> void:
 	_flush_accumulator += maxf(0.0, delta)
 	if _sample_accumulator >= SAMPLE_INTERVAL_SECONDS:
 		_sample_accumulator = fmod(_sample_accumulator, SAMPLE_INTERVAL_SECONDS)
+		var sample_started_usec := Time.get_ticks_usec()
 		_latest_snapshot = _capture_snapshot()
+		_latest_snapshot["observer_sample_usec"] = Time.get_ticks_usec() - sample_started_usec
 		_record("sample", _latest_snapshot)
 		_refresh_truth_strip()
 	if _flush_accumulator >= FLUSH_INTERVAL_SECONDS:
@@ -94,7 +96,9 @@ func get_last_edit_timing_for_test() -> Dictionary:
 
 
 func capture_snapshot_for_test() -> Dictionary:
+	var sample_started_usec := Time.get_ticks_usec()
 	_latest_snapshot = _capture_snapshot()
+	_latest_snapshot["observer_sample_usec"] = Time.get_ticks_usec() - sample_started_usec
 	_refresh_truth_strip()
 	return _latest_snapshot.duplicate(true)
 
@@ -382,7 +386,11 @@ func _on_edit_rejected(reason: String) -> void:
 
 
 func _on_active_spaces_changed() -> void:
-	_record("active_spaces_changed", _collect_lifecycle_census())
+	# Keep lifecycle callbacks O(1)-ish. Full volume/collision census belongs to
+	# the periodic observer sample, not inside authority/split publication.
+	_record("active_spaces_changed", {
+		"logical_spaces": _registry.get_active_count() if _registry != null else 0,
+	})
 
 
 func _on_provider_changed(space: LocalMatterSpace) -> void:

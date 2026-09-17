@@ -152,6 +152,8 @@ jobs:
           - WASD: move
           - Space: jump
           - MMB drag: orbit camera
+          - F7: write OWNER MARK into the synchronized trace
+          - F8: open the current trace session folder
           - LMB: remove Matter
           - RMB: build Matter
           - Cut the narrow support/neck to detach ordinary world Matter.
@@ -162,6 +164,7 @@ jobs:
           - Does cutting support and having Matter become physical feel causal/intuitive?
           - Does riding the same Matter through detachment feel continuous?
           - What still feels bad, confusing, dead, artificial or regressed?
+          - Observer trace: low-frequency JSONL under user://framematter-observer; on-screen * timings are sampled monitors, not exact same-frame causality.
           "@ | Set-Content -Path (Join-Path $env:OUTPUT_DIR "OWNER-TEST.txt")
           "RECOVERY_OWNER_EXPORT_SHA256: $digest"
 
