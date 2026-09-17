@@ -1,8 +1,9 @@
 extends SceneTree
 
 const SETTLE_FRAMES := 20
-const MOTION_FRAMES := 45
-const TARGET_SETTLE_FRAMES := 3
+const COMPOSITION_FRAMES := 4
+const EARLY_FALL_FRAMES := 6
+const LATE_FALL_FRAMES := 6
 
 var _failures: Array[String] = []
 var _output_dir := ""
@@ -33,48 +34,100 @@ func _run() -> void:
 	var player := _root.call("get_player") as SpaceQueryCharacter
 	var camera_rig := _root.call("get_camera_rig") as P1CameraRig
 	var interactor := _root.call("get_interactor") as P1MatterInteractor
-	var world := _root.call("get_recovery_world_space") as LocalMatterSpace
-	var moving := _root.call("get_recovery_demo_space") as LocalMatterSpace
-	_check(player != null and camera_rig != null and interactor != null, "capture resolves interactive roles")
-	_check(world != null and moving != null, "capture resolves world and moving Matter")
-	if player == null or camera_rig == null or interactor == null or world == null or moving == null:
+	var registry := _root.get_node_or_null("P1SpaceRegistry") as P1SpaceRegistry
+	var world := _root.call("get_recovery_world_space") as W0AuthorityPartitionSpace
+	var old_demo := _root.call("get_recovery_demo_space") as LocalMatterSpace
+	var bridge_cell: Vector3i = _root.call("get_recovery_causal_bridge_cell_for_test") if _root.has_method("get_recovery_causal_bridge_cell_for_test") else Vector3i(-1, -1, -1)
+
+	_check(player != null and camera_rig != null and interactor != null and registry != null, "capture resolves interactive roles")
+	_check(world != null, "capture resolves one causal ordinary-Matter world")
+	_check(old_demo == null, "capture contains no pre-authored moving demo Space")
+	_check(registry != null and registry.get_active_count() == 1, "capture starts with one live ordinary world Space")
+	_check(player != null and player.grounded and player.support_space == world, "capture actor starts supported by ordinary world Matter")
+	_check(world != null and world.volume.in_bounds(bridge_cell) and world.volume.get_cell(bridge_cell) != CellVolume.EMPTY, "capture resolves the authored ordinary-Matter causal bridge")
+	if player == null or camera_rig == null or interactor == null or registry == null or world == null:
 		_root.free()
 		_finish()
 		return
 
+	# Frame 00 is deliberately untouched: this is the actual first view an Owner
+	# receives after startup, including the world-scoped HUD language.
 	await _capture("00_first_contact")
-	var moving_start := moving.get_active_provider().global_transform
-	await _advance_frames(MOTION_FRAMES)
-	var moving_delta := moving.get_active_provider().global_position.distance_to(moving_start.origin)
-	_check(moving_delta > 0.05, "moving Matter visibly changes world position during capture")
-	await _capture("01_world_alive")
 
-	# Owner-facing direct-edit readability: use the real centre pointer on the
-	# canonical recovery camera. This is not a synthetic fixture target.
-	var centre := get_root().get_visible_rect().size * 0.5
-	interactor.set_mode(P1MatterInteractor.EditMode.REMOVE)
-	interactor.update_target_from_pointer_position(centre)
-	await _advance_frames(TARGET_SETTLE_FRAMES)
-	await _capture("02_direct_remove_target")
-
-	interactor.set_mode(P1MatterInteractor.EditMode.PLACE)
-	interactor.update_target_from_pointer_position(centre)
-	await _advance_frames(TARGET_SETTLE_FRAMES)
-	await _capture("03_direct_build_target")
-
-	# One alternate view to catch the old class of camera/form lies without
-	# turning this into another giant visual campaign.
-	camera_rig.set("_yaw", -0.62)
+	# Widen only the evidence view so the material neck, raised ordinary Matter and
+	# surrounding world can be read together. No Matter/physics state changes here.
+	camera_rig.set("_yaw", 0.88)
 	camera_rig.set("_pitch", 0.54)
+	camera_rig.set("_distance", 9.5)
+	camera_rig.call("_apply_user_orbit_immediately")
+	await _advance_frames(COMPOSITION_FRAMES)
+	await _capture("01_causal_bridge_before_cut")
+
+	var acquisitions_before := player.observed_ground_acquisitions
+	var transfers_before := player.observed_support_transfers
+	var actor_before := player.global_position
+
+	interactor.set_mode(P1MatterInteractor.EditMode.REMOVE)
+	var edit_applied := interactor.apply_edit_to_cell(world, bridge_cell, P1MatterInteractor.EditMode.REMOVE)
+	_check(edit_applied, "shared Matter interaction removes the ordinary causal bridge")
+	_check(world.volume.get_cell(bridge_cell) == CellVolume.EMPTY, "causal bridge Matter is visibly/logically removed")
+	_check(world.is_authority_partition_pending(), "the same ordinary edit queues causal ownership transfer")
+	if not world.is_authority_partition_pending():
+		_root.free()
+		_finish()
+		return
+
+	await world.authority_partition_committed
+	var result := world.get_last_authority_partition_result()
+	var detached := result.get("target_space") as LocalMatterSpace
+	_check(detached != null and is_instance_valid(detached), "causal cut creates one fresh live Matter Space")
+	_check(registry.get_active_count() == 2, "visual sequence now contains canonical world plus detached Matter")
+	_check(detached != null and detached.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC, "detached ordinary Matter is solver-driven dynamic Matter")
+	_check(player.support_space == detached, "actor support follows exact Matter into detached ownership")
+	_check(player.observed_support_transfers == transfers_before + 1, "visual causal cut performs one explicit actor frame transfer")
+	_check(player.observed_ground_acquisitions == acquisitions_before, "visual causal cut does not fake continuity through reacquisition")
+	_check(player.global_position.distance_to(actor_before) < 0.0001, "visual causal cut has no actor teleport at authority handoff")
+	if detached == null:
+		_root.free()
+		_finish()
+		return
+
+	# Capture immediately after the ownership commit and before intentionally
+	# advancing the detached body's fall. The pixels should show a changed world
+	# topology without an authored launch or hidden teleport.
+	await _capture("02_causal_detach_committed")
+
+	var detached_provider := detached.get_active_provider()
+	var detached_start_y := detached_provider.global_position.y if detached_provider != null else 0.0
+	var actor_start_y := player.global_position.y
+	await _advance_frames(EARLY_FALL_FRAMES)
+	await _capture("03_riding_detached_matter")
+
+	await _advance_frames(LATE_FALL_FRAMES)
+	var detached_fall := detached_start_y - (detached_provider.global_position.y if detached_provider != null else detached_start_y)
+	var actor_fall := actor_start_y - player.global_position.y
+	_check(detached_fall > 0.05, "detached Matter visibly falls under solver gravity")
+	_check(actor_fall > 0.05, "actor visibly rides the causally detached Matter")
+	_check(absf(detached_fall - actor_fall) < 0.02, "actor and detached Matter retain visual ride continuity")
+	_check(player.grounded and player.support_space == detached, "actor remains supported by detached Matter during visual fall")
+	_check(player.observed_ground_acquisitions == acquisitions_before, "visual ride never falls back to ground reacquisition")
+
+	# A second view challenges whether the relationship survives camera change,
+	# without changing Matter state or adding any artificial motion.
+	camera_rig.set("_yaw", -0.62)
+	camera_rig.set("_pitch", 0.50)
 	camera_rig.set("_distance", 9.0)
 	camera_rig.call("_apply_user_orbit_immediately")
-	await _advance_frames(4)
-	await _capture("04_alternate_view")
+	await _advance_frames(COMPOSITION_FRAMES)
+	await _capture("04_alternate_riding_view")
 
-	print("P1_RECOVERY_VISUAL_METRIC moving_delta=%.6f target_space=%s target_cell=%s" % [
-		moving_delta,
-		interactor.target_space.name if interactor.target_space != null else "none",
-		str(interactor.target_cell),
+	print("P1_RECOVERY_VISUAL_METRIC bridge=%s active_spaces=%d detached_fall=%.6f actor_fall=%.6f transfers=%d acquisitions=%d" % [
+		str(bridge_cell),
+		registry.get_active_count(),
+		detached_fall,
+		actor_fall,
+		player.observed_support_transfers - transfers_before,
+		player.observed_ground_acquisitions - acquisitions_before,
 	])
 
 	_root.free()
@@ -108,7 +161,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_RECOVERY_VISUAL_PASS: recovery Owner surface produced first-contact, live-world, direct-edit and alternate-view rendered evidence.")
+		print("P1_RECOVERY_VISUAL_PASS: recovery Owner surface rendered one causal sequence from ordinary world Matter through destructive detachment to actor-supported dynamic motion.")
 		quit(0)
 		return
 	for failure in _failures:
