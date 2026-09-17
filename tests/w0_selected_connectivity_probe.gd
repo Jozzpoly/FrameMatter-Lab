@@ -27,9 +27,10 @@ func _run() -> void:
 		var direct := MatterTopology.cells_form_single_component(cells)
 		_check(direct == legacy, "%s direct selected connectivity matches legacy full-volume selection" % str(case["name"]))
 
-	var duplicate := [Vector3i(4, 2, 4), Vector3i(4, 2, 4)]
+	var duplicate: Array[Vector3i] = [Vector3i(4, 2, 4), Vector3i(4, 2, 4)]
+	var empty: Array[Vector3i] = []
 	_check(not MatterTopology.cells_form_single_component(duplicate), "duplicate selected cells fail closed")
-	_check(not MatterTopology.cells_form_single_component([]), "empty selected set fails closed")
+	_check(not MatterTopology.cells_form_single_component(empty), "empty selected set fails closed")
 
 	var single: Array[Vector3i] = [Vector3i(16, 4, 16)]
 	var line := _line_cells(2, 30, 4, 16)
