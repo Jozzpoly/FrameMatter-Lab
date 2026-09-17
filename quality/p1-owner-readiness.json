@@ -5,16 +5,16 @@
   "campaign_contract_version": 4,
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
-  "status": "READY_FOR_OWNER",
-  "candidate_state": "FROZEN",
-  "candidate_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
+  "status": "BLOCKED",
+  "candidate_state": "OPEN",
+  "candidate_runtime_commit": "",
   "owner_goal": "Provide a professional, physically legible sandbox research surface where the Owner can directly see and judge editable Matter, moving/static local Spaces, actor relations, editing, topology consequences and motion without reconstructing hidden mechanics from debug output.",
   "owner_visible_surface": "Windows desktop P1 runtime, rendered scene, camera, interaction feedback and default UI",
-  "promotion_authorized": true,
-  "approved_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
+  "promotion_authorized": false,
+  "approved_runtime_commit": "",
   "owner_attention_event": {
-    "allowed": true,
-    "reason": "Contract-v4 post-R-V5 candidate 337716db303e94e459cad2b9bcdbfcb8b6c0474b passed exact-candidate revalidation, recorded G8 adversarial rehearsal, fresh separate read-only independent assurance with zero material findings, and the final cross-plane readiness audit. Owner attention is now authorized for a bounded P1 Owner test."
+    "allowed": false,
+    "reason": "Direct Owner test on 2026-09-17 materially falsified the READY_FOR_OWNER judgement for runtime 337716db303e94e459cad2b9bcdbfcb8b6c0474b. The candidate regressed the intended sandbox pressure versus earlier baselines, presented normal-looking WorldReference terrain outside Matter editability, and did not establish the required clear superiority to P0.5. Campaign reopened before further Owner delivery."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -170,11 +170,12 @@
       ]
     },
     "final_readiness_audit": {
-      "status": "PASS",
+      "status": "FAIL",
       "evidence_type": "final_cross_plane_audit",
       "verified_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
       "evidence": [
         "docs/evidence/p1-final-readiness-audit-v4.md",
+        "docs/evidence/p1-owner-test-2026-09-17-experiential-regression.md",
         "docs/QUALITY-SYSTEM.md",
         "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md",
         "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md",
@@ -277,5 +278,7 @@
       ]
     }
   },
-  "open_blockers": []
+  "open_blockers": [
+    "Owner test 2026-09-17 materially failed: the candidate regresses the intended sandbox/Owner baseline, normal WorldReference terrain is not editable Matter, default interaction is too inert/ceremonial, and the required clear superiority to P0.5 was not established."
+  ]
 }
