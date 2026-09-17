@@ -1,0 +1,132 @@
+name: Deliver Recovery Owner Slice
+
+# Fast Owner-feedback delivery for the post-failure recovery branch.
+# This does NOT confer merge/readiness status and deliberately does not reuse the
+# frozen P1 readiness/assurance contract. It packages the exact recovery source
+# only after the small causal loop needed for the next Owner test passes.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "actor/**"
+      - "matter/**"
+      - "construct/**"
+      - "space/**"
+      - "p1/**"
+      - "tests/p1_compile_gate.gd"
+      - "tests/p1_canonical_startup_smoke.gd"
+      - "tests/p1_recovery_owner_pressure_smoke.gd"
+      - "tests/w0*.gd"
+      - "ci/**"
+      - "project.godot"
+      - "export_presets.cfg"
+      - ".github/workflows/recovery-owner-slice.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recovery-owner-slice-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-owner-slice:
+    name: Build exact Windows recovery slice
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      RECOVERY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      OUTPUT_DIR: artifacts/recovery-owner-windows
+
+    steps:
+      - name: Checkout exact recovery source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.RECOVERY_SOURCE_SHA }}
+          fetch-depth: 1
+
+      - name: Prove exact source
+        shell: pwsh
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:RECOVERY_SOURCE_SHA) {
+            throw "Recovery checkout mismatch: expected $env:RECOVERY_SOURCE_SHA, got $actual"
+          }
+          "RECOVERY_OWNER_SOURCE_PASS: $actual"
+
+      - name: Setup Godot 4.7.2 with export templates
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Strict Windows import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Compile recovery dependency graph
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_compile_gate.gd -PassMarker P1_COMPILE_GATE_PASS
+
+      - name: Verify one-world startup and Owner control scope
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_canonical_startup_smoke.gd -PassMarker P1_CANONICAL_STARTUP_PASS
+
+      - name: Verify ordinary edit pressure
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_recovery_owner_pressure_smoke.gd -PassMarker P1_RECOVERY_OWNER_PRESSURE_PASS
+
+      - name: Verify Owner-facing causal detach and actor ride
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0d_recovery_causal_loop_probe.gd -PassMarker W0D_RECOVERY_CAUSAL_LOOP_PASS
+
+      - name: Export exact Windows recovery slice
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:OUTPUT_DIR | Out-Null
+          godot --headless --path . --export-release "Windows Desktop" "$env:OUTPUT_DIR/FrameMatter-Recovery-Owner.exe"
+          $exe = Join-Path $env:OUTPUT_DIR "FrameMatter-Recovery-Owner.exe"
+          if (-not (Test-Path $exe)) { throw "Windows recovery export missing: $exe" }
+          if ((Get-Item $exe).Length -lt 1000000) { throw "Windows recovery export is implausibly small" }
+
+      - name: Record Owner-test provenance and controls
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:OUTPUT_DIR "FrameMatter-Recovery-Owner.exe"
+          $digest = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          @"
+          FrameMatter Recovery Owner Slice
+          source_commit=$env:RECOVERY_SOURCE_SHA
+          workflow_run=$env:GITHUB_RUN_ID
+          godot=4.7.2
+          platform=windows-latest
+          main_scene=res://p1/recovery_main.tscn
+          executable_sha256=$digest
+          status=OWNER_FEEDBACK_SLICE_NOT_MERGE_AUTHORIZATION
+
+          Controls
+          - WASD: move
+          - Space: jump
+          - MMB drag: orbit camera
+          - LMB: remove Matter
+          - RMB: build Matter
+          - Cut the narrow support/neck to detach ordinary world Matter.
+          - After Matter is detached: T freeze/release; arrows push/turn.
+
+          What this slice is for
+          - Does the world read as one editable material reality?
+          - Does cutting support and having Matter become physical feel causal/intuitive?
+          - Does riding the same Matter through detachment feel continuous?
+          - What still feels bad, confusing, dead, artificial or regressed?
+          "@ | Set-Content -Path (Join-Path $env:OUTPUT_DIR "OWNER-TEST.txt")
+          "RECOVERY_OWNER_EXPORT_SHA256: $digest"
+
+      - name: Upload Windows recovery Owner slice
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-Recovery-Owner-Windows
+          path: artifacts/recovery-owner-windows
+          if-no-files-found: error
+          retention-days: 14
