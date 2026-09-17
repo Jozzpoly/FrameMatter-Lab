@@ -130,6 +130,10 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_recovery_owner_pressure_smoke.gd -PassMarker P1_RECOVERY_OWNER_PRESSURE_PASS
 
+      - name: Run W0D Owner-facing causal recovery probe
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0d_recovery_causal_loop_probe.gd -PassMarker W0D_RECOVERY_CAUSAL_LOOP_PASS
+
       - name: Run real P1 composed scene foundation smoke
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_scene_foundation_smoke.gd -PassMarker P1_SCENE_FOUNDATION_PASS
