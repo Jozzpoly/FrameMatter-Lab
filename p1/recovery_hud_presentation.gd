@@ -23,7 +23,7 @@ func _bind() -> void:
 	_status = _host.get_node_or_null("HUD/Panel/MarginContainer/VBoxContainer/Status") as Label
 	_hint = _host.get_node_or_null("HUD/Panel/MarginContainer/VBoxContainer/Hint") as Label
 	if _panel != null:
-		_panel.offset_right = _panel.offset_left + 620.0
+		_panel.offset_right = _panel.offset_left + 700.0
 		_panel.offset_bottom = _panel.offset_top + 58.0
 	_refresh()
 
@@ -36,13 +36,22 @@ func _refresh() -> void:
 	var spaces: Array[LocalMatterSpace] = _host.call("get_active_spaces") if _host.has_method("get_active_spaces") else []
 	if focus == null or not is_instance_valid(focus) or focus.is_retired():
 		_status.text = "FRAME MATTER · NO FOCUS"
-	else:
-		var role := "WORLD MATTER" if focus == world else "MOVING SPACE"
-		var kind := "STATIC" if focus.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC else "DYNAMIC"
-		_status.text = "%s   ·   %s   ·   %d LIVE SPACE%s" % [
-			role,
-			kind,
-			spaces.size(),
-			"" if spaces.size() == 1 else "S",
-		]
-	_hint.text = "LMB remove   ·   RMB build   ·   WASD move   ·   Space jump   ·   MMB orbit   ·   T release/freeze   ·   arrows push/turn"
+		_hint.text = "WASD move   ·   Space jump   ·   MMB orbit"
+		return
+
+	var is_world := focus == world
+	var kind := "STATIC" if focus.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC else "DYNAMIC"
+	var role := "WORLD MATTER" if is_world else "DETACHED MATTER"
+	_status.text = "%s   ·   %s   ·   %d LIVE SPACE%s" % [
+		role,
+		kind,
+		spaces.size(),
+		"" if spaces.size() == 1 else "S",
+	]
+
+	if is_world:
+		_hint.text = "LMB remove   ·   RMB build   ·   cut support to detach Matter   ·   WASD move   ·   Space jump   ·   MMB orbit"
+		return
+
+	var toggle_label := "T freeze" if focus.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC else "T release"
+	_hint.text = "LMB remove   ·   RMB build   ·   %s   ·   arrows push/turn   ·   WASD move   ·   Space jump   ·   MMB orbit" % toggle_label
