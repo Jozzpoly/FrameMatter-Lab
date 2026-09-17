@@ -54,10 +54,10 @@ try {
 
     foreach ($file in @(
         "00_first_contact.png",
-        "01_world_alive.png",
-        "02_direct_remove_target.png",
-        "03_direct_build_target.png",
-        "04_alternate_view.png"
+        "01_causal_bridge_before_cut.png",
+        "02_causal_detach_committed.png",
+        "03_riding_detached_matter.png",
+        "04_alternate_riding_view.png"
     )) {
         $path = Join-Path $OutputDir $file
         if (-not (Test-Path $path)) {
