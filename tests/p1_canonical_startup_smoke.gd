@@ -47,6 +47,7 @@ func _run() -> void:
 	var space_control := main.get_node_or_null("P1SpaceControl") as P1SpaceControl
 	var interactor := main.get_node_or_null("P1MatterInteractor") as P1MatterInteractor
 	var direct_edit := main.get_node_or_null("P1RecoveryDirectEdit") as P1RecoveryDirectEdit
+	var hint := main.get_node_or_null("HUD/Panel/MarginContainer/VBoxContainer/Hint") as Label
 	var world := main.call("get_recovery_world_space") as LocalMatterSpace
 	var old_demo := main.call("get_recovery_demo_space") as LocalMatterSpace
 	var bridge_cell: Vector3i = main.call("get_recovery_causal_bridge_cell_for_test") if main.has_method("get_recovery_causal_bridge_cell_for_test") else Vector3i(-1, -1, -1)
@@ -71,14 +72,31 @@ func _run() -> void:
 	var witness: Dictionary = player.get_support_contact_witness() if player != null else {}
 	_check(bool(witness.get("valid", false)), "canonical startup establishes exact actor↔Matter contact witness")
 
+	# Recovery teaches one causal model: edit the canonical world; only detached
+	# Matter receives explicit rigid-body controls. The canonical authority must
+	# never be releasable through the legacy T/arrows Space-control surface.
+	var toggle_accepted: bool = bool(main.call("toggle_focused_space_for_test"))
+	var impulse_accepted: bool = bool(main.call("apply_focused_central_impulse_for_test", Vector3(0.0, 0.0, -4.0)))
+	var torque_accepted: bool = bool(main.call("apply_focused_torque_impulse_for_test", Vector3(0.0, 1.0, 0.0)))
+	_check(not toggle_accepted, "canonical causal world rejects legacy release/freeze toggle")
+	_check(not impulse_accepted and not torque_accepted, "canonical causal world rejects manual rigid-body impulses")
+	_check(world.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "canonical causal world remains static after rejected legacy controls")
+	_check(not world.is_provider_transition_pending(), "rejected legacy controls queue no hidden provider transition")
+	_check(hint != null, "canonical recovery HUD exposes first-contact hint")
+	if hint != null:
+		_check(hint.text.contains("LMB remove") and hint.text.contains("RMB build"), "world HUD prioritizes direct Matter editing")
+		_check(not hint.text.contains("T release") and not hint.text.contains("arrows push"), "world HUD does not advertise detached-Matter controls on canonical authority")
+
 	print(
-		"P1_CANONICAL_STARTUP_METRIC main_scene=%s world_space_id=%d active_spaces=%d bridge=%s witness=%s"
+		"P1_CANONICAL_STARTUP_METRIC main_scene=%s world_space_id=%d active_spaces=%d bridge=%s witness=%s world_toggle=%s world_impulse=%s"
 		% [
 			configured_main,
 			world.get_instance_id() if world != null else 0,
 			registry.get_active_count() if registry != null else 0,
 			str(bridge_cell),
 			str(witness.get("cell", Vector3i(-1, -1, -1))),
+			str(toggle_accepted),
+			str(impulse_accepted),
 		]
 	)
 
@@ -99,7 +117,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_CANONICAL_STARTUP_PASS: project startup resolves to one editable causal Matter world with direct interaction and exact actor support; motion is no longer pre-authored beside the world.")
+		print("P1_CANONICAL_STARTUP_PASS: project startup resolves to one editable causal Matter world with direct interaction and exact actor support; rigid-body controls are scoped to detached Matter rather than the world authority.")
 		quit(0)
 		return
 	for failure in _failures:
