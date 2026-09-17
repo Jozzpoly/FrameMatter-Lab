@@ -81,7 +81,7 @@ func _run() -> void:
 	_check(not toggle_accepted, "canonical causal world rejects legacy release/freeze toggle")
 	_check(not impulse_accepted and not torque_accepted, "canonical causal world rejects manual rigid-body impulses")
 	_check(world.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "canonical causal world remains static after rejected legacy controls")
-	_check(not world.is_provider_transition_pending(), "rejected legacy controls queue no hidden provider transition")
+	_check(not world.is_transition_pending(), "rejected legacy controls queue no hidden provider transition")
 	_check(hint != null, "canonical recovery HUD exposes first-contact hint")
 	if hint != null:
 		_check(hint.text.contains("LMB remove") and hint.text.contains("RMB build"), "world HUD prioritizes direct Matter editing")
