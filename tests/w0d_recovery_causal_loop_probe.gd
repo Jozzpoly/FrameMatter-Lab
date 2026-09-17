@@ -78,8 +78,12 @@ func _run() -> void:
 		_finish(root)
 		return
 
+	# The signal is emitted synchronously at the defended physics-frame commit
+	# boundary. Measure continuity immediately here, before process_frame or the
+	# fresh target's first solver-driven displacement can legitimately move it.
 	await causal_world.authority_partition_committed
-	await process_frame
+	var actor_world_at_handoff := player.global_position
+	var handoff_world_error := actor_world_at_handoff.distance_to(actor_world_before)
 	var result := causal_world.get_last_authority_partition_result()
 	var target := result.get("target_space") as LocalMatterSpace
 	_check(target != null and is_instance_valid(target), "causal edit creates one fresh live Matter Space")
@@ -89,7 +93,7 @@ func _run() -> void:
 	_check(player.grounded and player.support_space == target, "actor immediately follows the Matter that supported it into the fresh frame")
 	_check(player.observed_support_transfers == transfers_before + 1, "causal world edit performs exactly one explicit actor frame transfer")
 	_check(player.observed_ground_acquisitions == acquisitions_before, "causal world edit does not fake continuity through later ground reacquisition")
-	_check(player.global_position.distance_to(actor_world_before) < 0.0001, "actor has no world-space teleport at the authority handoff")
+	_check(handoff_world_error < 0.0001, "actor has no world-space teleport at the authority handoff")
 
 	var source_origin: Vector3i = result.get("source_origin", Vector3i.ZERO)
 	var target_witness_cell := witness_cell - source_origin
@@ -109,12 +113,13 @@ func _run() -> void:
 	_check(player.observed_ground_acquisitions == acquisitions_before, "ride continuity never falls back to reacquisition")
 
 	print(
-		"W0D_RECOVERY_CAUSAL_LOOP_METRIC bridge=%s witness=%s token=%d active_before=1 active_after=%d target_fall=%.6f actor_fall=%.6f transfers=%d acquisitions=%d"
+		"W0D_RECOVERY_CAUSAL_LOOP_METRIC bridge=%s witness=%s token=%d active_before=1 active_after=%d handoff_error=%.10f target_fall=%.6f actor_fall=%.6f transfers=%d acquisitions=%d"
 		% [
 			str(bridge_cell),
 			str(witness_cell),
 			witness_token,
 			registry.get_active_count(),
+			handoff_world_error,
 			target_fall,
 			actor_fall,
 			player.observed_support_transfers - transfers_before,
