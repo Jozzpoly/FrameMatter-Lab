@@ -18,6 +18,7 @@ on:
       - "tests/p1_recovery_owner_pressure_smoke.gd"
       - "tests/p1_live_topology_consumer_probe.gd"
       - "tests/p1_split_actor_witness_probe.gd"
+      - "tests/p1_recovery_observer_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -95,6 +96,10 @@ jobs:
       - name: Verify destroyed support cannot fabricate split handoff
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_split_actor_witness_probe.gd -PassMarker P1_SPLIT_ACTOR_WITNESS_PASS
+
+      - name: Verify observer-light Spark instrumentation
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_recovery_observer_probe.gd -PassMarker P1_RECOVERY_OBSERVER_PASS
 
       - name: Export exact Windows recovery slice
         shell: pwsh

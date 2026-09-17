@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://p1/recovery_main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://p1/player.tscn" id="2_player"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://p1/interaction_feedback.gd" id="10_interaction_feedback"]
 [ext_resource type="Script" path="res://p1/recovery_direct_edit.gd" id="11_direct_edit"]
 [ext_resource type="Script" path="res://p1/recovery_hud_presentation.gd" id="12_hud"]
+[ext_resource type="Script" path="res://p1/recovery_observer.gd" id="13_observer"]
 
 [sub_resource type="Environment" id="Environment_Recovery"]
 background_mode = 1
@@ -112,6 +113,9 @@ script = ExtResource("9_target_presentation")
 
 [node name="P1RecoveryHudPresentation" type="Node" parent="."]
 script = ExtResource("12_hud")
+
+[node name="P1RecoveryObserver" type="Node" parent="."]
+script = ExtResource("13_observer")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

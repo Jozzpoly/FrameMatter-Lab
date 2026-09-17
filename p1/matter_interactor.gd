@@ -13,6 +13,7 @@ enum TargetingMode {
 
 signal edit_mode_changed(mode: int)
 signal edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, topology_split_queued: bool)
+signal edit_timing_sample(space: LocalMatterSpace, cell: Vector3i, mode: int, topology_split_queued: bool, sample: Dictionary)
 signal storage_expansion_requested(space: LocalMatterSpace, source_cell: Vector3i)
 signal edit_rejected(reason: String)
 
@@ -113,8 +114,10 @@ func apply_edit_to_cell(space: LocalMatterSpace, cell: Vector3i, edit_mode: int)
 		_reject("target is outside current local storage")
 		return false
 
+	var edit_started_usec := Time.get_ticks_usec()
 	var previous := space.volume.get_cell(cell)
 	var changed := false
+	var mutation_started_usec := Time.get_ticks_usec()
 	if edit_mode == EditMode.REMOVE:
 		if previous == CellVolume.EMPTY:
 			_reject("remove target is already empty")
@@ -130,19 +133,46 @@ func apply_edit_to_cell(space: LocalMatterSpace, cell: Vector3i, edit_mode: int)
 	else:
 		_reject("unsupported edit mode")
 		return false
+	var mutation_usec := Time.get_ticks_usec() - mutation_started_usec
 
 	if not changed:
 		_reject("Matter mutation was rejected")
 		return false
 
+	var topology_started_usec := Time.get_ticks_usec()
 	var split_queued := false
 	if edit_mode == EditMode.REMOVE and space.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC:
 		if MatterTopology.extract_connected_components(space.volume).size() > 1:
 			split_queued = space.request_connected_component_split()
+	var topology_usec := Time.get_ticks_usec() - topology_started_usec
+	var provider_rebuild_usec := _provider_last_rebuild_usec(space)
 
 	last_rejection = ""
+	var listeners_started_usec := Time.get_ticks_usec()
 	edit_applied.emit(space, cell, edit_mode, split_queued)
+	var listeners_usec := Time.get_ticks_usec() - listeners_started_usec
+	var total_usec := Time.get_ticks_usec() - edit_started_usec
+	# Observer signal is deliberately emitted after edit_applied so telemetry does
+	# not contaminate the listener timing it is meant to measure.
+	edit_timing_sample.emit(space, cell, edit_mode, split_queued, {
+		"mutation_usec": mutation_usec,
+		"topology_usec": topology_usec,
+		"listeners_usec": listeners_usec,
+		"total_usec": total_usec,
+		"provider_rebuild_usec": provider_rebuild_usec,
+	})
 	return true
+
+
+func _provider_last_rebuild_usec(space: LocalMatterSpace) -> int:
+	if space == null or not is_instance_valid(space):
+		return -1
+	var provider := space.get_active_provider()
+	if provider is ConstructBody:
+		return (provider as ConstructBody).last_rebuild_usec
+	if provider is MatterRepresentation:
+		return (provider as MatterRepresentation).last_rebuild_usec
+	return -1
 
 
 func _process(_delta: float) -> void:
