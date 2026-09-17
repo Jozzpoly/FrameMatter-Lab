@@ -96,14 +96,19 @@ func _on_physics_frame() -> void:
 
 
 func _commit_authority_partition() -> void:
+	var commit_started_usec := Time.get_ticks_usec()
 	# Revalidate current truth at the defended pre-step boundary. A request is
 	# intent, not a lock: if selected Matter or another lifecycle transaction
 	# changed before commit, fail closed without touching authority.
-	if not _partition_request_is_current():
+	var validation_started_usec := Time.get_ticks_usec()
+	var request_is_current := _partition_request_is_current()
+	var validation_usec := Time.get_ticks_usec() - validation_started_usec
+	if not request_is_current:
 		_clear_pending_authority_partition()
 		_last_authority_partition_result = {}
 		return
 
+	var staging_started_usec := Time.get_ticks_usec()
 	var selection := CellVolume.new(volume.size)
 	var selected_lookup: Dictionary = {}
 	for cell in _pending_authority_partition_cells:
@@ -139,10 +144,12 @@ func _commit_authority_partition() -> void:
 	var target_transform := source_transform * Transform3D(Basis.IDENTITY, Vector3(source_origin))
 	var parent_node := get_parent()
 	assert(parent_node != null)
+	var staging_usec := Time.get_ticks_usec() - staging_started_usec
 
 	# Commit boundary: source keeps Space/provider identity but swaps its complete
 	# authoritative Matter state in one rebuild. The staged target has not been a
 	# live owner before this point.
+	var source_rebuild_started_usec := Time.get_ticks_usec()
 	volume = source_after_volume
 	lineage = source_after_lineage
 	if source_provider is MatterRepresentation:
@@ -152,7 +159,9 @@ func _commit_authority_partition() -> void:
 	else:
 		assert(false, "Unsupported W0 source provider")
 	source_provider.reset_physics_interpolation()
+	var source_rebuild_usec := Time.get_ticks_usec() - source_rebuild_started_usec
 
+	var target_initialize_started_usec := Time.get_ticks_usec()
 	var target_kind := _pending_authority_partition_target_kind
 	var target := LocalMatterSpace.new()
 	target.name = "%s_Extracted" % name
@@ -173,6 +182,8 @@ func _commit_authority_partition() -> void:
 		)
 	else:
 		assert(false, "Unsupported W0 target provider kind")
+	var target_initialize_usec := Time.get_ticks_usec() - target_initialize_started_usec
+	var pre_signal_total_usec := Time.get_ticks_usec() - commit_started_usec
 
 	_last_authority_partition_result = {
 		"source_space": self,
@@ -182,9 +193,16 @@ func _commit_authority_partition() -> void:
 		"target_transform": target_transform,
 		"target_provider_kind": target_kind,
 		"source_cells": _pending_authority_partition_cells.duplicate(),
+		"timing": {
+			"validation_usec": validation_usec,
+			"staging_usec": staging_usec,
+			"source_rebuild_usec": source_rebuild_usec,
+			"target_initialize_usec": target_initialize_usec,
+			"pre_signal_total_usec": pre_signal_total_usec,
+		},
 	}
 	_clear_pending_authority_partition()
-	authority_partition_committed.emit(_last_authority_partition_result.duplicate())
+	authority_partition_committed.emit(_last_authority_partition_result.duplicate(true))
 
 
 func _partition_request_is_current() -> bool:

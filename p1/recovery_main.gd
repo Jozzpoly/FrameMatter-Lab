@@ -30,6 +30,9 @@ var _pending_causal_actor_handoff := false
 var _pending_causal_actor_local_center := Vector3.ZERO
 var _pending_causal_actor_witness_cell := Vector3i.ZERO
 var _pending_causal_actor_witness_token := MatterLineageMap.NONE
+var _last_recovery_policy_usec := 0
+var _last_recovery_partition_request_usec := 0
+var _last_recovery_partition_publication_usec := 0
 
 
 func _ready() -> void:
@@ -50,6 +53,18 @@ func get_recovery_demo_space() -> LocalMatterSpace:
 
 func get_recovery_causal_bridge_cell_for_test() -> Vector3i:
 	return RECOVERY_CAUSAL_BRIDGE_CELL
+
+
+func get_last_recovery_policy_usec() -> int:
+	return _last_recovery_policy_usec
+
+
+func get_last_recovery_partition_request_usec() -> int:
+	return _last_recovery_partition_request_usec
+
+
+func get_last_recovery_partition_publication_usec() -> int:
+	return _last_recovery_partition_publication_usec
 
 
 func _initialize_space() -> void:
@@ -164,6 +179,8 @@ func _apply_focused_torque_impulse(local_impulse: Vector3) -> bool:
 
 
 func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_queued: bool) -> void:
+	_last_recovery_policy_usec = 0
+	_last_recovery_partition_request_usec = 0
 	super._on_edit_applied(space, cell, mode, split_queued)
 	if mode != P1MatterInteractor.EditMode.REMOVE:
 		return
@@ -173,11 +190,13 @@ func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_
 		_last_event = "causal detach already pending"
 		return
 
+	var policy_started_usec := Time.get_ticks_usec()
 	var policy: Dictionary = W0AnchoredDetachmentPolicy.evaluate(
 		_recovery_world_space.volume,
 		_recovery_world_space.lineage,
 		_recovery_anchor_tokens
 	)
+	_last_recovery_policy_usec = Time.get_ticks_usec() - policy_started_usec
 	if not bool(policy.get("valid", false)):
 		_last_event = "detach policy fail-closed: %s" % str(policy.get("reason", "invalid"))
 		return
@@ -197,10 +216,13 @@ func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_
 		selected.append(candidate)
 
 	_prepare_causal_actor_handoff(selected)
-	if not _recovery_world_space.request_authority_partition(
+	var request_started_usec := Time.get_ticks_usec()
+	var accepted := _recovery_world_space.request_authority_partition(
 		selected,
 		LocalMatterSpace.ProviderKind.DYNAMIC
-	):
+	)
+	_last_recovery_partition_request_usec = Time.get_ticks_usec() - request_started_usec
+	if not accepted:
 		_clear_pending_causal_actor_handoff()
 		_last_event = "causal authority transfer rejected"
 		return
@@ -230,10 +252,12 @@ func _prepare_causal_actor_handoff(selected_cells: Array[Vector3i]) -> void:
 
 
 func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
+	var publication_started_usec := Time.get_ticks_usec()
 	var target := result.get("target_space") as LocalMatterSpace
 	if target == null or not is_instance_valid(target):
 		_clear_pending_causal_actor_handoff()
 		_last_event = "causal transfer committed without live target"
+		_last_recovery_partition_publication_usec = Time.get_ticks_usec() - publication_started_usec
 		return
 
 	var actor_transferred := false
@@ -267,6 +291,7 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 		if actor_transferred
 		else "world Matter detached → fresh dynamic Space"
 	)
+	_last_recovery_partition_publication_usec = Time.get_ticks_usec() - publication_started_usec
 
 
 func _clear_pending_causal_actor_handoff() -> void:

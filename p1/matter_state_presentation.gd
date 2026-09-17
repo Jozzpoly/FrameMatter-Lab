@@ -18,6 +18,8 @@ var registry: P1SpaceRegistry
 var interactor: P1MatterInteractor
 var focus_source: Node
 var enabled := true
+var last_refresh_usec := 0
+var last_refresh_space_id := 0
 
 var _focus_space: LocalMatterSpace
 
@@ -96,11 +98,19 @@ func refresh_all() -> void:
 
 
 func refresh_space(space: LocalMatterSpace) -> void:
+	var started_usec := Time.get_ticks_usec()
+	last_refresh_space_id = (
+		space.get_instance_id()
+		if space != null and is_instance_valid(space)
+		else 0
+	)
 	if not _is_live_space(space) or space.volume == null:
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 	var provider: Node3D = space.get_active_provider()
 	_remove_overlays_from_provider(provider)
 	if not enabled or space.volume.count_solid() == 0:
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 
 	var state_overlay := MeshInstance3D.new()
@@ -115,9 +125,11 @@ func refresh_space(space: LocalMatterSpace) -> void:
 	provider.add_child(state_overlay)
 
 	if space != _focus_space:
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 	var focus_mesh := build_top_surface_perimeter(space.volume)
 	if focus_mesh.get_surface_count() == 0:
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 	var focus_overlay := MeshInstance3D.new()
 	focus_overlay.name = FOCUS_OVERLAY_NAME
@@ -129,6 +141,7 @@ func refresh_space(space: LocalMatterSpace) -> void:
 	focus_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	focus_overlay.material_override = focus_material
 	provider.add_child(focus_overlay)
+	last_refresh_usec = Time.get_ticks_usec() - started_usec
 
 
 func clear_all() -> void:

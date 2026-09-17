@@ -6,7 +6,7 @@ extends Node
 # physics bodies or lifecycle policy. The goal is to make one natural Owner run
 # explainable without turning the sandbox into a debug dashboard.
 
-const TRACE_SCHEMA := "framematter.spark.observer.v1"
+const TRACE_SCHEMA := "framematter.spark.observer.v2"
 const SESSION_ROOT := "user://framematter-observer"
 const SAMPLE_INTERVAL_SECONDS := 0.50
 const FLUSH_INTERVAL_SECONDS := 1.00
@@ -32,6 +32,7 @@ var _trace_available := false
 var _bound := false
 var _latest_snapshot: Dictionary = {}
 var _last_edit_timing: Dictionary = {}
+var _last_authority_timing: Dictionary = {}
 var _mark_flash_until_msec := 0
 
 
@@ -95,6 +96,10 @@ func get_last_edit_timing_for_test() -> Dictionary:
 	return _last_edit_timing.duplicate(true)
 
 
+func get_last_authority_timing_for_test() -> Dictionary:
+	return _last_authority_timing.duplicate(true)
+
+
 func capture_snapshot_for_test() -> Dictionary:
 	var sample_started_usec := Time.get_ticks_usec()
 	_latest_snapshot = _capture_snapshot()
@@ -139,7 +144,7 @@ func _bind() -> void:
 		"physics_engine": str(ProjectSettings.get_setting("physics/3d/physics_engine", "")),
 		"user_data_dir": OS.get_user_data_dir(),
 		"sample_interval_seconds": SAMPLE_INTERVAL_SECONDS,
-		"performance_monitor_note": "Performance monitors are sampled values and may update more slowly than this trace.",
+		"performance_monitor_note": "TIME_* monitors are sampled values and may update more slowly than this trace. Jolt PhysicsServer3D process-info counters are unsupported and are therefore recorded as null.",
 	})
 	_record("sample", _latest_snapshot)
 	_refresh_truth_strip()
@@ -204,6 +209,14 @@ func _capture_snapshot() -> Dictionary:
 	if _host != null and is_instance_valid(_host) and _host.has_method("get_space"):
 		focus_space = _host.call("get_space") as LocalMatterSpace
 	var focus := _space_state(focus_space)
+	var physics_process_info_supported := not _jolt_process_info_unavailable()
+	var physics_active_objects: Variant = null
+	var physics_collision_pairs: Variant = null
+	var physics_islands: Variant = null
+	if physics_process_info_supported:
+		physics_active_objects = PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ACTIVE_OBJECTS)
+		physics_collision_pairs = PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_COLLISION_PAIRS)
+		physics_islands = PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ISLAND_COUNT)
 	return {
 		"support": support,
 		"focus": focus,
@@ -218,13 +231,19 @@ func _capture_snapshot() -> Dictionary:
 		"occupied_cells": census["occupied_cells"],
 		"collision_shapes": census["collision_shapes"],
 		"max_provider_rebuild_usec": census["max_provider_rebuild_usec"],
-		"physics_active_objects": PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ACTIVE_OBJECTS),
-		"physics_collision_pairs": PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_COLLISION_PAIRS),
-		"physics_islands": PhysicsServer3D.get_process_info(PhysicsServer3D.INFO_ISLAND_COUNT),
+		"physics_process_info_supported": physics_process_info_supported,
+		"physics_active_objects": physics_active_objects,
+		"physics_collision_pairs": physics_collision_pairs,
+		"physics_islands": physics_islands,
 		"fps_sampled": Performance.get_monitor(Performance.TIME_FPS),
 		"frame_process_ms_sampled": Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
 		"physics_process_ms_sampled": Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 	}
+
+
+func _jolt_process_info_unavailable() -> bool:
+	var physics_engine := str(ProjectSettings.get_setting("physics/3d/physics_engine", ""))
+	return physics_engine.to_lower().contains("jolt")
 
 
 func _collect_lifecycle_census() -> Dictionary:
@@ -339,15 +358,16 @@ func _refresh_truth_strip() -> void:
 	var relation := "=" if bool(s["support_equals_focus"]) else "!="
 	var trace_state := "TRACE" if _trace_available else "TRACE OFF"
 	var mark_state := " · MARK %d" % _owner_mark_count if Time.get_ticks_msec() < _mark_flash_until_msec else ""
+	var last_edit_ms := float(_last_edit_timing.get("total_usec", 0)) / 1000.0
 	_truth_label.text = (
 		"OBS · SUPPORT %s/%s %s FOCUS %s/%s · SPACES %d/%d (empty %d) · DYN/AWAKE %d/%d\n"
-		+ "PHYS A/P/I %d/%d/%d · FPS %.0f · physics %.2f ms* · %s · F7 MARK · F8 FOLDER%s"
+		+ "CELLS %d · SHAPES %d · FPS %.0f · physics %.2f ms* · EDIT %.1f ms · %s · F7 MARK · F8 FOLDER%s"
 	) % [
 		support["role"], support["kind"], relation, focus["role"], focus["kind"],
 		s["logical_spaces"], s["nonempty_spaces"], s["empty_spaces"],
 		s["dynamic_spaces"], s["awake_dynamic_spaces"],
-		s["physics_active_objects"], s["physics_collision_pairs"], s["physics_islands"],
-		s["fps_sampled"], s["physics_process_ms_sampled"], trace_state, mark_state,
+		s["occupied_cells"], s["collision_shapes"],
+		s["fps_sampled"], s["physics_process_ms_sampled"], last_edit_ms, trace_state, mark_state,
 	]
 
 
@@ -367,7 +387,29 @@ func _on_edit_timing_sample(
 	split_queued: bool,
 	sample: Dictionary
 ) -> void:
+	var grid := _host.get_node_or_null("P1MatterSurfaceGrid") as P1MatterSurfaceGrid
+	var state_presentation := _host.get_node_or_null("P1MatterStatePresentation") as P1MatterStatePresentation
+	var grid_usec := grid.last_refresh_usec if grid != null else -1
+	var state_usec := state_presentation.last_refresh_usec if state_presentation != null else -1
+	var policy_usec := (
+		int(_host.call("get_last_recovery_policy_usec"))
+		if _host != null and _host.has_method("get_last_recovery_policy_usec")
+		else -1
+	)
+	var request_usec := (
+		int(_host.call("get_last_recovery_partition_request_usec"))
+		if _host != null and _host.has_method("get_last_recovery_partition_request_usec")
+		else -1
+	)
+	var listeners_usec := int(sample.get("listeners_usec", -1))
+	var known_listener_usec := maxi(0, grid_usec) + maxi(0, state_usec) + maxi(0, policy_usec) + maxi(0, request_usec)
+	var unattributed_listener_usec := maxi(0, listeners_usec - known_listener_usec)
 	_last_edit_timing = sample.duplicate(true)
+	_last_edit_timing["surface_grid_refresh_usec"] = grid_usec
+	_last_edit_timing["state_presentation_refresh_usec"] = state_usec
+	_last_edit_timing["w0_policy_usec"] = policy_usec
+	_last_edit_timing["w0_partition_request_usec"] = request_usec
+	_last_edit_timing["unattributed_listener_usec"] = unattributed_listener_usec
 	_record("edit_timing", {
 		"space_id": space.get_instance_id() if space != null and is_instance_valid(space) else 0,
 		"cell": [cell.x, cell.y, cell.z],
@@ -375,9 +417,14 @@ func _on_edit_timing_sample(
 		"split_queued": split_queued,
 		"mutation_usec": int(sample.get("mutation_usec", -1)),
 		"topology_usec": int(sample.get("topology_usec", -1)),
-		"listeners_usec": int(sample.get("listeners_usec", -1)),
+		"listeners_usec": listeners_usec,
 		"total_usec": int(sample.get("total_usec", -1)),
 		"provider_rebuild_usec": int(sample.get("provider_rebuild_usec", -1)),
+		"surface_grid_refresh_usec": grid_usec,
+		"state_presentation_refresh_usec": state_usec,
+		"w0_policy_usec": policy_usec,
+		"w0_partition_request_usec": request_usec,
+		"unattributed_listener_usec": unattributed_listener_usec,
 	})
 
 
@@ -420,6 +467,33 @@ func _on_split_committed(source: LocalMatterSpace, result: LocalMatterSplitResul
 	})
 
 
+func _on_authority_partition_committed(result: Dictionary) -> void:
+	var target := result.get("target_space") as LocalMatterSpace
+	var source_cells: Array = result.get("source_cells", [])
+	var timing: Dictionary = result.get("timing", {})
+	var publication_usec := (
+		int(_host.call("get_last_recovery_partition_publication_usec"))
+		if _host != null and _host.has_method("get_last_recovery_partition_publication_usec")
+		else -1
+	)
+	_last_authority_timing = {
+		"validation_usec": int(timing.get("validation_usec", -1)),
+		"staging_usec": int(timing.get("staging_usec", -1)),
+		"source_rebuild_usec": int(timing.get("source_rebuild_usec", -1)),
+		"target_initialize_usec": int(timing.get("target_initialize_usec", -1)),
+		"pre_signal_total_usec": int(timing.get("pre_signal_total_usec", -1)),
+		"recovery_publication_usec": publication_usec,
+	}
+	_record("authority_partition_committed", {
+		"target_space_id": target.get_instance_id() if target != null and is_instance_valid(target) else 0,
+		"transferred_cell_count": source_cells.size(),
+		"validation_usec": _last_authority_timing["validation_usec"],
+		"staging_usec": _last_authority_timing["staging_usec"],
+		"source_rebuild_usec": _last_authority_timing["source_rebuild_usec"],
+		"target_initialize_usec": _last_authority_timing["target_initialize_usec"],
+		"pre_signal_total_usec": _last_authority_timing["pre_signal_total_usec"],
+		"recovery_publication_usec": publication_usec,
+	})
 func _on_authority_partition_committed(result: Dictionary) -> void:
 	var target := result.get("target_space") as LocalMatterSpace
 	var source_cells: Array = result.get("source_cells", [])

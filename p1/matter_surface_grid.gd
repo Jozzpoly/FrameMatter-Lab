@@ -13,6 +13,8 @@ const LINE_COLOR := Color(0.035, 0.075, 0.11, LINE_ALPHA)
 var registry: P1SpaceRegistry
 var interactor: P1MatterInteractor
 var enabled := true
+var last_refresh_usec := 0
+var last_refresh_space_id := 0
 
 
 func _ready() -> void:
@@ -62,14 +64,23 @@ func refresh_all() -> void:
 
 
 func refresh_space(space: LocalMatterSpace) -> void:
+	var started_usec := Time.get_ticks_usec()
+	last_refresh_space_id = (
+		space.get_instance_id()
+		if space != null and is_instance_valid(space)
+		else 0
+	)
 	if space == null or not is_instance_valid(space) or space.is_retired() or space.volume == null:
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 	var provider: Node3D = space.get_active_provider()
 	if provider == null or not is_instance_valid(provider):
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 
 	_remove_overlay_from_provider(provider)
 	if not enabled or space.volume.count_solid() == 0:
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
 
 	var overlay := MeshInstance3D.new()
@@ -85,6 +96,7 @@ func refresh_space(space: LocalMatterSpace) -> void:
 	# x-ray/debug overlay.
 	overlay.material_override = material
 	provider.add_child(overlay)
+	last_refresh_usec = Time.get_ticks_usec() - started_usec
 
 
 func clear_all() -> void:
