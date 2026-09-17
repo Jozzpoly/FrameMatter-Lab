@@ -191,8 +191,21 @@ func _step_grounded(delta: float) -> void:
 	var actual_motion: Vector3 = global_position - before
 	world_velocity = support_velocity + actual_motion / maxf(delta, 0.000001)
 
+	# A provider installed at SceneTree.physics_frame is authoritative before the
+	# upcoming solver step, but direct-space queries in this same host phase may
+	# not see its fresh collision yet. Explicit frame handoff/rebase already
+	# proves the logical support relation, so preserve it for one step instead of
+	# fabricating detach+reacquire from a transient PhysicsServer visibility gap.
 	if _topology_validation_grace_steps > 0:
 		_topology_validation_grace_steps -= 1
+		support_local_center = support_body.to_local(global_position)
+		if actual_motion.length_squared() > 0.0000000001:
+			# We moved without a fresh collision query, so the old exact contact point
+			# can no longer certify which Matter cell is directly under the actor.
+			_has_support_contact_witness = false
+		_previous_support_point_world = global_position
+		_has_support_sample = true
+		return
 
 	if not _snap_and_attach_ground():
 		_detach_from_support(false)
