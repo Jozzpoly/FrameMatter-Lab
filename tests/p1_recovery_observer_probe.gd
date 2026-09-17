@@ -83,6 +83,27 @@ func _run() -> void:
 	]:
 		_check(int(authority_timing.get(key, -1)) >= 0, "authority timing exposes nonnegative %s" % key)
 
+	print(
+		"P1_RECOVERY_OBSERVER_METRIC edit_total_us=%d mutation_us=%d provider_rebuild_us=%d listeners_us=%d grid_us=%d state_us=%d policy_us=%d request_us=%d unattributed_listener_us=%d authority_validation_us=%d authority_staging_us=%d authority_source_rebuild_us=%d authority_target_init_us=%d authority_pre_signal_total_us=%d authority_publication_us=%d"
+		% [
+			int(timing.get("total_usec", -1)),
+			int(timing.get("mutation_usec", -1)),
+			int(timing.get("provider_rebuild_usec", -1)),
+			int(timing.get("listeners_usec", -1)),
+			int(timing.get("surface_grid_refresh_usec", -1)),
+			int(timing.get("state_presentation_refresh_usec", -1)),
+			int(timing.get("w0_policy_usec", -1)),
+			int(timing.get("w0_partition_request_usec", -1)),
+			int(timing.get("unattributed_listener_usec", -1)),
+			int(authority_timing.get("validation_usec", -1)),
+			int(authority_timing.get("staging_usec", -1)),
+			int(authority_timing.get("source_rebuild_usec", -1)),
+			int(authority_timing.get("target_initialize_usec", -1)),
+			int(authority_timing.get("pre_signal_total_usec", -1)),
+			int(authority_timing.get("recovery_publication_usec", -1)),
+		]
+	)
+
 	observer.owner_mark_for_test("probe")
 	_check(FileAccess.file_exists(trace_path), "Owner mark flush keeps trace file materialized")
 	var trace_file := FileAccess.open(trace_path, FileAccess.READ)
@@ -111,7 +132,9 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish(root: Node) -> void:
 	if root != null and is_instance_valid(root):
-		root.free()
+		# _run can resume directly inside authority_partition_committed. Queue the
+		# scene for deletion instead of freeing the signal owner synchronously.
+		root.queue_free()
 	if _failures.is_empty():
 		print("P1_RECOVERY_OBSERVER_PASS: calibrated Spark observer writes causal JSONL, marks unsupported Jolt process counters honestly, attributes edit/presentation/W0 costs and records authority-commit phases without taking authority.")
 		quit(0)
