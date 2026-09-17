@@ -10,10 +10,10 @@ extends "res://p1/main.gd"
 # now has to emerge from ordinary world Matter: destructive topology can detach
 # a previously canonical portion into a fresh dynamic frame.
 
-const RECOVERY_WORLD_SIZE := Vector3i(32, 5, 32)
-const RECOVERY_WORLD_ORIGIN := Vector3(-16.0, -2.0, -16.0)
-const RECOVERY_CAUSAL_BRIDGE_CELL := Vector3i(13, 3, 16)
-const RECOVERY_CAUSAL_SUPPORT_CELL := Vector3i(16, 3, 16)
+const RECOVERY_WORLD_SIZE := Vector3i(32, 8, 32)
+const RECOVERY_WORLD_ORIGIN := Vector3(-16.0, -4.0, -16.0)
+const RECOVERY_CAUSAL_BRIDGE_CELL := Vector3i(14, 5, 16)
+const RECOVERY_CAUSAL_SUPPORT_CELL := Vector3i(18, 5, 17)
 const RECOVERY_ANCHOR_CELLS: Array[Vector3i] = [
 	Vector3i(1, 0, 1),
 	Vector3i(30, 0, 1),
@@ -69,20 +69,30 @@ func _initialize_space() -> void:
 
 func _build_world_matter_space() -> W0AuthorityPartitionSpace:
 	var volume := CellVolume.new(RECOVERY_WORLD_SIZE)
-	# The visible ordinary terrain is authoritative Matter, not a separate fake
-	# floor. Relief stays part of the same owner/frame as the ground.
-	volume.fill_box(Vector3i.ZERO, Vector3i(32, 1, 32), CellVolume.SOLID)
-	volume.fill_box(Vector3i(3, 1, 4), Vector3i(8, 2, 8), CellVolume.SOLID)
-	volume.fill_box(Vector3i(24, 1, 20), Vector3i(29, 3, 24), CellVolume.SOLID)
-	volume.fill_box(Vector3i(5, 1, 24), Vector3i(11, 2, 27), CellVolume.SOLID)
-	volume.fill_box(Vector3i(22, 1, 5), Vector3i(26, 2, 9), CellVolume.SOLID)
+	# The visible terrain is authoritative Matter all the way down. A shallow pit
+	# is carved from that same connected mass so a detached shelf has real room to
+	# fall without inventing a second terrain ontology or a hidden catcher plane.
+	volume.fill_box(Vector3i.ZERO, Vector3i(32, 4, 32), CellVolume.SOLID)
+	for x in range(12, 23):
+		for y in range(1, 4):
+			for z in range(12, 23):
+				volume.set_cell(Vector3i(x, y, z), CellVolume.EMPTY)
 
-	# A raised ordinary-Matter overhang is NOT a second Space. It belongs to the
-	# same canonical world through one material neck. Removing that one cell can
-	# therefore change topology first and ownership/physics second.
-	volume.fill_box(Vector3i(12, 1, 16), Vector3i(13, 4, 17), CellVolume.SOLID)
-	volume.set_cell(RECOVERY_CAUSAL_BRIDGE_CELL, CellVolume.SOLID)
-	volume.fill_box(Vector3i(14, 3, 14), Vector3i(19, 4, 19), CellVolume.SOLID)
+	# Low authored relief keeps the world readable as terrain rather than a blank
+	# laboratory plane. Every piece remains ordinary editable Matter in this same
+	# canonical Space.
+	volume.fill_box(Vector3i(3, 4, 4), Vector3i(5, 1, 5), CellVolume.SOLID)
+	volume.fill_box(Vector3i(24, 4, 20), Vector3i(5, 2, 4), CellVolume.SOLID)
+	volume.fill_box(Vector3i(5, 4, 24), Vector3i(6, 1, 3), CellVolume.SOLID)
+	volume.fill_box(Vector3i(23, 4, 5), Vector3i(4, 1, 4), CellVolume.SOLID)
+
+	# The causal shelf is still ordinary world Matter at startup. A solid mesa on
+	# the west rim reaches the shelf height, then a narrow three-cell material neck
+	# crosses the visible pit to a broad terrain slab. Removing the outer neck cell
+	# changes topology; only then does the slab acquire a fresh dynamic owner.
+	volume.fill_box(Vector3i(8, 4, 14), Vector3i(4, 2, 5), CellVolume.SOLID)
+	volume.fill_box(Vector3i(12, 5, 16), Vector3i(3, 1, 1), CellVolume.SOLID)
+	volume.fill_box(Vector3i(15, 5, 14), Vector3i(6, 1, 6), CellVolume.SOLID)
 
 	var lineage := MatterLineageMap.new(RECOVERY_WORLD_SIZE)
 	var issuer := MatterLineageIssuer.new(1200001)
@@ -122,8 +132,8 @@ func _find_safe_spawn_local(space: LocalMatterSpace) -> Vector3:
 		and space.volume.in_bounds(RECOVERY_CAUSAL_SUPPORT_CELL)
 		and space.volume.get_cell(RECOVERY_CAUSAL_SUPPORT_CELL) != CellVolume.EMPTY
 	):
-		# Spawn on the ordinary-Matter overhang so the first causal experiment can
-		# include the actor without teleporting them into a special demo object.
+		# Spawn on the ordinary terrain shelf, away from the narrow neck, so the
+		# first causal experiment can carry the actor without a special demo object.
 		return Vector3(
 			float(RECOVERY_CAUSAL_SUPPORT_CELL.x) + 0.5,
 			float(RECOVERY_CAUSAL_SUPPORT_CELL.y) + 1.0 + _player.height * 0.5 + 0.04,
