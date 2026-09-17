@@ -7,6 +7,7 @@ on:
       - "p1/recovery_*.gd"
       - "p1/recovery_main.tscn"
       - "tests/p1_recovery_visual_capture.gd"
+      - "ci/run_godot_recovery_visual_capture.ps1"
       - "matter/**"
       - "construct/**"
       - "actor/**"
@@ -51,17 +52,7 @@ jobs:
 
       - name: Capture recovery surface
         shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path $env:P1_RECOVERY_VISUAL_DIR | Out-Null
-          $log = Join-Path $env:RUNNER_TEMP "p1-recovery-visual.log"
-          & godot --path . --audio-driver Dummy --script res://tests/p1_recovery_visual_capture.gd 2>&1 | Tee-Object -FilePath $log
-          if ($LASTEXITCODE -ne 0) { throw "capture exited $LASTEXITCODE" }
-          $text = Get-Content $log -Raw
-          if ($text -match 'SCRIPT ERROR:|ERROR:') { throw "capture emitted engine/script ERROR output" }
-          if ($text -notmatch 'P1_RECOVERY_VISUAL_PASS') { throw "missing recovery visual PASS marker" }
-          foreach ($name in @('00_first_contact.png','01_world_alive.png','02_direct_remove_target.png','03_direct_build_target.png','04_alternate_view.png')) {
-            if (-not (Test-Path (Join-Path $env:P1_RECOVERY_VISUAL_DIR $name))) { throw "missing $name" }
-          }
+        run: ./ci/run_godot_recovery_visual_capture.ps1 -OutputDir $env:P1_RECOVERY_VISUAL_DIR
 
       - name: Record provenance
         shell: pwsh
