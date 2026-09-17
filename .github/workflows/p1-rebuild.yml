@@ -50,6 +50,9 @@ jobs:
       - name: Verify direct selected-cell connectivity
         run: bash ci/run_godot_probe.sh res://tests/w0_selected_connectivity_probe.gd W0_SELECTED_CONNECTIVITY_PASS
 
+      - name: Characterize chunked provider feasibility
+        run: bash ci/run_godot_probe.sh res://tests/p1_chunked_provider_feasibility_probe.gd P1_CHUNKED_PROVIDER_FEASIBILITY_PASS
+
       - name: Run W0A authority partition probe
         run: bash ci/run_godot_probe.sh res://tests/w0a_authority_partition_probe.gd W0A_AUTHORITY_PARTITION_PASS
 
