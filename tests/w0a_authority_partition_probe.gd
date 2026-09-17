@@ -22,7 +22,7 @@ func _run() -> void:
 	for cell in _occupied_cells(volume):
 		lineage.set_lineage(cell, issuer.allocate())
 
-	var source := LocalMatterSpace.new()
+	var source := W0AuthorityPartitionSpace.new()
 	source.name = "W0ACanonicalSource"
 	source.lineage_issuer = issuer
 	world.add_child(source)
@@ -38,11 +38,11 @@ func _run() -> void:
 	var source_space_id := source.get_instance_id()
 
 	if not source.has_method("request_authority_partition"):
-		_check(false, "LocalMatterSpace exposes the W0A authority-partition request path")
+		_check(false, "W0 authority source exposes the partition request path")
 		_finish(world)
 		return
 	if not source.has_method("get_last_authority_partition_result"):
-		_check(false, "LocalMatterSpace exposes the W0A authority-partition result")
+		_check(false, "W0 authority source exposes the partition result")
 		_finish(world)
 		return
 
