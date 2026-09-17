@@ -21,8 +21,12 @@ func request_authority_partition(
 ) -> bool:
 	if is_retired() or volume == null or lineage == null or get_active_provider() == null:
 		return false
-	# W0A deliberately isolates ownership transfer from physical activation.
-	if get_provider_kind() != ProviderKind.STATIC or target_provider_kind != ProviderKind.STATIC:
+	# The source is the designated canonical/static authority in W0. The target
+	# may remain static for pure ownership evidence (W0A) or enter a zero-launch
+	# dynamic provider immediately (W0B).
+	if get_provider_kind() != ProviderKind.STATIC:
+		return false
+	if target_provider_kind != ProviderKind.STATIC and target_provider_kind != ProviderKind.DYNAMIC:
 		return false
 	if not _pending_authority_partition_cells.is_empty():
 		return false
@@ -130,17 +134,29 @@ func _commit_authority_partition() -> void:
 	elif source_provider is ConstructBody:
 		(source_provider as ConstructBody).set_volume(source_after_volume)
 	else:
-		assert(false, "Unsupported W0A source provider")
+		assert(false, "Unsupported W0 source provider")
 	source_provider.reset_physics_interpolation()
 
+	var target_kind := _pending_authority_partition_target_kind
 	var target := LocalMatterSpace.new()
 	target.name = "%s_Extracted" % name
 	_copy_runtime_configuration_to(target)
 	parent_node.add_child(target)
-	if _pending_authority_partition_target_kind == ProviderKind.STATIC:
+	if target_kind == ProviderKind.STATIC:
 		target.initialize_static(target_volume, target_lineage, target_transform)
+	elif target_kind == ProviderKind.DYNAMIC:
+		# Authority changes first; physical motion begins from the same pose with no
+		# hidden launch. Gravity/contacts in the upcoming solver step are the first
+		# permitted causes of new motion.
+		target.initialize_dynamic(
+			target_volume,
+			target_lineage,
+			target_transform,
+			Vector3.ZERO,
+			Vector3.ZERO
+		)
 	else:
-		assert(false, "W0A supports only static target ownership")
+		assert(false, "Unsupported W0 target provider kind")
 
 	_last_authority_partition_result = {
 		"source_space": self,
@@ -148,6 +164,7 @@ func _commit_authority_partition() -> void:
 		"source_origin": source_origin,
 		"source_transform": source_transform,
 		"target_transform": target_transform,
+		"target_provider_kind": target_kind,
 		"source_cells": _pending_authority_partition_cells.duplicate(),
 	}
 	_clear_pending_authority_partition()
@@ -159,7 +176,10 @@ func _partition_request_is_current() -> bool:
 		return false
 	if get_provider_kind() != ProviderKind.STATIC:
 		return false
-	if _pending_authority_partition_target_kind != ProviderKind.STATIC:
+	if (
+		_pending_authority_partition_target_kind != ProviderKind.STATIC
+		and _pending_authority_partition_target_kind != ProviderKind.DYNAMIC
+	):
 		return false
 	if _pending_provider_kind != ProviderKind.NONE or _pending_connected_component_split or _pending_storage_rebase:
 		return false
