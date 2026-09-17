@@ -44,6 +44,9 @@ jobs:
       - name: Run W0A authority partition probe
         run: bash ci/run_godot_probe.sh res://tests/w0a_authority_partition_probe.gd W0A_AUTHORITY_PARTITION_PASS
 
+      - name: Run W0B dynamic detach timing probe
+        run: bash ci/run_godot_probe.sh res://tests/w0b_dynamic_detach_timing_probe.gd W0B_DYNAMIC_DETACH_PASS
+
       - name: Verify procedural Matter front-face orientation
         run: bash ci/run_godot_probe.sh res://tests/p1_cell_mesher_front_face_probe.gd P1_CELL_MESHER_FRONT_FACE_PASS
 
