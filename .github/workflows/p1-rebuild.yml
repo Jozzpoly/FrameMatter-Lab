@@ -56,6 +56,9 @@ jobs:
       - name: Run W0B dynamic detach timing probe
         run: bash ci/run_godot_probe.sh res://tests/w0b_dynamic_detach_timing_probe.gd W0B_DYNAMIC_DETACH_PASS
 
+      - name: Verify fused W0 anchored-detachment policy
+        run: bash ci/run_godot_probe.sh res://tests/w0_policy_fused_equivalence_probe.gd W0_POLICY_FUSED_PASS
+
       - name: Run W0B2 causal detachment policy probe
         run: bash ci/run_godot_probe.sh res://tests/w0b2_causal_detachment_policy_probe.gd W0B2_CAUSAL_DETACH_PASS
 
