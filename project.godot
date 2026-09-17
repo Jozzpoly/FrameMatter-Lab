@@ -2,7 +2,7 @@ config_version=5
 
 [application]
 config/name="FrameMatter Lab"
-run/main_scene="res://p1/main.tscn"
+run/main_scene="res://p1/recovery_main.tscn"
 
 [display]
 window/size/viewport_width=1280
