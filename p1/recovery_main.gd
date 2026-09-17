@@ -79,20 +79,20 @@ func _build_world_matter_space() -> W0AuthorityPartitionSpace:
 				volume.set_cell(Vector3i(x, y, z), CellVolume.EMPTY)
 
 	# Low authored relief keeps the world readable as terrain rather than a blank
-	# laboratory plane. Every piece remains ordinary editable Matter in this same
-	# canonical Space.
-	volume.fill_box(Vector3i(3, 4, 4), Vector3i(5, 1, 5), CellVolume.SOLID)
-	volume.fill_box(Vector3i(24, 4, 20), Vector3i(5, 2, 4), CellVolume.SOLID)
-	volume.fill_box(Vector3i(5, 4, 24), Vector3i(6, 1, 3), CellVolume.SOLID)
-	volume.fill_box(Vector3i(23, 4, 5), Vector3i(4, 1, 4), CellVolume.SOLID)
+	# laboratory plane. CellVolume.fill_box uses an exclusive end coordinate.
+	# Every piece remains ordinary editable Matter in this same canonical Space.
+	volume.fill_box(Vector3i(3, 4, 4), Vector3i(8, 5, 9), CellVolume.SOLID)
+	volume.fill_box(Vector3i(24, 4, 20), Vector3i(29, 6, 24), CellVolume.SOLID)
+	volume.fill_box(Vector3i(5, 4, 24), Vector3i(11, 5, 27), CellVolume.SOLID)
+	volume.fill_box(Vector3i(23, 4, 5), Vector3i(27, 5, 9), CellVolume.SOLID)
 
 	# The causal shelf is still ordinary world Matter at startup. A solid mesa on
 	# the west rim reaches the shelf height, then a narrow three-cell material neck
 	# crosses the visible pit to a broad terrain slab. Removing the outer neck cell
 	# changes topology; only then does the slab acquire a fresh dynamic owner.
-	volume.fill_box(Vector3i(8, 4, 14), Vector3i(4, 2, 5), CellVolume.SOLID)
-	volume.fill_box(Vector3i(12, 5, 16), Vector3i(3, 1, 1), CellVolume.SOLID)
-	volume.fill_box(Vector3i(15, 5, 14), Vector3i(6, 1, 6), CellVolume.SOLID)
+	volume.fill_box(Vector3i(8, 4, 14), Vector3i(12, 6, 19), CellVolume.SOLID)
+	volume.fill_box(Vector3i(12, 5, 16), Vector3i(15, 6, 17), CellVolume.SOLID)
+	volume.fill_box(Vector3i(15, 5, 14), Vector3i(21, 6, 20), CellVolume.SOLID)
 
 	var lineage := MatterLineageMap.new(RECOVERY_WORLD_SIZE)
 	var issuer := MatterLineageIssuer.new(1200001)
