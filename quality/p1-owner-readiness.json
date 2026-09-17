@@ -5,16 +5,16 @@
   "campaign_contract_version": 4,
   "candidate_label": "FrameMatter P1 Owner Candidate",
   "source_branch": "rebuild/p1-interactive-foundation",
-  "status": "BLOCKED",
+  "status": "READY_FOR_OWNER",
   "candidate_state": "FROZEN",
   "candidate_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
   "owner_goal": "Provide a professional, physically legible sandbox research surface where the Owner can directly see and judge editable Matter, moving/static local Spaces, actor relations, editing, topology consequences and motion without reconstructing hidden mechanics from debug output.",
   "owner_visible_surface": "Windows desktop P1 runtime, rendered scene, camera, interaction feedback and default UI",
-  "promotion_authorized": false,
-  "approved_runtime_commit": "",
+  "promotion_authorized": true,
+  "approved_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
   "owner_attention_event": {
-    "allowed": false,
-    "reason": "The exact post-R-V5 frozen runtime has passed candidate-wide evidence, recorded G8 adversarial rehearsal and a separate read-only independent assurance review with zero material findings. The final cross-plane readiness audit remains the only required gate before Owner attention can be authorized."
+    "allowed": true,
+    "reason": "Contract-v4 post-R-V5 candidate 337716db303e94e459cad2b9bcdbfcb8b6c0474b passed exact-candidate revalidation, recorded G8 adversarial rehearsal, fresh separate read-only independent assurance with zero material findings, and the final cross-plane readiness audit. Owner attention is now authorized for a bounded P1 Owner test."
   },
   "superseded_failed_candidate": {
     "status": "FAIL",
@@ -170,10 +170,11 @@
       ]
     },
     "final_readiness_audit": {
-      "status": "PENDING",
+      "status": "PASS",
       "evidence_type": "final_cross_plane_audit",
-      "verified_runtime_commit": "",
+      "verified_runtime_commit": "337716db303e94e459cad2b9bcdbfcb8b6c0474b",
       "evidence": [
+        "docs/evidence/p1-final-readiness-audit-v4.md",
         "docs/QUALITY-SYSTEM.md",
         "docs/evidence/p1-post-rv5-candidate-freeze-revalidation.md",
         "docs/evidence/p1-g8-post-rv5-adversarial-rehearsal.md",
@@ -276,7 +277,5 @@
       ]
     }
   },
-  "open_blockers": [
-    "Final cross-plane readiness audit must pass and explicitly authorize promotion; Owner attention remains blocked until then."
-  ]
+  "open_blockers": []
 }
