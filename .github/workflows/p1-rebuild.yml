@@ -53,6 +53,9 @@ jobs:
       - name: Run W0C actor causal detach probe
         run: bash ci/run_godot_probe.sh res://tests/w0c_actor_causal_detach_probe.gd W0C_ACTOR_CAUSAL_DETACH_PASS
 
+      - name: Run W0D Owner-facing causal recovery probe
+        run: bash ci/run_godot_probe.sh res://tests/w0d_recovery_causal_loop_probe.gd W0D_RECOVERY_CAUSAL_LOOP_PASS
+
       - name: Verify procedural Matter front-face orientation
         run: bash ci/run_godot_probe.sh res://tests/p1_cell_mesher_front_face_probe.gd P1_CELL_MESHER_FRONT_FACE_PASS
 
