@@ -41,6 +41,9 @@ jobs:
       - name: Compile P1 dependency graph
         run: bash ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
 
+      - name: Verify CellVolume cached occupancy invariant
+        run: bash ci/run_godot_probe.sh res://tests/p1_cell_volume_solid_count_probe.gd P1_CELL_VOLUME_SOLID_COUNT_PASS
+
       - name: Run W0A authority partition probe
         run: bash ci/run_godot_probe.sh res://tests/w0a_authority_partition_probe.gd W0A_AUTHORITY_PARTITION_PASS
 

@@ -21,6 +21,7 @@ on:
       - "tests/p1_recovery_observer_probe.gd"
       - "tests/p1_spark_cost_scaling_probe.gd"
       - "tests/p1_presentation_invalidation_probe.gd"
+      - "tests/p1_cell_volume_solid_count_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -74,6 +75,10 @@ jobs:
       - name: Compile recovery dependency graph
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_compile_gate.gd -PassMarker P1_COMPILE_GATE_PASS
+
+      - name: Verify CellVolume cached occupancy invariant
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_cell_volume_solid_count_probe.gd -PassMarker P1_CELL_VOLUME_SOLID_COUNT_PASS
 
       - name: Verify one-world startup and Owner control scope
         shell: pwsh
