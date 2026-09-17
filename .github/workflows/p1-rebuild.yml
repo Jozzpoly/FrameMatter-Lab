@@ -10,6 +10,7 @@ on:
       - "space/**"
       - "p1/**"
       - "tests/p1_*.gd"
+      - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
       - ".github/workflows/p1-rebuild.yml"
@@ -39,6 +40,9 @@ jobs:
 
       - name: Compile P1 dependency graph
         run: bash ci/run_godot_probe.sh res://tests/p1_compile_gate.gd P1_COMPILE_GATE_PASS
+
+      - name: Run W0A authority partition probe
+        run: bash ci/run_godot_probe.sh res://tests/w0a_authority_partition_probe.gd W0A_AUTHORITY_PARTITION_PASS
 
       - name: Verify procedural Matter front-face orientation
         run: bash ci/run_godot_probe.sh res://tests/p1_cell_mesher_front_face_probe.gd P1_CELL_MESHER_FRONT_FACE_PASS
