@@ -16,6 +16,8 @@ on:
       - "tests/p1_compile_gate.gd"
       - "tests/p1_canonical_startup_smoke.gd"
       - "tests/p1_recovery_owner_pressure_smoke.gd"
+      - "tests/p1_live_topology_consumer_probe.gd"
+      - "tests/p1_split_actor_witness_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -81,6 +83,18 @@ jobs:
       - name: Verify Owner-facing causal detach and actor ride
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0d_recovery_causal_loop_probe.gd -PassMarker W0D_RECOVERY_CAUSAL_LOOP_PASS
+
+      - name: Verify pending W0 authority transaction quarantine
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0e_pending_authority_quarantine_probe.gd -PassMarker W0E_PENDING_AUTHORITY_QUARANTINE_PASS
+
+      - name: Verify retained split support maps by exact Matter witness
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_live_topology_consumer_probe.gd -PassMarker P1_LIVE_TOPOLOGY_PASS
+
+      - name: Verify destroyed support cannot fabricate split handoff
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_split_actor_witness_probe.gd -PassMarker P1_SPLIT_ACTOR_WITNESS_PASS
 
       - name: Export exact Windows recovery slice
         shell: pwsh

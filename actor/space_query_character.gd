@@ -121,12 +121,36 @@ func transfer_support_frame(new_support: Node3D, mapped_local_center: Vector3) -
 			resolved_support.global_transform.basis.inverse() * witness_world_normal
 		).normalized()
 		_has_support_contact_witness = not _support_contact_local_normal.is_zero_approx()
+	else:
+		_clear_support_contact_witness()
 	_previous_support_point_world = global_position
 	_has_support_sample = true
 	world_velocity = _rigid_velocity_at_point(resolved_support, global_position)
 	observed_support_velocity = world_velocity
 	_topology_validation_grace_steps = 1
 	observed_support_transfers += 1
+	return true
+
+
+func transfer_support_frame_with_contact_witness(
+	new_support: Node3D,
+	mapped_local_center: Vector3,
+	mapped_contact_local_point: Vector3,
+	mapped_contact_local_normal: Vector3
+) -> bool:
+	# Topology succession can retire the old provider before the consumer receives
+	# the split result. In that case transfer_support_frame() cannot reconstruct
+	# the contact from the old body, so the transaction supplies the already
+	# captured source-local witness mapped into the exact successor frame.
+	if not transfer_support_frame(new_support, mapped_local_center):
+		return false
+	var local_normal := mapped_contact_local_normal.normalized()
+	if support_space == null or not is_instance_valid(support_space) or local_normal.is_zero_approx():
+		_clear_support_contact_witness()
+		return true
+	_support_contact_local_point = mapped_contact_local_point
+	_support_contact_local_normal = local_normal
+	_has_support_contact_witness = true
 	return true
 
 
@@ -406,10 +430,14 @@ func _detach_from_support(preserve_velocity: bool = true) -> void:
 	support_space = null
 	observed_support_velocity = Vector3.ZERO
 	_has_support_sample = false
+	_clear_support_contact_witness()
+	_topology_validation_grace_steps = 0
+
+
+func _clear_support_contact_witness() -> void:
 	_has_support_contact_witness = false
 	_support_contact_local_point = Vector3.ZERO
 	_support_contact_local_normal = Vector3.ZERO
-	_topology_validation_grace_steps = 0
 
 
 func _refresh_support_provider_from_space() -> void:

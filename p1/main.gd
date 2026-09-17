@@ -13,6 +13,13 @@ var _last_event := "P1 boot"
 var _pending_storage_place := false
 var _pending_storage_place_space: LocalMatterSpace
 var _pending_storage_place_source_cell := Vector3i.ZERO
+var _pending_split_actor_source: LocalMatterSpace
+var _pending_split_actor_has_witness := false
+var _pending_split_actor_local_center := Vector3.ZERO
+var _pending_split_actor_witness_cell := Vector3i.ZERO
+var _pending_split_actor_witness_token := MatterLineageMap.NONE
+var _pending_split_actor_contact_local_point := Vector3.ZERO
+var _pending_split_actor_contact_local_normal := Vector3.ZERO
 
 @onready var _registry: P1SpaceRegistry = $P1SpaceRegistry
 @onready var _space_control: P1SpaceControl = $P1SpaceControl
@@ -151,6 +158,7 @@ func recover_player_for_test() -> void:
 
 func _initialize_space() -> void:
 	_clear_pending_storage_place()
+	_clear_pending_split_actor_handoff()
 	_registry.clear()
 	for child in $Spaces.get_children():
 		child.free()
@@ -361,16 +369,38 @@ func _clear_pending_storage_place() -> void:
 
 func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterSplitResult) -> void:
 	var transferred := false
-	if _player.grounded and _player.support_space == source:
-		var mapping: Dictionary = _find_actor_successor_mapping(result, _player.support_local_center)
+	if (
+		_pending_split_actor_source == source
+		and _pending_split_actor_has_witness
+		and _player.grounded
+		and _player.support_space == source
+	):
+		var mapping: Dictionary = result.map_source_local_point_for_cell(
+			_pending_split_actor_witness_cell,
+			_pending_split_actor_local_center
+		)
 		if not mapping.is_empty():
 			var successor := mapping["space"] as LocalMatterSpace
 			var provider: Node3D = successor.get_active_provider() if successor != null else null
-			if provider != null:
-				transferred = _player.transfer_support_frame(provider, mapping["local_point"])
+			var source_origin: Vector3i = mapping["source_origin"]
+			var mapped_witness_cell := _pending_split_actor_witness_cell - source_origin
+			var successor_owns_witness := (
+				successor != null
+				and successor.lineage != null
+				and successor.lineage.in_bounds(mapped_witness_cell)
+				and successor.lineage.get_lineage(mapped_witness_cell) == _pending_split_actor_witness_token
+			)
+			if provider != null and successor_owns_witness:
+				transferred = _player.transfer_support_frame_with_contact_witness(
+					provider,
+					mapping["local_point"],
+					_pending_split_actor_contact_local_point - Vector3(source_origin),
+					_pending_split_actor_contact_local_normal
+				)
 				if transferred:
 					_focus_space = successor
 
+	_clear_pending_split_actor_handoff()
 	if _pending_storage_place and _pending_storage_place_space == source:
 		_clear_pending_storage_place()
 	if not transferred and source == _focus_space:
@@ -378,33 +408,8 @@ func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterS
 	_refresh_camera_context()
 	_last_event = "topology split → %d live Spaces%s" % [
 		_registry.get_active_count(),
-		"; actor mapped" if transferred else "",
+		"; actor mapped by support witness" if transferred else "",
 	]
-
-
-func _find_actor_successor_mapping(result: LocalMatterSplitResult, source_local_center: Vector3) -> Dictionary:
-	var best_cell := Vector3i.ZERO
-	var best_score: float = INF
-	var found := false
-	for component_variant in result.source_components:
-		var component := component_variant as CellVolume
-		if component == null:
-			continue
-		for cell in _occupied_cells(component):
-			var top_y: float = float(cell.y) + 1.0
-			if top_y > source_local_center.y + 0.35:
-				continue
-			var dx: float = float(cell.x) + 0.5 - source_local_center.x
-			var dz: float = float(cell.z) + 0.5 - source_local_center.z
-			var vertical_gap: float = maxf(0.0, source_local_center.y - top_y)
-			var score: float = dx * dx + dz * dz + vertical_gap * vertical_gap * 0.15
-			if score < best_score:
-				best_score = score
-				best_cell = cell
-				found = true
-	if not found:
-		return {}
-	return result.map_source_local_point_for_cell(best_cell, source_local_center)
 
 
 func _on_active_spaces_changed() -> void:
@@ -455,6 +460,8 @@ func _on_edit_mode_changed(_mode: int) -> void:
 
 
 func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_queued: bool) -> void:
+	if split_queued:
+		_capture_pending_split_actor_handoff(space)
 	_focus_space = space
 	_refresh_camera_context()
 	_last_event = "%s %s%s" % [
@@ -462,6 +469,44 @@ func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_
 		str(cell),
 		"; topology split queued" if split_queued else "",
 	]
+
+
+func _capture_pending_split_actor_handoff(space: LocalMatterSpace) -> void:
+	_clear_pending_split_actor_handoff()
+	_pending_split_actor_source = space
+	if not _player.grounded or _player.support_space != space:
+		return
+	var witness: Dictionary = _player.get_support_contact_witness()
+	if not bool(witness.get("valid", false)):
+		# The edit may have destroyed the exact Matter that was supporting the
+		# actor. In that case there is deliberately no explicit successor handoff;
+		# normal airborne/contact logic may reacquire something later.
+		return
+	if int(witness.get("space_id", 0)) != space.get_instance_id():
+		return
+	var witness_cell: Vector3i = witness.get("cell", Vector3i(-1, -1, -1))
+	if space.lineage == null or not space.lineage.in_bounds(witness_cell):
+		return
+	var witness_token: int = space.lineage.get_lineage(witness_cell)
+	if witness_token == MatterLineageMap.NONE:
+		return
+
+	_pending_split_actor_has_witness = true
+	_pending_split_actor_local_center = _player.support_local_center
+	_pending_split_actor_witness_cell = witness_cell
+	_pending_split_actor_witness_token = witness_token
+	_pending_split_actor_contact_local_point = witness.get("local_point", Vector3.ZERO)
+	_pending_split_actor_contact_local_normal = witness.get("local_normal", Vector3.ZERO)
+
+
+func _clear_pending_split_actor_handoff() -> void:
+	_pending_split_actor_source = null
+	_pending_split_actor_has_witness = false
+	_pending_split_actor_local_center = Vector3.ZERO
+	_pending_split_actor_witness_cell = Vector3i.ZERO
+	_pending_split_actor_witness_token = MatterLineageMap.NONE
+	_pending_split_actor_contact_local_point = Vector3.ZERO
+	_pending_split_actor_contact_local_normal = Vector3.ZERO
 
 
 func _on_edit_rejected(reason: String) -> void:

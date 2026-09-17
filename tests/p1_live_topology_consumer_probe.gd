@@ -58,6 +58,14 @@ func _run() -> void:
 	_check(removed == 12, "full causal cut removes all twelve separating cells")
 	_check(source.is_topology_split_pending(), "final destructive edit queues connected-component split")
 
+	var split_witness: Dictionary = player.get_support_contact_witness()
+	_check(bool(split_witness.get("valid", false)), "actor exposes an exact retained Matter witness at the split boundary")
+	var split_witness_cell: Vector3i = split_witness.get("cell", Vector3i(-999, -999, -999))
+	var split_witness_token := MatterLineageMap.NONE
+	if bool(split_witness.get("valid", false)) and source.lineage != null and source.lineage.in_bounds(split_witness_cell):
+		split_witness_token = source.lineage.get_lineage(split_witness_cell)
+	_check(split_witness_token != MatterLineageMap.NONE, "split witness resolves retained source Matter lineage")
+
 	# Capture the source-local support point at the exact transaction boundary.
 	# Local coordinates should map through LocalMatterSplitResult without using
 	# later dynamic motion as a proxy for handoff continuity.
@@ -74,10 +82,24 @@ func _run() -> void:
 	_check(handoff_world_error < 0.0001, "source→successor actor handoff preserves the exact world support point")
 	_check(player.observed_support_transfers == transfers_before + 1, "topology succession records one explicit actor support transfer")
 	_check(player.grounded, "actor remains grounded at topology handoff")
-	_check(player.support_space != null and player.support_space != source, "actor immediately references a successor rather than retired source")
-	if player.support_space != null:
-		_check(player.support_body == player.support_space.get_active_provider(), "actor support body immediately matches successor provider")
-		_check(camera_rig.context_target == player.support_space.get_active_provider(), "camera context immediately follows actor-owned successor")
+	var expected_successor := result.get_successor_for_source_cell(split_witness_cell) if result != null else null
+	_check(expected_successor != null, "exact supporting Matter cell maps to one split successor")
+	_check(player.support_space == expected_successor, "actor transfers to the successor that owns its exact supporting Matter")
+	if expected_successor != null:
+		var witness_origin: Vector3i = result.get_source_origin_for_source_cell(split_witness_cell)
+		var mapped_witness_cell := split_witness_cell - witness_origin
+		_check(
+			expected_successor.lineage.get_lineage(mapped_witness_cell) == split_witness_token,
+			"same supporting Matter lineage exists in the selected successor"
+		)
+		var handoff_witness: Dictionary = player.get_support_contact_witness()
+		_check(bool(handoff_witness.get("valid", false)), "exact support witness survives split handoff")
+		_check(
+			handoff_witness.get("cell", Vector3i(-999, -999, -999)) == mapped_witness_cell,
+			"post-split actor witness maps to the same Matter cell in successor coordinates"
+		)
+		_check(player.support_body == expected_successor.get_active_provider(), "actor support body immediately matches witness-owned successor provider")
+		_check(camera_rig.context_target == expected_successor.get_active_provider(), "camera context immediately follows actor-owned successor")
 
 	var actor_world_at_handoff: Vector3 = player.global_position
 	await _advance_frames(POST_SPLIT_FRAMES)
@@ -138,7 +160,7 @@ func _check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	if _failures.is_empty():
-		print("P1_LIVE_TOPOLOGY_PASS: destructive edits create real successor Spaces with exact actor handoff continuity; later dynamic motion is measured separately.")
+		print("P1_LIVE_TOPOLOGY_PASS: destructive edits create real successor Spaces and exact supporting Matter lineage selects the actor successor without heuristic remapping.")
 		quit(0)
 		return
 	for failure in _failures:

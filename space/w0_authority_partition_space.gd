@@ -12,7 +12,22 @@ signal authority_partition_committed(result: Dictionary)
 var _pending_authority_partition_cells: Array[Vector3i] = []
 var _pending_authority_partition_snapshot: Dictionary = {}
 var _pending_authority_partition_target_kind := ProviderKind.NONE
+var _pending_authority_partition_revision := -1
 var _last_authority_partition_result: Dictionary = {}
+
+
+func mutate_cell(
+	cell: Vector3i,
+	material_id: int,
+	created_lineage_token: int = MatterLineageMap.NONE
+) -> bool:
+	# An accepted authority partition is a transaction boundary, not merely an
+	# advisory intent. Until it commits or cancels, ordinary logical edits to the
+	# canonical source are quarantined so the request cannot commit against a
+	# different source truth than the one it classified.
+	if is_authority_partition_pending():
+		return false
+	return super.mutate_cell(cell, material_id, created_lineage_token)
 
 
 func request_authority_partition(
@@ -58,6 +73,7 @@ func request_authority_partition(
 	_pending_authority_partition_cells = selected_cells.duplicate()
 	_pending_authority_partition_snapshot = snapshot
 	_pending_authority_partition_target_kind = target_provider_kind
+	_pending_authority_partition_revision = volume.revision
 	_last_authority_partition_result = {}
 	return true
 
@@ -185,6 +201,11 @@ func _partition_request_is_current() -> bool:
 		return false
 	if _pending_authority_partition_cells.is_empty():
 		return false
+	# The normal mutation API is quarantined while pending. Revision equality is
+	# the second line of defense: any bypass/direct state edit makes the request
+	# stale and the transaction fails closed without moving authority.
+	if volume.revision != _pending_authority_partition_revision:
+		return false
 	if _pending_authority_partition_cells.size() >= volume.count_solid():
 		return false
 
@@ -205,6 +226,7 @@ func _clear_pending_authority_partition() -> void:
 	_pending_authority_partition_cells.clear()
 	_pending_authority_partition_snapshot.clear()
 	_pending_authority_partition_target_kind = ProviderKind.NONE
+	_pending_authority_partition_revision = -1
 
 
 func _occupied_cells(target_volume: CellVolume) -> Array[Vector3i]:
