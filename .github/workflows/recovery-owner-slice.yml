@@ -90,6 +90,10 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0e_pending_authority_quarantine_probe.gd -PassMarker W0E_PENDING_AUTHORITY_QUARANTINE_PASS
 
+      - name: Verify lightweight W0 topology component equivalence
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0_topology_cell_components_probe.gd -PassMarker W0_TOPOLOGY_CELL_COMPONENTS_PASS
+
       - name: Verify retained split support maps by exact Matter witness
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_live_topology_consumer_probe.gd -PassMarker P1_LIVE_TOPOLOGY_PASS

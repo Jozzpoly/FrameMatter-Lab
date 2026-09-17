@@ -21,7 +21,7 @@ static func evaluate(
 	if anchor_tokens.is_empty():
 		return _invalid("no canonical anchor lineage supplied")
 
-	var components: Array[CellVolume] = MatterTopology.extract_connected_components(volume)
+	var components: Array = MatterTopology.extract_connected_cell_components(volume)
 	if components.is_empty():
 		return _invalid("canonical Matter is empty")
 
@@ -29,10 +29,12 @@ static func evaluate(
 	var detached_components: Array = []
 	var retained_anchor_tokens: Dictionary = {}
 
-	for component in components:
+	for component_variant in components:
+		var component: Array = component_variant
 		var cells: Array[Vector3i] = []
 		var contains_anchor := false
-		for cell in _occupied_cells(component):
+		for cell_variant in component:
+			var cell: Vector3i = cell_variant
 			var token: int = lineage.get_lineage(cell)
 			if token == MatterLineageMap.NONE:
 				return _invalid("occupied Matter is missing lineage")
@@ -71,14 +73,3 @@ static func _invalid(reason: String) -> Dictionary:
 		"detached_components": [],
 		"retained_anchor_tokens": {},
 	}
-
-
-static func _occupied_cells(volume: CellVolume) -> Array[Vector3i]:
-	var result: Array[Vector3i] = []
-	for z in range(volume.size.z):
-		for y in range(volume.size.y):
-			for x in range(volume.size.x):
-				var cell := Vector3i(x, y, z)
-				if volume.get_cell(cell) != CellVolume.EMPTY:
-					result.append(cell)
-	return result

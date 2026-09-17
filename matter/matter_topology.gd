@@ -11,6 +11,53 @@ const AXIAL_NEIGHBORS: Array[Vector3i] = [
 ]
 
 
+# Cell-list connectivity is the lightweight topology representation for callers
+# that need component membership but not a full component-sized Matter clone.
+# Logical authority remains in the source CellVolume; these arrays are derived.
+static func extract_connected_cell_components(source: CellVolume) -> Array:
+	var components: Array = []
+	if source == null:
+		return components
+
+	var visited := PackedByteArray()
+	visited.resize(source.size.x * source.size.y * source.size.z)
+	visited.fill(0)
+
+	for z in range(source.size.z):
+		for y in range(source.size.y):
+			for x in range(source.size.x):
+				var start := Vector3i(x, y, z)
+				var start_index := _flat_index(source.size, start)
+				if source.get_cell(start) == CellVolume.EMPTY or visited[start_index] != 0:
+					continue
+
+				var component: Array[Vector3i] = []
+				var queue: Array[Vector3i] = [start]
+				var cursor := 0
+				visited[start_index] = 1
+
+				while cursor < queue.size():
+					var cell: Vector3i = queue[cursor]
+					cursor += 1
+					component.append(cell)
+
+					for offset in AXIAL_NEIGHBORS:
+						var neighbor := cell + offset
+						if not source.in_bounds(neighbor):
+							continue
+						var neighbor_index := _flat_index(source.size, neighbor)
+						if visited[neighbor_index] != 0:
+							continue
+						if source.get_cell(neighbor) == CellVolume.EMPTY:
+							continue
+						visited[neighbor_index] = 1
+						queue.append(neighbor)
+
+				components.append(component)
+
+	return components
+
+
 static func extract_connected_components(source: CellVolume) -> Array[CellVolume]:
 	var components: Array[CellVolume] = []
 	var visited: Dictionary = {}
@@ -101,3 +148,7 @@ static func center_of_mass_local(volume: CellVolume) -> Vector3:
 	if solid_count == 0:
 		return Vector3.ZERO
 	return weighted_sum / float(solid_count)
+
+
+static func _flat_index(volume_size: Vector3i, cell: Vector3i) -> int:
+	return cell.x + volume_size.x * (cell.y + volume_size.y * cell.z)
