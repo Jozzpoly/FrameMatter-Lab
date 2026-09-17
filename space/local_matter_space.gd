@@ -22,6 +22,7 @@ var lineage_issuer: MatterLineageIssuer
 
 var mass_per_cell := 1.0
 var collision_mode := CellCollisionBoxer.Mode.MERGED_CUBOIDS
+var static_chunk_edge := 0
 var dynamic_gravity_scale := 0.0
 var dynamic_linear_damp := 0.0
 var dynamic_angular_damp := 0.0
@@ -164,7 +165,10 @@ func mutate_cell(cell: Vector3i, material_id: int, created_lineage_token: int = 
 		# Material mutation retains logical Matter lineage.
 		volume.set_cell(cell, material_id)
 
-	_rebuild_active_provider()
+	if _active_provider is MatterRepresentation and static_chunk_edge > 0:
+		(_active_provider as MatterRepresentation).rebuild_cell(cell)
+	else:
+		_rebuild_active_provider()
 	return true
 
 
@@ -506,6 +510,7 @@ func _copy_runtime_configuration_to(successor: LocalMatterSpace) -> void:
 	successor.lineage_issuer = lineage_issuer
 	successor.mass_per_cell = mass_per_cell
 	successor.collision_mode = collision_mode
+	successor.static_chunk_edge = static_chunk_edge
 	successor.dynamic_gravity_scale = dynamic_gravity_scale
 	successor.dynamic_linear_damp = dynamic_linear_damp
 	successor.dynamic_angular_damp = dynamic_angular_damp
@@ -525,11 +530,11 @@ func _create_static_provider(world_transform: Transform3D) -> MatterRepresentati
 	var provider := MatterRepresentation.new()
 	provider.name = "StaticMatterProvider"
 	provider.collision_mode = collision_mode
+	provider.chunk_edge = static_chunk_edge
 	add_child(provider)
 	provider.global_transform = world_transform
 	provider.set_volume(volume)
 	return provider
-
 
 func _create_dynamic_provider(
 	world_transform: Transform3D,

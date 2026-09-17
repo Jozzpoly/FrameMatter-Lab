@@ -24,6 +24,7 @@ on:
       - "tests/p1_cell_volume_solid_count_probe.gd"
       - "tests/p1_authority_state_clone_probe.gd"
       - "tests/p1_chunked_provider_feasibility_probe.gd"
+      - "tests/p1_chunked_static_provider_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -85,6 +86,10 @@ jobs:
       - name: Characterize chunked provider feasibility
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_chunked_provider_feasibility_probe.gd -PassMarker P1_CHUNKED_PROVIDER_FEASIBILITY_PASS
+
+      - name: Verify bounded chunked static-provider runtime
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_chunked_static_provider_probe.gd -PassMarker P1_CHUNKED_STATIC_PROVIDER_PASS
 
       - name: Verify one-world startup and Owner control scope
         shell: pwsh

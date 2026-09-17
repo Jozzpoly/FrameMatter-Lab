@@ -118,6 +118,9 @@ func _build_world_matter_space() -> W0AuthorityPartitionSpace:
 	space.name = "RecoveryWorldMatterSpace"
 	space.lineage_issuer = issuer
 	space.mass_per_cell = 1.0
+	# Recovery WORLD stays one logical authority while its static provider uses
+	# edge-8 local derived chunks. Detached dynamic targets retain ConstructBody.
+	space.static_chunk_edge = 8
 	# The canonical source remains static, but W0 targets copy these runtime
 	# settings. Gravity is therefore a property of the detached Matter regime,
 	# not an artificial launch authored by the recovery scene.
