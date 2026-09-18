@@ -1,5 +1,7 @@
 # FrameMatter Lab — adaptive roadmap
 
+> **CURRENT ROUTING NOTE (2026-09-18):** this file preserves the long historical roadmap. The active near-term decision map is now `docs/convergence/ROADMAP.md`, with live boundary in `docs/convergence/CURRENT.md`. Where the historical “Q0 current stop condition” language below conflicts with the Convergence pointer, Convergence is newer and controls execution.
+
 Status: **living research decision map**. This is not a fixed release plan, feature checklist or promise of implementation order.
 
 ## North star
