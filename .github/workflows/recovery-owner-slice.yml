@@ -228,6 +228,37 @@ jobs:
           if (-not (Test-Path $exe)) { throw "Windows recovery export missing after Godot exited: $exe" }
           if ((Get-Item $exe).Length -lt 1000000) { throw "Windows recovery export is implausibly small" }
 
+      - name: Qualify Spark in exact exported executable
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:OUTPUT_DIR "FrameMatter-Recovery-Owner.exe"
+          $stdoutFile = [System.IO.Path]::GetTempFileName()
+          $stderrFile = [System.IO.Path]::GetTempFileName()
+          try {
+            $argumentLine = "--headless -- --c0-artifact-baseline"
+            $process = Start-Process `
+              -FilePath $exe `
+              -ArgumentList $argumentLine `
+              -NoNewWindow `
+              -Wait `
+              -PassThru `
+              -RedirectStandardOutput $stdoutFile `
+              -RedirectStandardError $stderrFile
+            $stdout = Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue
+            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            $combined = $stdout + [Environment]::NewLine + $stderr
+            Write-Host $combined
+            if ($process.ExitCode -ne 0) {
+              throw "Exact exported C0 qualification exited with status $($process.ExitCode)"
+            }
+            if ($combined -notmatch "C0_EXPORTED_SPARK_BASELINE_PASS") {
+              throw "Exact exported C0 qualification did not emit the required PASS marker"
+            }
+          }
+          finally {
+            Remove-Item -Path $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+          }
+
       - name: Record Owner-test provenance and controls
         shell: pwsh
         run: |
