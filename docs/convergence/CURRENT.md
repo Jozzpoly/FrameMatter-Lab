@@ -8,98 +8,87 @@ If live repository/CI evidence contradicts this file, live evidence wins and thi
 
 ## Active objective
 
-**C4 — Passive Relation is active.**
+**C5 — Living World is active.**
 
 Question:
 
-> can the C2 structural seam remain meaningful after C3 authority composition and derive one passive rotational degree of freedom, so ordinary gravity produces constrained motion without a prefab mechanism mode?
+> does the passive structural relation remain a consequence of current Matter identity and causal history, or does it behave like a mechanism object created once and then detached from world truth?
 
-C3 is closed as a bounded PASS.
-
-## Protected chain
+## Earned Convergence chain
 
 ### C0 — Spark
 
-Ordinary WORLD Matter can causally acquire dynamic autonomy while preserving retained Matter identity, actor continuity and live editability.
+Ordinary WORLD Matter can causally acquire dynamic autonomy while preserving retained Matter identity, actor continuity and moving editability.
 
 ### C1 — Scale
 
-Owner play established relative scale as a strong experiential multiplier. Roughly 50–25 cm proxies are the strongest current signal; ~12.5 cm remains interesting. SCALE remains a future track, not current driver.
+Relative body : Matter scale is a strong experiential multiplier. Current Owner signal favors roughly 50–25 cm proxies while ~12.5 cm remains interesting. No final representation decision.
 
 ### C2 — Structural Law
 
 `material continuity != rigid connectivity`
 
-Same Matter occupancy can derive one or two rigid components from one local lineage-owned adjacency law, including alternate rigid bypass behavior.
-
 ### C3 — Authority Composition
+
+Local structural law can derive an unanchored rigid island and feed the existing W0 transaction:
+
+> materially-continuous WORLD → anchored WORLD remainder + zero-launch dynamic island
+
+without Matter destruction causing the split.
+
+### C4 — Passive Relation
 
 Qualified source:
 
-`0d541e022ec4fa82ce5678321e30ded50b74015c`
+`1e327b2e1ba8f68f6494937431696576eddaf3a3`
 
 Evidence:
 
-`docs/evidence/convergence-c3-authority-composition-2026-09-18.md`
+`docs/evidence/convergence-c4-passive-relation-2026-09-18.md`
 
-Earned chain:
+A lineage-owned seam resolves after C3 to a passive rotational host. Gravity rotates the island while the seam anchor remains stable. An equivalent unjointed control falls freely. No motor/limits.
 
-> same ordinary Matter → local law → derived rigid split → anchored WORLD remainder + zero-launch dynamic island
+## C5 boundary
 
-No Matter was destroyed to cause that split.
+Do not turn C5 into a reconnect/binding framework.
 
-## C4 execution boundary
+First exercise histories already expressible by current Matter authority:
 
-The relation truth must exist independently of body IDs.
+1. relation is live;
+2. edit retained non-endpoint island Matter while it moves;
+3. relation remains valid because endpoint lineage survives;
+4. destroy endpoint Matter;
+5. relation truth becomes invalid and host constraint must retire;
+6. recreate Matter at the same address;
+7. fresh lineage must **not** resurrect the old relation.
 
-Experiment-local relation identity may use:
+If this passes, then test relation ownership through topology succession/reframing as a separate bounded pressure.
 
-- lineage token on the WORLD side;
-- lineage token on the island side;
-- local seam frame / axis.
+Rigid brace/bypass across different authorities is deferred until reconnect semantics are explicitly earned.
 
-This is a **lab dialect**, not a final MaterialAnchor/Bond schema.
+## Required C5A evidence
 
-After C3 transfer:
+- relation validity is derived from live lineage ownership, not joint existence;
+- non-endpoint live edit does not kill relation;
+- endpoint destruction does kill relation;
+- freeing the host gives the former island unconstrained motion;
+- same-address Matter recreation receives fresh lineage;
+- old relation remains dead after recreation;
+- C2/C3/C4 and C0 remain protected.
 
-- resolve which current authority owns each retained lineage endpoint;
-- use exactly one passive `HingeJoint3D` as disposable solver host;
-- no motor;
-- no angular limits;
-- gravity is the only driver;
-- compare against an otherwise equivalent unjointed C3 control.
+## Explicitly not next
 
-For the first C4 specimen the anchored endpoint is canonical static WORLD. Godot can host the dynamic endpoint against an implicit fixed StaticBody when only one joint body is specified; this is acceptable only for this bounded WORLD↔dynamic test.
+- no generic relation registry;
+- no reconnect/bind implementation;
+- no motor/limits;
+- no final MaterialAnchor datatype;
+- no actor rewrite yet;
+- no representation rewrite.
 
-Required evidence:
+## Embodiment pressure
 
-1. relation metadata contains no provider/body identity;
-2. lineage endpoints remain live on opposite authorities after C3;
-3. control island falls freely;
-4. related island remains anchored at the seam;
-5. related island develops substantial solver-driven relative rotation;
-6. Matter/lineage are not mutated by relation motion;
-7. C2, C3 and exact-artifact C0 remain PASS.
-
-## Explicit nonclaims
-
-C4 does not yet prove:
-
-- dynamic↔dynamic relations;
-- relation succession/rebase;
-- live edit survival;
-- brace/bypass suppression;
-- relation destruction;
-- final hinge/Bearing semantics;
-- a generic mechanical graph;
-- Owner-facing mechanism authoring.
-
-Those belong to C5 or later.
-
-## Embodiment debt
-
-C1 Owner play exposed that the query capsule and weak reciprocal world reaction increasingly lag behind the implied physical body, especially at larger relative scale. Preserve this as a material future EMBODIMENT/WORK signal. Do not pre-empt C4 with an actor rewrite.
+The C1 play recording remains a material signal that the capsule/query actor and weak reciprocal reaction increasingly lag behind the physical world at larger scale. Keep it visible; do not let it interrupt C5 before world-language history is tested.
 
 ## Next legitimate move
 
-Run one bounded passive-relation control/challenger. Stop C4 after the claim is earned; do not generalize the host implementation.
+Implement C5A as a strict relation-history probe around retained/destroyed/fresh lineage. Only if it passes should C5 continue into topology succession.
