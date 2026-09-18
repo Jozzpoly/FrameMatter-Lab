@@ -20,6 +20,7 @@ const C1_SCALE_PROXY_REACH_BASE := 14.0
 const C1_SCALE_PROXY_FACTORS := [1.0, 2.0, 4.0, 8.0]
 const C6_SEAM_MARKER_LENGTH := 0.9
 const C6_SEAM_MARKER_THICKNESS := 0.08
+const C6_ARTIFACT_QUALIFIER = preload("res://p1/c6_artifact_qualifier.gd")
 const RECOVERY_ANCHOR_CELLS: Array[Vector3i] = [
 	Vector3i(1, 0, 1),
 	Vector3i(30, 0, 1),
@@ -67,6 +68,8 @@ func _ready() -> void:
 	_last_event = "recovery: edit ordinary Matter; detached Matter becomes physical"
 	if OS.get_cmdline_user_args().has("--c0-artifact-baseline"):
 		call_deferred("_run_c0_artifact_baseline")
+	elif OS.get_cmdline_user_args().has("--c6-autonomous-flow"):
+		call_deferred("_run_c6_exported_autonomous_flow")
 	_apply_c1_scale_probe(1.0, false)
 
 
@@ -1096,6 +1099,18 @@ func _refresh_camera_context() -> void:
 		context_space.get_content_center_local(),
 		_space_planar_radius(context_space)
 	)
+
+
+func _run_c6_exported_autonomous_flow() -> void:
+	var qualifier = C6_ARTIFACT_QUALIFIER.new()
+	var report: Dictionary = await qualifier.run(self)
+	if bool(report.get("pass", false)):
+		print("C6_EXPORTED_AUTONOMOUS_FLOW_PASS: exact packaged Owner scene resolves production pointer/H input into local structural law -> authority composition -> same-frame passive relation -> gravity/ride -> live history.")
+		get_tree().quit(0)
+		return
+	for failure_variant in report.get("failures", []):
+		push_error("C6_EXPORTED_AUTONOMOUS_FLOW_FAIL: " + str(failure_variant))
+	get_tree().quit(1)
 
 
 # Convergence C0 exact-artifact qualification. This is intentionally embedded
