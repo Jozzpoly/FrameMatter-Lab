@@ -4,137 +4,108 @@ Status: **live mutable execution pointer**
 
 Updated: 2026-09-18
 
-This file answers only four questions:
-
-1. what is the active research objective?
-2. what is proven now?
-3. what is currently broken/open?
-4. what is the next legitimate move?
-
 If live repository/CI evidence contradicts this file, live evidence wins and this file must be corrected.
 
 ## Active objective
 
-C1 has reached its **Owner judgement boundary**.
+**C2 — Structural Law is now active.**
 
-The immediate decision is not “what should final voxel resolution be?”
+Question:
 
-It is:
+> can Matter remain materially continuous while one local interface stops transmitting full rigid connectivity?
 
-> does a materially smaller apparent Matter unit create a qualitative jump in the Owner's desire/ability to construct mechanisms and shapes?
+This is deliberately narrower than Bearing, joints, authority decomposition or a mechanism system.
 
-Until that evidence exists, C2 must not be started merely to maintain momentum.
+The first target is only:
 
-## Frozen protected baseline — C0 PASS
+> same Matter occupancy + same lineage + one bounded local adjacency rule → either one rigid component or two.
 
-C0 branch:
+## Protected baseline
 
-`research/convergence-c0-baseline`
-
-Frozen qualified source:
+C0 exact-artifact Spark remains frozen and protected:
 
 `028c12764692b8d79ba9b2c634ed9fbd6a2d7f70`
 
-Protected exact-release result:
-
-`C0_EXPORTED_SPARK_BASELINE_PASS`
-
-Protected properties:
+Later Convergence experiments must preserve:
 
 - ordinary visible terrain is Matter;
-- destructive topology can derive physical autonomy;
+- causal world change can derive physical autonomy;
 - retained Matter lineage transfers rather than clones;
-- actor/support handoff is world-continuous;
-- detached Matter moves under solver-owned physics;
-- actor rides it;
-- moving Matter remains editable.
+- actor/support handoff remains continuous;
+- detached Matter is solver-driven and remains editable.
 
-C0 also discovered a release-only authority bug hidden by side-effectful `assert(...)` expressions. Exact-artifact qualification remains mandatory for protected Convergence behavior.
+## C1 result — CLOSED AS BOUNDED OWNER FINDING
 
-## C1 technical status — PASS / experiential result OPEN
+Technically qualified runtime:
 
-Active branch:
+`15426dccc87f9f9b49608beffb65aa5655bdd4f3`
 
-`research/convergence-c1-scale-probe`
+Owner evidence:
 
-Exact technically-qualified C1 source before this status-only commit:
+`docs/evidence/convergence-c1-owner-scale-play-2026-09-18.md`
 
-`f52dce049a6be5aebc4c864e5005dfaa13b7390f`
+Result:
 
-Qualification run:
+- relative scale produced substantially more fun and a different immersion than expected;
+- Owner reports modes 2–3 (≈50 cm / ≈25 cm proxies) as the strongest current range;
+- 8x / ≈12.5 cm is extreme but still useful and worth further testing;
+- more scale exploration, possibly beyond 8x, remains legitimate later;
+- Owner explicitly warns that almost no new world capability was added and novelty alone will fade quickly.
 
-`35350213339`
+Interpretation:
 
-C1 provides one runtime with:
+**scale is a real experiential multiplier, not the next primary research track.**
 
-- 1x ≈ 100 cm relative cell;
-- 2x ≈ 50 cm;
-- 4x ≈ 25 cm;
-- 8x ≈ 12.5 cm.
+Do not convert the C1 proxy into a final resolution decision.
 
-Technical evidence now proves:
+## New pressure discovered but not activated
 
-- lifecycle-safe world reset;
-- actor support does not retain retired Space references;
-- focus/camera/presentation reset before old world retirement;
-- observer reacquires canonical WORLD identity;
-- full `1x → 2x → 4x → 8x → 1x` scale sequence passes clean reset/grounding qualification;
-- source-level W0D Spark remains PASS;
-- Windows release export succeeds;
-- the exact C1 release executable independently re-passes the C0 Spark causal loop with zero actor handoff error;
-- no technical failure found that justifies spending more engineering time before Owner comparison.
+C1 made actor embodiment debt materially clearer:
 
-This is **technical readiness for the bounded C1 experiment**, not evidence that any scale feels good.
+- the capsule/query actor increasingly feels detached from the physical causality of the world;
+- bidirectional actor↔Matter reaction is insufficient for the implied body/mass;
+- extreme scales expose camera/body framing failures.
 
-## C1 Owner question
+This is now a durable EMBODIMENT/WORK pressure signal, but **not the active task**.
 
-Run the same small sandbox across the four modes and answer only:
+## C2 execution boundary
 
-> at which mode, if any, do I first stop thinking “giant blocks” and start thinking “I can build interesting things here”?
+The current Matter topology control assumes:
 
-Useful outcomes include:
+`occupied axial neighbor => connected`
 
-- `1x`, `2x`, `4x` or `8x` as the first meaningful qualitative jump;
-- “none”;
-- “scale helps, but interaction/world-language is clearly the stronger blocker.”
+C2 must preserve that as the control and add the smallest challenger view that can answer:
 
-Do not force a numerical winner if the experience does not support one.
+> may rigid connectivity cross this specific occupied adjacency?
 
-The proxy deliberately changes player/camera/reach scale against an unchanged one-cell Matter backend. It is a cheap authoring-perception probe, not a final world-scale or representation architecture.
+Normal adjacency: yes.
+
+One experiment-local seam: no.
+
+Required C2 evidence:
+
+1. identical occupied Matter and lineage;
+2. control resolves as one rigid component;
+3. one seam override resolves as two rigid components;
+4. adding a rigid bypass reconnects them as one component;
+5. removing the bypass restores two;
+6. no changes to CellVolume authority;
+7. no dynamic body, joint, UI, Space creation or authority transfer.
+
+Stop after this claim is earned.
 
 ## Next legitimate move
 
-**OWNER BOUNDARY.**
+Audit the smallest seam around `MatterTopology`, then implement a disposable `RigidConnectivityChallenger` plus strict probe.
 
-1. deliver the exact C1 artifact from the latest fully-qualified run;
-2. Owner compares 1/2/3/4 modes through ordinary play/building;
-3. record the qualitative result here;
-4. use that result to decide whether SCALE/REPRESENTATION earns further work;
-5. then begin C2 Structural Law only if it is still the highest-information next question.
-
-If the Owner instead supplies new material evidence that changes the priority, update this pointer before executing C2.
-
-## Meaning of the next “continue”
-
-Before Owner C1 evidence exists:
-
-- do not silently interpret `continue` as permission to skip the human scale gate and start C2;
-- use `continue` to finish delivery/inspection support for the already-qualified C1 experiment.
-
-After Owner C1 evidence is recorded:
-
-- reacquire live branch/CI truth;
-- update this pointer;
-- enter the highest-information next gate, currently expected to be C2 Structural Law unless the scale result redirects the campaign.
+Do **not** begin C3 authority composition until C2 independently passes.
 
 ## Explicitly not next
 
-Until C1 Owner evidence says otherwise, do not:
-
-- implement final 25 cm Matter;
-- build octrees/VDB/adaptive LOD;
-- implement Bearing or a generic mechanics framework;
-- redesign the full actor;
-- reopen P1 visual-governance work;
-- optimize performance without demonstrated pressure;
-- merge PR #1 to main.
+- no final finer-resolution Matter;
+- no octree/VDB/adaptive representation;
+- no HingeJoint/Bearing implementation;
+- no generic relation/mechanics framework;
+- no actor rewrite yet;
+- no performance campaign without demonstrated pressure;
+- no merge of historical PR #1.
