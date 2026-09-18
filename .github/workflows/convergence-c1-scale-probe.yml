@@ -1,0 +1,172 @@
+name: Convergence C1 scale probe
+
+on:
+  push:
+    branches:
+      - research/convergence-c1-scale-probe
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: convergence-c1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scale-proxy:
+    name: Qualify scale proxy and preserve exact-artifact Spark
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      SOURCE_SHA: ${{ github.sha }}
+      OUTPUT_DIR: artifacts/convergence-c1
+
+    steps:
+      - name: Checkout exact C1 source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 1
+
+      - name: Prove exact source
+        shell: pwsh
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:SOURCE_SHA) {
+            throw "C1 checkout mismatch: expected $env:SOURCE_SHA, got $actual"
+          }
+          "C1_SOURCE_PASS: $actual"
+
+      - name: Setup Godot 4.7.2 with export templates
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Strict Windows import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Compile recovery dependency graph
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_compile_gate.gd -PassMarker P1_COMPILE_GATE_PASS
+
+      - name: Preserve source-level causal Spark
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0d_recovery_causal_loop_probe.gd -PassMarker W0D_RECOVERY_CAUSAL_LOOP_PASS
+
+      - name: Qualify C1 relative-scale proxy
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/c1_scale_proxy_probe.gd -PassMarker C1_SCALE_PROXY_PASS
+
+      - name: Export exact Windows C1 artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:OUTPUT_DIR | Out-Null
+          $godotExecutable = (Get-Command godot -ErrorAction Stop).Source
+          $outputPath = "$env:OUTPUT_DIR/FrameMatter-Convergence-C1.exe"
+          $stdoutFile = [System.IO.Path]::GetTempFileName()
+          $stderrFile = [System.IO.Path]::GetTempFileName()
+          try {
+            $argumentLine = "--headless --path . --export-release `"Windows Desktop`" `"$outputPath`""
+            $process = Start-Process `
+              -FilePath $godotExecutable `
+              -ArgumentList $argumentLine `
+              -NoNewWindow `
+              -Wait `
+              -PassThru `
+              -RedirectStandardOutput $stdoutFile `
+              -RedirectStandardError $stderrFile
+            $stdout = Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue
+            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            Write-Host ($stdout + [Environment]::NewLine + $stderr)
+            if ($process.ExitCode -ne 0) {
+              throw "Godot C1 export exited with status $($process.ExitCode)"
+            }
+          }
+          finally {
+            Remove-Item -Path $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+          }
+          if (-not (Test-Path $outputPath)) { throw "C1 executable missing after export: $outputPath" }
+          if ((Get-Item $outputPath).Length -lt 1000000) { throw "C1 executable is implausibly small" }
+
+      - name: Re-prove C0 Spark in exact C1 executable
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:OUTPUT_DIR "FrameMatter-Convergence-C1.exe"
+          $stdoutFile = [System.IO.Path]::GetTempFileName()
+          $stderrFile = [System.IO.Path]::GetTempFileName()
+          try {
+            $argumentLine = "--headless -- --c0-artifact-baseline"
+            $process = Start-Process `
+              -FilePath $exe `
+              -ArgumentList $argumentLine `
+              -NoNewWindow `
+              -Wait `
+              -PassThru `
+              -RedirectStandardOutput $stdoutFile `
+              -RedirectStandardError $stderrFile
+            $stdout = Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue
+            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            $combined = $stdout + [Environment]::NewLine + $stderr
+            Write-Host $combined
+            if ($process.ExitCode -ne 0) {
+              throw "Exact C1 executable failed C0 qualification with status $($process.ExitCode)"
+            }
+            if ($combined -notmatch "C0_EXPORTED_SPARK_BASELINE_PASS") {
+              throw "Exact C1 executable did not preserve the C0 PASS marker"
+            }
+          }
+          finally {
+            Remove-Item -Path $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Record C1 provenance and Owner instructions
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:OUTPUT_DIR "FrameMatter-Convergence-C1.exe"
+          $digest = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          @"
+          FrameMatter Convergence C1
+          source_commit=$env:SOURCE_SHA
+          workflow_run=$env:GITHUB_RUN_ID
+          godot=4.7.2
+          platform=windows-latest
+          main_scene=res://p1/recovery_main.tscn
+          executable_sha256=$digest
+          c0_exact_artifact=PASS
+          c1_scale_proxy_smoke=PASS
+          scope=C1_SCALE_PROXY_FOR_OWNER_FEEL_NOT_REPRESENTATION_DECISION
+          "@ | Set-Content -Path (Join-Path $env:OUTPUT_DIR "C1-PROVENANCE.txt")
+
+          @"
+          FrameMatter C1 Scale Probe
+
+          This is a relative-scale perception experiment, not a new Matter representation.
+
+          1 = 1x   (~100 cm relative cell)
+          2 = 2x   (~50 cm relative cell)
+          3 = 4x   (~25 cm relative cell)
+          4 = 8x   (~12.5 cm relative cell)
+
+          Switching scale resets the experimental world so each comparison starts clean.
+          Matter storage/topology still uses the same 1-cell backend.
+
+          Evaluate one question:
+          At which scale, if any, do you start naturally thinking "I can build things here"
+          rather than "I am placing giant blocks"?
+
+          Also note if 8x still feels wrong: that would argue that interaction grammar or
+          world language is a larger blocker than raw authoring resolution.
+          "@ | Set-Content -Path (Join-Path $env:OUTPUT_DIR "C1-OWNER-NOTE.txt")
+          "C1_ARTIFACT_SHA256: $digest"
+
+      - name: Upload C1 evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-Convergence-C1-Windows
+          path: artifacts/convergence-c1
+          if-no-files-found: error
+          retention-days: 14
