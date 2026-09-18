@@ -8,116 +8,148 @@ If live repository/CI evidence contradicts this file, live evidence wins and thi
 
 ## Active objective
 
-**C5 — Living World is active.**
+**C6 — Autonomous Qualification is active.**
 
 Question:
 
-> does the passive structural relation remain a consequence of current Matter identity and causal history, or does it behave like a mechanism object created once and then detached from world truth?
+> can the earned C2→C5 causal language operate through the real Owner-facing scene and actual input path as one continuous packaged-world flow, without relying on headless fixture orchestration?
+
+The next build is not yet an Owner judgement gate. C6 must remove basic technical uncertainty first.
 
 ## Earned Convergence chain
 
-### C0 — Spark
+### C0 — Spark / exact artifact
 
-Ordinary WORLD Matter can causally acquire dynamic autonomy while preserving retained Matter identity, actor continuity and moving editability.
+Ordinary WORLD Matter can causally acquire dynamic autonomy while retaining Matter identity, actor continuity and live moving editability.
 
-### C1 — Scale
+### C1 — Scale / Owner finding
 
-Relative body : Matter scale is a strong experiential multiplier. Current Owner signal favors roughly 50–25 cm proxies while ~12.5 cm remains interesting. No final representation decision.
+Relative body : Matter scale is a strong experiential multiplier. Current strongest Owner signal is roughly 50–25 cm proxies; ~12.5 cm remains informative. This does not select final representation.
 
 ### C2 — Structural Law
 
 `material continuity != rigid connectivity`
 
+One local lineage-owned interface law can change rigid decomposition without changing Matter occupancy.
+
 ### C3 — Authority Composition
 
-Local structural law can derive an unanchored rigid island and feed the existing W0 transaction:
+Local structural law can produce:
 
 > materially-continuous WORLD → anchored WORLD remainder + zero-launch dynamic island
 
-without Matter destruction causing the split.
+without destructive Matter topology causing the decomposition.
 
 ### C4 — Passive Relation
 
-Qualified source:
+The lineage-owned seam can manifest as one passive rotational DOF. Gravity, not a motor or launch command, produces motion.
 
-`1e327b2e1ba8f68f6494937431696576eddaf3a3`
+### C5 — Living World / bounded PASS
+
+C5A:
+
+- unrelated moving-Matter edits preserve relation;
+- endpoint destruction kills relation;
+- same-address fresh Matter does not resurrect relation.
+
+C5B:
+
+- retained endpoint lineage follows production topology succession;
+- old Space/body retires;
+- non-zero compact-frame remap is exact;
+- new body identity is resolved from Matter lineage;
+- relation continues without world-space seam discontinuity.
+
+Qualified C5B source:
+
+`6171413d165bf09cfe631663ea65bb658ec58a04`
 
 Evidence:
 
-`docs/evidence/convergence-c4-passive-relation-2026-09-18.md`
+- `docs/evidence/convergence-c5a-relation-history-2026-09-18.md`
+- `docs/evidence/convergence-c5b-relation-succession-2026-09-18.md`
 
-A lineage-owned seam resolves after C3 to a passive rotational host. Gravity rotates the island while the seam anchor remains stable. An equivalent unjointed control falls freely. No motor/limits.
+## C5 explicit residual
 
-## C5 boundary
+A temporary rigid bypass that suppresses the DOF and later restores it remains **unearned**.
 
-Do not turn C5 into a reconnect/binding framework.
+After C3 the two sides live under distinct authorities. A real rigid bypass/removal cycle therefore requires reconnect / authority-merge semantics. Do not fake this by keeping a hidden snapshot body or by simply toggling the host joint.
 
-First exercise histories already expressible by current Matter authority:
+This is a future WORLD LANGUAGE branch-selection candidate, not a reason to inflate C5 now.
 
-1. relation is live;
-2. edit retained non-endpoint island Matter while it moves;
-3. relation remains valid because endpoint lineage survives;
-4. destroy endpoint Matter;
-5. relation truth becomes invalid and host constraint must retire;
-6. recreate Matter at the same address;
-7. fresh lineage must **not** resurrect the old relation.
+## C6 product-flow requirement
 
-If this passes, then test relation ownership through topology succession/reframing as a separate bounded pressure.
+C6 must compose the already-earned pieces in `p1/recovery_main.tscn` (or a minimal sibling Owner scene if integration pressure proves that cleaner):
 
-Rigid brace/bypass across different authorities is deferred until reconnect semantics are explicitly earned.
+> ordinary WORLD Matter
+> → actual Owner input authors one local structural seam
+> → derived rigid decomposition
+> → authority composition
+> → passive rotational relation exists before the next solver step
+> → gravity produces motion
+> → actor can ride/interact
+> → live Matter edit changes the moving structure
+> → relation history/succession remains truthful.
 
-## Required C5A evidence
+Required surfaces:
 
-- relation validity is derived from live lineage ownership, not joint existence;
-- non-endpoint live edit does not kill relation;
-- endpoint destruction does kill relation;
-- freeing the host gives the former island unconstrained motion;
-- same-address Matter recreation receives fresh lineage;
-- old relation remains dead after recreation;
-- C2/C3/C4 and C0 remain protected.
+- actual pointer/input targeting;
+- actual Matter/lineage authority;
+- actual registry + actor support handoff;
+- actual physics;
+- actual rendered scene;
+- exact exported Windows artifact;
+- autonomous artifact-side qualification of the protected causal flow.
+
+## C6 authoring constraint
+
+Do not introduce a mechanism editor or final relation ontology.
+
+The smallest acceptable Owner-facing authoring dialect may be one explicit experimental **STRUCTURAL SEAM** action operating on a local occupied adjacency derived from the pointer hit.
+
+Relation truth must remain lineage-owned + local frame/axis.
+
+Body/provider IDs remain execution details only.
+
+## C6 atomicity invariant
+
+The integrated transition must not expose a one-frame free-fall window:
+
+> meaning change
+> → rigid decomposition
+> → authority repartition
+> → target provider publication
+> → passive relation host manifestation
+> → only then next solver step.
+
+If a frame exists where the newly separated island is unconstrained before the relation host exists, C6 is RED.
+
+## C6 scale stance
+
+Retain the C1 scale proxy controls unless they materially complicate C6.
+
+They are useful Owner research instrumentation, not a new C6 objective.
+
+Do not redesign representation.
 
 ## Explicitly not next
 
-- no generic relation registry;
-- no reconnect/bind implementation;
+- no generic relation graph/registry;
+- no reconnect/merge framework;
 - no motor/limits;
-- no final MaterialAnchor datatype;
+- no final MaterialAnchor/Bond datatype;
 - no actor rewrite yet;
-- no representation rewrite.
+- no real finer-resolution backend;
+- no performance campaign without demonstrated pressure.
 
 ## Embodiment pressure
 
-The C1 play recording remains a material signal that the capsule/query actor and weak reciprocal reaction increasingly lag behind the physical world at larger scale. Keep it visible; do not let it interrupt C5 before world-language history is tested.
+C1 Owner play exposed a real future debt: the query capsule and weak reciprocal actor↔Matter reaction increasingly lag behind the physical world at larger scale.
 
-## C5A result — PASS
-
-Qualified source:
-
-`b23c47d1c326f732ef6bf9791c9989d5b39b3b31`
-
-Evidence:
-
-`docs/evidence/convergence-c5a-relation-history-2026-09-18.md`
-
-Earned statement:
-
-> relation validity follows live Matter identity and history; same-address geometry cannot resurrect destroyed endpoint identity.
-
-## Active C5B pressure — topology succession
-
-Now test a surviving relation endpoint through a real dynamic topology split.
-
-The relation record must keep the same lineage identity while:
-
-- old dynamic Space/body retires;
-- endpoint Matter maps into exactly one successor;
-- compact local coordinates change;
-- host joint may be destroyed/recreated;
-- seam world frame stays continuous;
-- relation resumes on the successor and remains solver-driven.
-
-Use a fixture where the endpoint-owning successor has a non-zero source origin so the frame mapping is actually exercised rather than trivially identity-mapped.
+C6 should preserve the current actor continuity contract. It should not solve embodiment before the next Owner Spark gate unless integration exposes a hard blocker.
 
 ## Next legitimate move
 
-Implement C5B topology-succession pressure only. Do not add reconnect/brace semantics yet.
+Audit the exact real-scene input and transaction seams, then implement the smallest C6 structural-seam authoring path with a strict autonomous integration probe.
+
+Do not hand an artifact to the Owner until the actual input→law→authority→relation→motion chain is machine-qualified.
