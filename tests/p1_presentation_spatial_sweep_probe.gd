@@ -83,22 +83,21 @@ func _run() -> void:
 
 
 func _sample_occupied_cells(volume: CellVolume) -> Array[Vector3i]:
+	var occupied: Array[Vector3i] = []
+	for z in range(volume.size.z):
+		for y in range(volume.size.y):
+			for x in range(volume.size.x):
+				var cell := Vector3i(x, y, z)
+				if volume.get_cell(cell) != CellVolume.EMPTY:
+					occupied.append(cell)
+	if occupied.size() <= SAMPLE_LIMIT:
+		return occupied
+
 	var result: Array[Vector3i] = []
-	var seen: Dictionary = {}
-	for i in range(1024):
-		var cell := Vector3i(
-			(i * 17 + 3) % volume.size.x,
-			(i * 5 + 1) % volume.size.y,
-			(i * 29 + 7) % volume.size.z
-		)
-		if seen.has(cell):
-			continue
-		seen[cell] = true
-		if volume.get_cell(cell) == CellVolume.EMPTY:
-			continue
-		result.append(cell)
-		if result.size() >= SAMPLE_LIMIT:
-			break
+	for sample_index in range(SAMPLE_LIMIT):
+		var t := float(sample_index) / float(SAMPLE_LIMIT - 1)
+		var occupied_index := int(round(t * float(occupied.size() - 1)))
+		result.append(occupied[occupied_index])
 	return result
 
 
