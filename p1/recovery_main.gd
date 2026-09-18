@@ -14,6 +14,7 @@ const RECOVERY_WORLD_SIZE := Vector3i(32, 8, 32)
 const RECOVERY_WORLD_ORIGIN := Vector3(-16.0, -4.0, -16.0)
 const RECOVERY_CAUSAL_BRIDGE_CELL := Vector3i(14, 5, 16)
 const RECOVERY_CAUSAL_SUPPORT_CELL := Vector3i(18, 5, 17)
+const RECOVERY_BOUNDED_POLICY_BUDGET := 64
 const RECOVERY_ANCHOR_CELLS: Array[Vector3i] = [
 	Vector3i(1, 0, 1),
 	Vector3i(30, 0, 1),
@@ -34,6 +35,11 @@ var _last_recovery_policy_usec := 0
 var _last_recovery_partition_request_usec := 0
 var _last_recovery_partition_publication_usec := 0
 var _last_recovery_publication_timing: Dictionary = {}
+var _recovery_anchor_cells_current: Array[Vector3i] = []
+var _recovery_source_known_single_connected := false
+var _pending_recovery_source_connected_after_partition := false
+var _last_recovery_policy_mode := "none"
+var _last_recovery_policy_visited_cells := 0
 
 
 func _ready() -> void:
@@ -60,6 +66,18 @@ func get_last_recovery_policy_usec() -> int:
 	return _last_recovery_policy_usec
 
 
+func get_last_recovery_policy_mode() -> String:
+	return _last_recovery_policy_mode
+
+
+func get_last_recovery_policy_visited_cells() -> int:
+	return _last_recovery_policy_visited_cells
+
+
+func is_recovery_source_known_single_connected_for_test() -> bool:
+	return _recovery_source_known_single_connected
+
+
 func get_last_recovery_partition_request_usec() -> int:
 	return _last_recovery_partition_request_usec
 
@@ -75,12 +93,19 @@ func get_last_recovery_publication_timing() -> Dictionary:
 func _initialize_space() -> void:
 	_clear_pending_storage_place()
 	_clear_pending_causal_actor_handoff()
+	_pending_recovery_source_connected_after_partition = false
+	_recovery_anchor_cells_current.clear()
+	for anchor_cell in RECOVERY_ANCHOR_CELLS:
+		_recovery_anchor_cells_current.append(anchor_cell)
 	_registry.clear()
 	for child in $Spaces.get_children():
 		child.free()
 
 	_recovery_demo_space = null
 	_recovery_world_space = _build_world_matter_space()
+	_recovery_source_known_single_connected = (
+		MatterTopology.extract_connected_cell_components(_recovery_world_space.volume).size() == 1
+	)
 	_recovery_world_space.authority_partition_committed.connect(_on_recovery_authority_partition_committed)
 	_registry.register_space(_recovery_world_space)
 	_focus_space = _recovery_world_space
@@ -189,38 +214,103 @@ func _apply_focused_torque_impulse(local_impulse: Vector3) -> bool:
 func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_queued: bool) -> void:
 	_last_recovery_policy_usec = 0
 	_last_recovery_partition_request_usec = 0
+	_last_recovery_policy_mode = "none"
+	_last_recovery_policy_visited_cells = 0
 	super._on_edit_applied(space, cell, mode, split_queued)
-	if mode != P1MatterInteractor.EditMode.REMOVE:
-		return
 	if space != _recovery_world_space or _recovery_world_space == null:
+		return
+
+	if mode == P1MatterInteractor.EditMode.PLACE:
+		_last_recovery_policy_mode = "place_connectivity_update"
+		if _recovery_source_known_single_connected:
+			var attached_to_source := false
+			for offset in MatterTopology.AXIAL_NEIGHBORS:
+				if _recovery_world_space.volume.get_cell(cell + offset) != CellVolume.EMPTY:
+					attached_to_source = true
+					break
+			_recovery_source_known_single_connected = attached_to_source
+		return
+	if mode != P1MatterInteractor.EditMode.REMOVE:
 		return
 	if _recovery_world_space.is_authority_partition_pending():
 		_last_event = "causal detach already pending"
 		return
 
-	var policy_started_usec := Time.get_ticks_usec()
-	var policy: Dictionary = W0AnchoredDetachmentPolicy.evaluate(
-		_recovery_world_space.volume,
-		_recovery_world_space.lineage,
-		_recovery_anchor_tokens
-	)
-	_last_recovery_policy_usec = Time.get_ticks_usec() - policy_started_usec
-	if not bool(policy.get("valid", false)):
-		_last_event = "detach policy fail-closed: %s" % str(policy.get("reason", "invalid"))
+	_pending_recovery_source_connected_after_partition = false
+	var detached_components: Array = []
+	var anchored_component_count := 0
+	var bounded_was_proven := false
+
+	if _recovery_source_known_single_connected:
+		var live_anchor_cells := _live_recovery_anchor_cells()
+		if not live_anchor_cells.is_empty():
+			var bounded_started_usec := Time.get_ticks_usec()
+			var bounded := MatterTopology.prove_partition_after_single_removal_from_connected_source(
+				_recovery_world_space.volume,
+				cell,
+				live_anchor_cells,
+				RECOVERY_BOUNDED_POLICY_BUDGET
+			)
+			_last_recovery_policy_usec = Time.get_ticks_usec() - bounded_started_usec
+			_last_recovery_policy_visited_cells = int(bounded.get("visited_cells", 0))
+			anchored_component_count = int(bounded.get("anchored_component_count", 0))
+			if bool(bounded.get("proven", false)) and anchored_component_count == 1:
+				bounded_was_proven = true
+				detached_components = bounded.get("detached_components", [])
+				_last_recovery_policy_mode = (
+					"bounded_connected"
+					if detached_components.is_empty()
+					else "bounded_partition"
+				)
+
+	if not bounded_was_proven:
+		var policy_started_usec := Time.get_ticks_usec()
+		var policy: Dictionary = W0AnchoredDetachmentPolicy.evaluate(
+			_recovery_world_space.volume,
+			_recovery_world_space.lineage,
+			_recovery_anchor_tokens
+		)
+		_last_recovery_policy_usec = Time.get_ticks_usec() - policy_started_usec
+		_last_recovery_policy_visited_cells = _recovery_world_space.volume.count_solid()
+		_last_recovery_policy_mode = (
+			"full_policy_fallback"
+			if _recovery_source_known_single_connected
+			else "full_policy"
+		)
+		if not bool(policy.get("valid", false)):
+			_recovery_source_known_single_connected = false
+			_last_event = "detach policy fail-closed: %s" % str(policy.get("reason", "invalid"))
+			return
+		var anchored_components: Array = policy.get("anchored_components", [])
+		anchored_component_count = anchored_components.size()
+		detached_components = policy.get("detached_components", [])
+
+	if detached_components.is_empty():
+		# Whether proven boundedly or by the full policy, one anchored component
+		# means this post-removal source remains a valid connected precondition for
+		# the next single-cell proof.
+		_recovery_source_known_single_connected = anchored_component_count == 1
 		return
 
-	var detached_components: Array = policy.get("detached_components", [])
-	if detached_components.is_empty():
-		# Most edits simply reshape connected world Matter and require no new frame.
-		return
+	# The post-removal source is currently disconnected until a successful
+	# authority partition removes the detached component from canonical WORLD.
+	_recovery_source_known_single_connected = false
 	if detached_components.size() != 1:
-		# W0 intentionally proves one target. Multiple simultaneous components need
-		# a later 0..N transaction rather than arbitrary ordering in the consumer.
 		_last_event = "detach deferred: %d independent components" % detached_components.size()
 		return
 
+	_request_recovery_detach(
+		detached_components[0],
+		anchored_component_count == 1
+	)
+
+
+func _request_recovery_detach(
+	component_variant: Variant,
+	source_connected_after_partition: bool
+) -> void:
 	var selected: Array[Vector3i] = []
-	for candidate in detached_components[0]:
+	for candidate in component_variant:
 		selected.append(candidate)
 
 	_prepare_causal_actor_handoff(selected)
@@ -231,11 +321,27 @@ func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_
 	)
 	_last_recovery_partition_request_usec = Time.get_ticks_usec() - request_started_usec
 	if not accepted:
+		_pending_recovery_source_connected_after_partition = false
 		_clear_pending_causal_actor_handoff()
 		_last_event = "causal authority transfer rejected"
 		return
+	_pending_recovery_source_connected_after_partition = source_connected_after_partition
 	_last_event = "Matter disconnected → dynamic ownership queued"
 
+
+func _live_recovery_anchor_cells() -> Array[Vector3i]:
+	var result: Array[Vector3i] = []
+	if _recovery_world_space == null or _recovery_world_space.volume == null or _recovery_world_space.lineage == null:
+		return result
+	for anchor_cell in _recovery_anchor_cells_current:
+		if not _recovery_world_space.volume.in_bounds(anchor_cell):
+			continue
+		if _recovery_world_space.volume.get_cell(anchor_cell) == CellVolume.EMPTY:
+			continue
+		var token := _recovery_world_space.lineage.get_lineage(anchor_cell)
+		if token != MatterLineageMap.NONE and _recovery_anchor_tokens.has(token):
+			result.append(anchor_cell)
+	return result
 
 func _prepare_causal_actor_handoff(selected_cells: Array[Vector3i]) -> void:
 	_clear_pending_causal_actor_handoff()
@@ -261,6 +367,8 @@ func _prepare_causal_actor_handoff(selected_cells: Array[Vector3i]) -> void:
 
 func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 	var publication_started_usec := Time.get_ticks_usec()
+	_recovery_source_known_single_connected = _pending_recovery_source_connected_after_partition
+	_pending_recovery_source_connected_after_partition = false
 	_last_recovery_publication_timing = {}
 	var target := result.get("target_space") as LocalMatterSpace
 	if target == null or not is_instance_valid(target):
@@ -355,6 +463,15 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 		"focus_camera_usec": focus_camera_usec,
 		"total_usec": _last_recovery_partition_publication_usec,
 	}
+
+
+func _on_registry_storage_rebased(space: LocalMatterSpace, report: Dictionary) -> void:
+	super._on_registry_storage_rebased(space, report)
+	if space != _recovery_world_space:
+		return
+	var local_shift: Vector3i = report.get("local_shift", Vector3i.ZERO)
+	for index in range(_recovery_anchor_cells_current.size()):
+		_recovery_anchor_cells_current[index] += local_shift
 
 
 func _clear_pending_causal_actor_handoff() -> void:

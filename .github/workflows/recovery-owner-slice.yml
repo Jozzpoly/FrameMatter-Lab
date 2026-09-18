@@ -28,6 +28,7 @@ on:
       - "tests/p1_chunked_presentation_feasibility_probe.gd"
       - "tests/p1_chunked_presentation_runtime_probe.gd"
       - "tests/w0_chunked_authority_locality_probe.gd"
+      - "tests/w0_bounded_policy_runtime_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -141,6 +142,10 @@ jobs:
       - name: Verify bounded detach classification
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0_bounded_detach_classification_probe.gd -PassMarker W0_BOUNDED_DETACH_CLASSIFICATION_PASS
+
+      - name: Verify bounded Recovery policy runtime
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0_bounded_policy_runtime_probe.gd -PassMarker W0_BOUNDED_POLICY_RUNTIME_PASS
 
       - name: Verify lightweight W0 topology component equivalence
         shell: pwsh

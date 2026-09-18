@@ -401,6 +401,16 @@ func _on_edit_timing_sample(
 		if _host != null and _host.has_method("get_last_recovery_partition_request_usec")
 		else -1
 	)
+	var policy_mode := (
+		str(_host.call("get_last_recovery_policy_mode"))
+		if _host != null and _host.has_method("get_last_recovery_policy_mode")
+		else ""
+	)
+	var policy_visited_cells := (
+		int(_host.call("get_last_recovery_policy_visited_cells"))
+		if _host != null and _host.has_method("get_last_recovery_policy_visited_cells")
+		else -1
+	)
 	var listeners_usec := int(sample.get("listeners_usec", -1))
 	var known_listener_usec := maxi(0, grid_usec) + maxi(0, state_usec) + maxi(0, policy_usec) + maxi(0, request_usec)
 	var unattributed_listener_usec := maxi(0, listeners_usec - known_listener_usec)
@@ -409,6 +419,8 @@ func _on_edit_timing_sample(
 	_last_edit_timing["state_presentation_refresh_usec"] = state_usec
 	_last_edit_timing["w0_policy_usec"] = policy_usec
 	_last_edit_timing["w0_partition_request_usec"] = request_usec
+	_last_edit_timing["w0_policy_mode"] = policy_mode
+	_last_edit_timing["w0_policy_visited_cells"] = policy_visited_cells
 	_last_edit_timing["unattributed_listener_usec"] = unattributed_listener_usec
 	_record("edit_timing", {
 		"space_id": space.get_instance_id() if space != null and is_instance_valid(space) else 0,
@@ -424,6 +436,8 @@ func _on_edit_timing_sample(
 		"state_presentation_refresh_usec": state_usec,
 		"w0_policy_usec": policy_usec,
 		"w0_partition_request_usec": request_usec,
+		"w0_policy_mode": policy_mode,
+		"w0_policy_visited_cells": policy_visited_cells,
 		"unattributed_listener_usec": unattributed_listener_usec,
 	})
 
