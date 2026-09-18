@@ -126,25 +126,49 @@ func _commit_authority_partition() -> void:
 	for source_cell in _pending_authority_partition_cells:
 		var material_id := volume.get_cell(source_cell)
 		var token := lineage.get_lineage(source_cell)
-		assert(material_id != CellVolume.EMPTY)
-		assert(token != MatterLineageMap.NONE)
+		if material_id == CellVolume.EMPTY or token == MatterLineageMap.NONE:
+			push_error("W0 authority partition staging lost selected Matter truth")
+			_clear_pending_authority_partition()
+			_last_authority_partition_result = {}
+			return
 		var target_cell := source_cell - source_origin
-		assert(target_volume.set_cell(target_cell, material_id))
-		assert(target_lineage.set_lineage(target_cell, token))
-		assert(source_after_volume.set_cell(source_cell, CellVolume.EMPTY))
-		assert(source_after_lineage.clear_lineage(source_cell))
+		# These mutations are authoritative staging work, not debug checks. Keep all
+		# side effects outside assert(): release exports do not evaluate assertions.
+		var target_volume_changed := target_volume.set_cell(target_cell, material_id)
+		var target_lineage_changed := target_lineage.set_lineage(target_cell, token)
+		var source_volume_changed := source_after_volume.set_cell(source_cell, CellVolume.EMPTY)
+		var source_lineage_changed := source_after_lineage.clear_lineage(source_cell)
+		if not (target_volume_changed and target_lineage_changed and source_volume_changed and source_lineage_changed):
+			push_error("W0 authority partition staging mutation failed")
+			_clear_pending_authority_partition()
+			_last_authority_partition_result = {}
+			return
 
 	# duplicate_volume() preserves the source revision. Clearing the k transferred
 	# cells advances it by exactly k through the normal mutation primitive, so the
 	# existing monotonic logical-revision contract is preserved without a manual
 	# revision override or a full GDScript source scan.
-	assert(source_after_volume.revision == volume.revision + _pending_authority_partition_cells.size())
+	var expected_source_revision := volume.revision + _pending_authority_partition_cells.size()
+	if source_after_volume.revision != expected_source_revision:
+		push_error("W0 authority partition staging revision mismatch")
+		_clear_pending_authority_partition()
+		_last_authority_partition_result = {}
+		return
 
 	var source_provider: Node3D = get_active_provider()
+	if not (source_provider is MatterRepresentation) and not (source_provider is ConstructBody):
+		push_error("Unsupported W0 source provider")
+		_clear_pending_authority_partition()
+		_last_authority_partition_result = {}
+		return
 	var source_transform: Transform3D = source_provider.global_transform
 	var target_transform := source_transform * Transform3D(Basis.IDENTITY, Vector3(source_origin))
 	var parent_node := get_parent()
-	assert(parent_node != null)
+	if parent_node == null:
+		push_error("W0 authority partition source has no parent for target publication")
+		_clear_pending_authority_partition()
+		_last_authority_partition_result = {}
+		return
 	var staging_usec := Time.get_ticks_usec() - staging_started_usec
 
 	# Commit boundary: source keeps Space/provider identity but swaps its complete
@@ -165,7 +189,12 @@ func _commit_authority_partition() -> void:
 	elif source_provider is ConstructBody:
 		(source_provider as ConstructBody).set_volume(source_after_volume)
 	else:
-		assert(false, "Unsupported W0 source provider")
+		# Guarded above; retained as a fail-closed runtime branch rather than a
+		# debug-only assertion.
+		push_error("Unsupported W0 source provider during commit")
+		_clear_pending_authority_partition()
+		_last_authority_partition_result = {}
+		return
 	source_provider.reset_physics_interpolation()
 	var source_rebuild_usec := Time.get_ticks_usec() - source_rebuild_started_usec
 
@@ -189,7 +218,11 @@ func _commit_authority_partition() -> void:
 			Vector3.ZERO
 		)
 	else:
-		assert(false, "Unsupported W0 target provider kind")
+		push_error("Unsupported W0 target provider kind during commit")
+		target.queue_free()
+		_clear_pending_authority_partition()
+		_last_authority_partition_result = {}
+		return
 	var target_initialize_usec := Time.get_ticks_usec() - target_initialize_started_usec
 	var pre_signal_total_usec := Time.get_ticks_usec() - commit_started_usec
 
