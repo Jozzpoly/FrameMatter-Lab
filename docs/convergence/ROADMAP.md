@@ -74,119 +74,170 @@ Stop rules:
 
 ---
 
-## C2 — structural law: adjacency != rigid connectivity
+## C2 — Structural Law
 
 **Status: QUEUED AFTER C1 DECISION**
 
 Question:
 
-> can identical occupied Matter geometry resolve into either one rigid island or multiple mechanically related islands because of one local world rule?
+> can Matter remain materially continuous while one local interface stops transmitting full rigid connectivity?
 
-Build the smallest possible experiment.
+Allowed scope:
+
+- one bounded rigid-connectivity challenger;
+- same Matter occupancy/lineage;
+- one local rule that changes whether a specific face adjacency may be crossed when deriving rigid connectivity;
+- no joints, UI, generic relation framework or final Bond datatype.
 
 Required evidence:
 
-- same Matter occupancy in control and challenger;
-- control behaves as one rigid connected organization;
-- one bounded local law changes the derived physical organization;
-- no special pre-authored “moving object” is required;
-- destroying/changing the relevant material relation changes the consequence coherently;
-- Matter identity is not redefined as joint/body identity.
+- control: the same occupancy resolves as one rigid island;
+- challenger: one local law resolves it as two rigid islands;
+- CellVolume and Matter lineage remain unchanged;
+- the distinction is derived physical organization, not creation of a pre-authored object class.
 
-Stop rule:
+Stop condition:
 
-Do not design a universal interface/constraint framework. One falsifiable relation is enough.
+> the same occupancy demonstrably yields one or two rigid islands depending only on the local structural law.
 
 ---
 
-## C3 — rotational seam / Bearing specimen
+## C3 — Authority Composition
 
-**Status: CONDITIONAL**
-
-Only if C2 supports the structural-law hypothesis.
-
-Challenge:
-
-> two adjacent material regions remain materially situated together while permitting one meaningful rotational degree of freedom.
-
-Bearing is an experimental specimen, not the ontology.
-
-Compare at least:
-
-- constrained relation present;
-- relation absent/rigid;
-- relation destroyed or materially invalidated.
-
-Observe whether the Owner can predict what will happen from the world itself.
-
----
-
-## C4 — living edit through mechanism
-
-**Status: CONDITIONAL**
-
-Pressure the C3 relation after creation:
-
-- edit Matter on either side;
-- remove supporting/owning Matter;
-- alter geometry around the interface;
-- move/ride the mechanism;
-- verify no magical resurrection after destroy/recreate-at-same-address.
+**Status: CONDITIONAL ON C2**
 
 Question:
 
-> does the mechanism remain a living consequence of Matter and history, or become an invisible object-system bolted onto the world?
+> can a change in local world law itself cause ordinary WORLD Matter to decompose into distinct physical authorities without deleting/recreating the Matter?
+
+Use the already-earned W0 authority-transfer semantics as a donor, not as ontology.
+
+Required evidence:
+
+- ordinary WORLD Matter begins under canonical static authority;
+- changing the bounded structural law changes derived rigid decomposition;
+- an unanchored rigid component receives derived dynamic authority;
+- retained Matter lineage transfers exactly;
+- the anchored remainder stays WORLD;
+- no hidden launch, prefab mechanism or manual Space creation is required.
+
+Stop condition:
+
+> WORLD → WORLD + derived dynamic island occurs because the local law changed, while the Matter itself remains retained.
 
 ---
 
-## C5 — first purposeful construction
+## C4 — Passive Relation
 
-**Status: CONDITIONAL / OWNER-LED**
-
-Create a tiny authored situation where the new world language enables a useful construction rather than a lab demonstration.
-
-Examples are not commitments: door, pivoting bridge, wheel-like support, lever, simple suspension, counterweight.
-
-The Owner should be able to invent or modify the construction, not merely trigger it.
+**Status: CONDITIONAL ON C3**
 
 Question:
 
-> did the primitive increase the space of things worth building?
+> can the newly separated rigid islands possess exactly one derived rotational relation, so gravity/world forces produce natural motion without a prefab mechanism mode?
 
-This gate chooses whether the primitive deserves further generalization.
+This is where the Bearing-like rotational seam becomes the smallest useful blade.
+
+Allowed scope:
+
+- exactly one relation type;
+- lineage-owned local anchor;
+- local face/axis lab dialect if sufficient;
+- reuse only the minimum constraint math already earned by mechanics probes.
+
+Do not build a general mechanical-relation framework.
+
+Required evidence:
+
+- relation is derived from world/material meaning;
+- no BUILD→RUN launch ceremony;
+- gravity or ordinary forces produce the motion;
+- removing the relation returns the appropriate rigid behavior;
+- body/provider IDs are not relation identity.
+
+Stop condition:
+
+> a passive rotational DOF exists as a consequence of the material situation and produces understandable solver-owned motion.
 
 ---
 
-## C6 — direct interaction fidelity
+## C5 — Living World
 
-**Status: CONDITIONAL**
+**Status: CONDITIONAL ON C4**
 
-Re-test the strongest loop through real Owner input rather than test hooks:
+Question:
 
-> point/act → edit → topology/structural consequence → move/ride → edit again.
+> does the relation survive real causal history instead of behaving like a snapshot-era mechanism object?
 
-Qualify pointer targeting, UI ownership, rejection feedback and causal readability at the scale/primitive selected by C1–C5.
+Pressure it with:
 
-Do not confuse source-level mutation authority with real interaction-path evidence.
+- live Matter edits while moving;
+- a temporary rigid brace/bypass that suppresses the DOF;
+- removal of that brace exposing the DOF again;
+- destruction of relation-owning/anchor Matter;
+- topology succession/reframing where relevant;
+- destroy + recreate at the same address, proving no magical resurrection.
+
+The world must remain live throughout; no BUILD→RUN→STOP split.
+
+Stop condition:
+
+> relation state follows current Matter + identity + causal history, and the world does not restore an obsolete mechanism snapshot.
 
 ---
 
-## C7 — convergence checkpoint
+## C6 — Autonomous Qualification
 
-**Status: FUTURE**
+**Status: CONDITIONAL ON C5**
 
-Synthesize Owner play + technical evidence and decide the next research branch.
+Question:
 
-Possible outcomes include:
+> does the complete promised causal flow actually work as a product-like exact artifact rather than only in source probes?
 
-- deepen WORLD LANGUAGE;
-- real finer-resolution representation;
-- embodiment/work;
-- actor/contact mechanics;
-- world scale/streaming;
-- another primitive.
+Qualify the real chain at required fidelity:
 
-C7 must not choose by roadmap inertia. The strongest repeated pressure wins.
+> ordinary WORLD Matter → local law change → rigid decomposition → authority composition → passive relation → natural motion → ride/interact/edit → history-changing consequence.
+
+Required evidence:
+
+- strict source/runtime probes for hidden truth;
+- exact exported executable qualification;
+- real interaction path where the claim depends on pointer/input semantics;
+- no engine/script failure markers;
+- provenance binds the tested artifact to exact source/run.
+
+Stop condition:
+
+> the exact artifact autonomously reproduces the causal flow we intend to expose to the Owner.
+
+---
+
+## C7 — Owner Spark Gate
+
+**Status: FUTURE / OWNER AUTHORITY**
+
+Only after C6.
+
+Give the Owner a small open sandbox and then **stop developing** long enough for play to answer the research question.
+
+The gate is not “can the Owner demonstrate the intended door/bearing?”
+
+The stronger signal is spontaneous construction pressure.
+
+Weak outcome:
+
+- the Owner mainly reproduces the one authored mechanism;
+- the relation feels like a special-purpose feature;
+- play does not suggest new uses.
+
+Strong outcome:
+
+- the Owner begins inventing pendulums, arms, traps, swings, rotors, braces, counterweights or unplanned constructions;
+- the primitive creates several new behaviors from one world rule;
+- the next missing primitive becomes obvious through play.
+
+Stop condition:
+
+> Owner play, not roadmap inertia, selects the next branch: deeper WORLD LANGUAGE, real representation work, embodiment/work, reconnect/bind, actor/contact work or something not predicted here.
 
 ---
 
