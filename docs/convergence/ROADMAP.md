@@ -86,7 +86,7 @@ Evidence: `docs/evidence/convergence-c1-owner-scale-play-2026-09-18.md`.
 
 ## C2 — Structural Law
 
-**Status: ACTIVE**
+**Status: PASS / BOUNDED**
 
 Question:
 
@@ -114,7 +114,7 @@ Stop condition:
 
 ## C3 — Authority Composition
 
-**Status: CONDITIONAL ON C2**
+**Status: ACTIVE**
 
 Question:
 
