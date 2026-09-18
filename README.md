@@ -1,5 +1,7 @@
 # FrameMatter Lab
 
+> **ACTIVE EXECUTION ENTRYPOINT (2026-09-18):** current project steering has moved to the Convergence control plane after the second P1 Owner experiential regression and Spark recovery. Start with `docs/convergence/CURRENT.md`, then `docs/convergence/VISION.md` and `docs/convergence/ROADMAP.md`. Historical P1/Q0 sections below remain evidence and provenance, not the current execution queue.
+
 Research lab for an editable systemic-world substrate where local Matter can become static or dynamic physical space **without logical identity collapsing into engine representation**.
 
 This repository is intentionally **not** a Minecraft clone, vehicle game, portal demo or final engine architecture. It exists to produce falsifiable evidence for the smallest substrate that could later support those directions.
