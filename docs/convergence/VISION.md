@@ -54,11 +54,15 @@ First answer the perceptual/authoring question cheaply:
 
 Only after that should a real finer-resolution representation campaign be justified.
 
+C1 Owner play now establishes a bounded pressure signal: relative scale is not cosmetic. The Owner found roughly 50–25 cm proxies strongest, while ≈12.5 cm was extreme but still interesting. This does **not** choose a final representation; it shows that future world-language primitives will be experienced differently depending on authoring scale.
+
 ### 3. EMBODIMENT / WORK — later multiplier
 
 Longer-term material interaction should increasingly be embodied and causal: carrying, pushing, cutting, supporting, building, damaging, climbing and operating mechanisms should have world-grounded consequences.
 
 Do not start this track merely because it is attractive. Let WORLD LANGUAGE and Owner play expose which forms of work create the most leverage.
+
+C1 also produced the first strong new pressure on this track: at larger body/world ratios the query-based capsule's lack of convincing bidirectional reaction with Matter becomes increasingly obvious, and camera/body framing degrades at the extreme. Preserve this as evidence; do not let it pre-empt C2.
 
 ## What this phase is not
 
