@@ -87,6 +87,15 @@ func request_jump() -> void:
 	jump_requested = true
 
 
+func clear_support_for_world_reset() -> void:
+	# Explicit world-rebuild boundary: no typed reference to the retiring support
+	# Space/body may survive into registry/presentation callbacks.
+	_detach_from_support(false)
+	desired_local_velocity = Vector3.ZERO
+	world_velocity = Vector3.ZERO
+	jump_requested = false
+
+
 func get_support_contact_witness() -> Dictionary:
 	var invalid := {"valid": false}
 	if (
