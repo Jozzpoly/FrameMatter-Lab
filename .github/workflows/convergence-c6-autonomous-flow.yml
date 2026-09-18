@@ -105,6 +105,57 @@ jobs:
           if (-not (Test-Path $outputPath)) { throw "C6 executable missing after export: $outputPath" }
           if ((Get-Item $outputPath).Length -lt 1000000) { throw "C6 executable is implausibly small" }
 
+      - name: Qualify autonomous C6 flow inside exact rendered executable
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:OUTPUT_DIR "FrameMatter-Convergence-C6.exe"
+          $evidenceDir = Join-Path $env:OUTPUT_DIR "exported-evidence"
+          New-Item -ItemType Directory -Force -Path $evidenceDir | Out-Null
+          $env:C6_EXPORTED_EVIDENCE_DIR = (Resolve-Path $evidenceDir).Path
+          $stdoutFile = [System.IO.Path]::GetTempFileName()
+          $stderrFile = [System.IO.Path]::GetTempFileName()
+          try {
+            $process = Start-Process `
+              -FilePath $exe `
+              -ArgumentList @(
+                "--audio-driver", "Dummy",
+                "--rendering-method", "forward_plus",
+                "--rendering-driver", "d3d12",
+                "--", "--c6-autonomous-flow"
+              ) `
+              -NoNewWindow `
+              -Wait `
+              -PassThru `
+              -RedirectStandardOutput $stdoutFile `
+              -RedirectStandardError $stderrFile
+            $stdout = Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue
+            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            $combined = $stdout + [Environment]::NewLine + $stderr
+            Write-Host $combined
+            if ($process.ExitCode -ne 0) { throw "Exact rendered C6 executable failed autonomous flow with status $($process.ExitCode)" }
+            if ($combined -match '(?m)^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|C6_EXPORTED_AUTONOMOUS_FLOW_FAIL') {
+              throw "Exact rendered C6 executable emitted an engine/script/failure error"
+            }
+            if ($combined -notmatch "C6_EXPORTED_AUTONOMOUS_FLOW_PASS") {
+              throw "Exact rendered C6 executable did not emit autonomous-flow PASS"
+            }
+            if ($combined -notmatch "D3D12" -or $combined -notmatch "Forward\+") {
+              throw "Exact rendered C6 executable did not prove D3D12 Forward+"
+            }
+          }
+          finally {
+            Remove-Item -Path $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+          }
+          foreach ($name in @(
+            "00_exported_seam_target.png",
+            "01_exported_relation_live.png",
+            "02_exported_relation_history.png"
+          )) {
+            if (-not (Test-Path (Join-Path $evidenceDir $name))) {
+              throw "Exact C6 exported evidence missing: $name"
+            }
+          }
+
       - name: Re-prove C0 Spark in exact C6 executable
         shell: pwsh
         run: |
@@ -129,11 +180,46 @@ jobs:
           $digest = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLowerInvariant()
           "C6_EXACT_ARTIFACT_SHA256: $digest"
 
-      - name: Upload C6 rendered interaction evidence
+      - name: Record C6 provenance
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:OUTPUT_DIR | Out-Null
+          $checkedOut = (git rev-parse HEAD).Trim()
+          @"
+          FrameMatter Convergence C6 autonomous qualification
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:SOURCE_SHA
+          checked_out_commit=$checkedOut
+          platform=windows-latest
+          engine=Godot 4.7.2
+          renderer=Forward+ / D3D12
+          owner_scene=res://p1/recovery_main.tscn
+          owner_input=pointer + H structural seam
+          semantic_chain=C2 structural law -> C3 authority composition -> C4 passive relation -> C5 living history
+          exact_artifact_flow=--c6-autonomous-flow
+          protected_baseline=--c0-artifact-baseline
+          "@ | Set-Content -Path (Join-Path $env:OUTPUT_DIR "C6-PROVENANCE.txt")
+
+      - name: Upload exact C6 Owner artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-Convergence-C6-Windows
+          path: |
+            artifacts/convergence-c6/FrameMatter-Convergence-C6.exe
+            artifacts/convergence-c6/C6-PROVENANCE.txt
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload C6 rendered evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: FrameMatter-Convergence-C6-Rendered-Evidence
-          path: artifacts/convergence-c6/interaction
+          path: |
+            artifacts/convergence-c6/interaction
+            artifacts/convergence-c6/exported-evidence
+            artifacts/convergence-c6/C6-PROVENANCE.txt
           retention-days: 30
           if-no-files-found: warn
