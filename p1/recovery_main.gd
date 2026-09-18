@@ -18,6 +18,8 @@ const RECOVERY_CAUSAL_SUPPORT_CELL := Vector3i(18, 5, 17)
 const RECOVERY_BOUNDED_POLICY_BUDGET := 64
 const C1_SCALE_PROXY_REACH_BASE := 14.0
 const C1_SCALE_PROXY_FACTORS := [1.0, 2.0, 4.0, 8.0]
+const C6_SEAM_MARKER_LENGTH := 0.9
+const C6_SEAM_MARKER_THICKNESS := 0.08
 const RECOVERY_ANCHOR_CELLS: Array[Vector3i] = [
 	Vector3i(1, 0, 1),
 	Vector3i(30, 0, 1),
@@ -44,6 +46,17 @@ var _c1_scale_probe_factor := 1.0
 var _pending_recovery_source_connected_after_partition := false
 var _last_recovery_policy_mode := "none"
 var _last_recovery_policy_visited_cells := 0
+
+# Convergence C6: one bounded structural relation. Logical truth is deliberately
+# lineage-owned; body/Space references below are execution caches only.
+var _c6_pending_relation: Dictionary = {}
+var _c6_relation: Dictionary = {}
+var _c6_relation_joint: HingeJoint3D
+var _c6_relation_marker: MeshInstance3D
+var _c6_relation_host_space: LocalMatterSpace
+var _c6_relation_install_physics_frame := -1
+var _c6_relation_rebind_count := 0
+var _c6_last_authoring_result: Dictionary = {}
 
 
 func _ready() -> void:
@@ -109,7 +122,63 @@ func get_last_recovery_publication_timing() -> Dictionary:
 	return _last_recovery_publication_timing.duplicate(true)
 
 
+func has_c6_active_relation_for_test() -> bool:
+	return not _c6_relation.is_empty()
+
+
+func get_c6_active_relation_for_test() -> Dictionary:
+	return _c6_relation.duplicate(true)
+
+
+func get_c6_relation_host_space_for_test() -> LocalMatterSpace:
+	return _c6_relation_host_space
+
+
+func get_c6_relation_joint_for_test() -> HingeJoint3D:
+	return _c6_relation_joint
+
+
+func get_c6_relation_install_physics_frame_for_test() -> int:
+	return _c6_relation_install_physics_frame
+
+
+func get_c6_relation_rebind_count_for_test() -> int:
+	return _c6_relation_rebind_count
+
+
+func get_c6_last_authoring_result_for_test() -> Dictionary:
+	return _c6_last_authoring_result.duplicate(true)
+
+
+func request_c6_structural_seam_at_screen(screen_position: Vector2) -> bool:
+	if _interactor == null or not is_instance_valid(_interactor):
+		_last_event = "structural seam blocked: interactor unavailable"
+		return false
+	_interactor.update_target_from_pointer_position(screen_position)
+	if (
+		_interactor.target_space != _recovery_world_space
+		or _recovery_world_space == null
+		or _recovery_world_space.volume == null
+		or not _recovery_world_space.volume.in_bounds(_interactor.remove_cell)
+		or _recovery_world_space.volume.get_cell(_interactor.remove_cell) == CellVolume.EMPTY
+	):
+		_last_event = "structural seam blocked: point at ordinary WORLD Matter"
+		return false
+	return _c6_request_structural_seam_near_cell(_interactor.remove_cell)
+
+
+func request_c6_structural_seam_near_cell_for_test(cell: Vector3i) -> bool:
+	return _c6_request_structural_seam_near_cell(cell)
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("p1_structural_seam") and not _is_echo_key_event(event):
+		var viewport := get_viewport()
+		if viewport != null:
+			request_c6_structural_seam_at_screen(viewport.get_mouse_position())
+			viewport.set_input_as_handled()
+		return
+
 	if event is InputEventKey:
 		var key := event as InputEventKey
 		if key.pressed and not key.echo:
@@ -146,6 +215,7 @@ func _apply_c1_scale_probe(scale_factor: float, reset_world: bool) -> void:
 
 
 func _initialize_space() -> void:
+	_c6_reset_relation_state()
 	_clear_pending_storage_place()
 	_clear_pending_causal_actor_handoff()
 	_pending_recovery_source_connected_after_partition = false
@@ -270,6 +340,13 @@ func _toggle_focused_space_state() -> bool:
 	if _focus_space == _recovery_world_space:
 		_last_event = "world Matter stays canonical; detach Matter by editing support"
 		return false
+	if (
+		not _c6_relation.is_empty()
+		and _c6_relation_host_space != null
+		and _focus_space == _c6_relation_host_space
+	):
+		_last_event = "structural relation owns this dynamic regime; provider toggle blocked in C6"
+		return false
 	return super._toggle_focused_space_state()
 
 
@@ -293,6 +370,7 @@ func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, mode: int, split_
 	_last_recovery_policy_mode = "none"
 	_last_recovery_policy_visited_cells = 0
 	super._on_edit_applied(space, cell, mode, split_queued)
+	_c6_reconcile_relation_truth("live Matter edit")
 	if space != _recovery_world_space or _recovery_world_space == null:
 		return
 
@@ -448,6 +526,7 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 	_last_recovery_publication_timing = {}
 	var target := result.get("target_space") as LocalMatterSpace
 	if target == null or not is_instance_valid(target):
+		_c6_pending_relation.clear()
 		_clear_pending_causal_actor_handoff()
 		_last_event = "causal transfer committed without live target"
 		_last_recovery_partition_publication_usec = Time.get_ticks_usec() - publication_started_usec
@@ -460,6 +539,12 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 			"total_usec": _last_recovery_partition_publication_usec,
 		}
 		return
+
+	var c6_relation_manifested := false
+	if not _c6_pending_relation.is_empty():
+		c6_relation_manifested = _c6_manifest_pending_relation(result, target)
+		if not c6_relation_manifested:
+			push_error("C6 structural relation failed to manifest inside authority commit")
 
 	var actor_started_usec := Time.get_ticks_usec()
 	var actor_transferred := false
@@ -526,9 +611,17 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 	_refresh_camera_context()
 	var focus_camera_usec := Time.get_ticks_usec() - focus_camera_started_usec
 	_last_event = (
-		"world Matter detached → riding fresh dynamic Space"
-		if actor_transferred
-		else "world Matter detached → fresh dynamic Space"
+		"structural seam → riding passive dynamic relation"
+		if c6_relation_manifested and actor_transferred
+		else (
+			"structural seam → passive dynamic relation"
+			if c6_relation_manifested
+			else (
+				"world Matter detached → riding fresh dynamic Space"
+				if actor_transferred
+				else "world Matter detached → fresh dynamic Space"
+			)
+		)
 	)
 	_last_recovery_partition_publication_usec = Time.get_ticks_usec() - publication_started_usec
 	_last_recovery_publication_timing = {
@@ -543,11 +636,34 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 
 func _on_registry_storage_rebased(space: LocalMatterSpace, report: Dictionary) -> void:
 	super._on_registry_storage_rebased(space, report)
-	if space != _recovery_world_space:
-		return
-	var local_shift: Vector3i = report.get("local_shift", Vector3i.ZERO)
-	for index in range(_recovery_anchor_cells_current.size()):
-		_recovery_anchor_cells_current[index] += local_shift
+	if space == _recovery_world_space:
+		var local_shift: Vector3i = report.get("local_shift", Vector3i.ZERO)
+		for index in range(_recovery_anchor_cells_current.size()):
+			_recovery_anchor_cells_current[index] += local_shift
+	if (
+		not _c6_relation.is_empty()
+		and (space == _recovery_world_space or space == _c6_relation_host_space)
+	):
+		_c6_reconcile_relation_truth("storage-frame rebase")
+
+
+func _on_registry_split_committed(source: LocalMatterSpace, result: LocalMatterSplitResult) -> void:
+	var relation_source_split := (
+		not _c6_relation.is_empty()
+		and _c6_relation_host_space == source
+	)
+	super._on_registry_split_committed(source, result)
+	if relation_source_split:
+		_c6_reconcile_relation_truth("topology succession")
+
+
+func _on_registry_provider_changed(space: LocalMatterSpace) -> void:
+	super._on_registry_provider_changed(space)
+	if (
+		not _c6_relation.is_empty()
+		and (space == _recovery_world_space or space == _c6_relation_host_space)
+	):
+		_c6_reconcile_relation_truth("provider replacement")
 
 
 func _clear_pending_causal_actor_handoff() -> void:
@@ -555,6 +671,409 @@ func _clear_pending_causal_actor_handoff() -> void:
 	_pending_causal_actor_local_center = Vector3.ZERO
 	_pending_causal_actor_witness_cell = Vector3i.ZERO
 	_pending_causal_actor_witness_token = MatterLineageMap.NONE
+
+
+# --- Convergence C6 bounded structural-seam experiment -----------------------
+
+func _c6_request_structural_seam_near_cell(target_cell: Vector3i) -> bool:
+	_c6_last_authoring_result = {}
+	if _recovery_world_space == null or _recovery_world_space.volume == null or _recovery_world_space.lineage == null:
+		_last_event = "structural seam blocked: WORLD unavailable"
+		return false
+	if not _c6_relation.is_empty() or not _c6_pending_relation.is_empty():
+		_last_event = "structural seam blocked: C6 supports one live relation"
+		return false
+	if _recovery_world_space.is_authority_partition_pending():
+		_last_event = "structural seam blocked: authority transaction pending"
+		return false
+	if (
+		not _recovery_world_space.volume.in_bounds(target_cell)
+		or _recovery_world_space.volume.get_cell(target_cell) == CellVolume.EMPTY
+	):
+		_last_event = "structural seam blocked: target is not live Matter"
+		return false
+
+	var candidates: Array = []
+	for offset in MatterTopology.AXIAL_NEIGHBORS:
+		# C6's first Owner-facing dialect is intentionally horizontal only. The
+		# axis is then an unambiguous horizontal tangent and the hinge is placed
+		# along the lower interface edge so real WORLD collision need not be
+		# globally disabled merely to obtain passive rotation.
+		if offset.y != 0:
+			continue
+		var neighbor := target_cell + offset
+		if (
+			not _recovery_world_space.volume.in_bounds(neighbor)
+			or _recovery_world_space.volume.get_cell(neighbor) == CellVolume.EMPTY
+		):
+			continue
+		var candidate := _c6_build_seam_candidate(target_cell, neighbor)
+		if not candidate.is_empty():
+			candidates.append(candidate)
+
+	_c6_last_authoring_result = {
+		"target_cell": target_cell,
+		"candidate_count": candidates.size(),
+	}
+	if candidates.size() != 1:
+		_last_event = (
+			"structural seam blocked: no separable adjacency"
+			if candidates.is_empty()
+			else "structural seam blocked: ambiguous neck (%d candidates)" % candidates.size()
+		)
+		return false
+
+	var candidate: Dictionary = candidates[0]
+	var selected: Array[Vector3i] = []
+	for cell_variant in candidate.get("selected_cells", []):
+		selected.append(cell_variant)
+	_prepare_causal_actor_handoff(selected)
+
+	_c6_pending_relation = {
+		"world_lineage": int(candidate["world_lineage"]),
+		"island_lineage": int(candidate["island_lineage"]),
+		"world_to_island_offset": candidate["world_to_island_offset"],
+		"axis_world_local": candidate["axis_world_local"],
+	}
+	_pending_recovery_source_connected_after_partition = true
+	var request_started_usec := Time.get_ticks_usec()
+	var accepted := _recovery_world_space.request_authority_partition(
+		selected,
+		LocalMatterSpace.ProviderKind.DYNAMIC
+	)
+	_last_recovery_partition_request_usec = Time.get_ticks_usec() - request_started_usec
+	if not accepted:
+		_c6_pending_relation.clear()
+		_pending_recovery_source_connected_after_partition = false
+		_clear_pending_causal_actor_handoff()
+		_last_event = "structural seam authority composition rejected"
+		return false
+
+	_c6_last_authoring_result["accepted"] = true
+	_c6_last_authoring_result["selected_cells"] = selected.size()
+	_c6_last_authoring_result["world_lineage"] = int(candidate["world_lineage"])
+	_c6_last_authoring_result["island_lineage"] = int(candidate["island_lineage"])
+	_last_event = "structural seam queued from local Matter law"
+	return true
+
+
+func _c6_build_seam_candidate(cell_a: Vector3i, cell_b: Vector3i) -> Dictionary:
+	var token_a := _recovery_world_space.lineage.get_lineage(cell_a)
+	var token_b := _recovery_world_space.lineage.get_lineage(cell_b)
+	if (
+		token_a == MatterLineageMap.NONE
+		or token_b == MatterLineageMap.NONE
+		or token_a == token_b
+	):
+		return {}
+
+	var result := C2RigidConnectivityChallenger.extract_rigid_components(
+		_recovery_world_space.volume,
+		_recovery_world_space.lineage,
+		[{"a": token_a, "b": token_b}]
+	)
+	if not bool(result.get("valid", false)):
+		return {}
+	var components: Array = result.get("components", [])
+	if components.size() != 2:
+		return {}
+
+	var anchored_component: Array = []
+	var unanchored_component: Array = []
+	for component_variant in components:
+		var component: Array = component_variant
+		if _c6_component_has_recovery_anchor(component):
+			if not anchored_component.is_empty():
+				return {}
+			anchored_component = component
+		else:
+			if not unanchored_component.is_empty():
+				return {}
+			unanchored_component = component
+	if anchored_component.is_empty() or unanchored_component.is_empty():
+		return {}
+
+	var a_anchored := anchored_component.has(cell_a)
+	var b_anchored := anchored_component.has(cell_b)
+	if a_anchored == b_anchored:
+		return {}
+
+	var world_cell := cell_a if a_anchored else cell_b
+	var island_cell := cell_b if a_anchored else cell_a
+	var offset := island_cell - world_cell
+	if absi(offset.x) + absi(offset.y) + absi(offset.z) != 1 or offset.y != 0:
+		return {}
+
+	var selected: Array[Vector3i] = []
+	for cell_variant in unanchored_component:
+		selected.append(cell_variant)
+	if selected.is_empty() or not selected.has(island_cell):
+		return {}
+
+	return {
+		"selected_cells": selected,
+		"world_lineage": _recovery_world_space.lineage.get_lineage(world_cell),
+		"island_lineage": _recovery_world_space.lineage.get_lineage(island_cell),
+		"world_to_island_offset": offset,
+		"axis_world_local": _c6_axis_for_interface(offset),
+	}
+
+
+func _c6_component_has_recovery_anchor(component: Array) -> bool:
+	for cell_variant in component:
+		var cell: Vector3i = cell_variant
+		var token := _recovery_world_space.lineage.get_lineage(cell)
+		if token != MatterLineageMap.NONE and _recovery_anchor_tokens.has(token):
+			return true
+	return false
+
+
+func _c6_axis_for_interface(offset: Vector3i) -> Vector3:
+	var normal := Vector3(offset).normalized()
+	var axis := Vector3.UP.cross(normal)
+	if axis.length_squared() < 0.5:
+		axis = Vector3.RIGHT
+	return axis.normalized()
+
+
+func _c6_manifest_pending_relation(result: Dictionary, target: LocalMatterSpace) -> bool:
+	if _c6_pending_relation.is_empty() or target == null or not is_instance_valid(target):
+		return false
+	var body := target.get_active_provider() as ConstructBody
+	if body == null:
+		return false
+	var world_token := int(_c6_pending_relation.get("world_lineage", MatterLineageMap.NONE))
+	var island_token := int(_c6_pending_relation.get("island_lineage", MatterLineageMap.NONE))
+	if _c6_find_lineage_cell(_recovery_world_space, world_token).is_empty():
+		return false
+	if _c6_find_lineage_cell(target, island_token).is_empty():
+		return false
+
+	var frame := _c6_resolve_world_relation_frame(_c6_pending_relation)
+	if frame.is_empty():
+		return false
+
+	_c6_relation = _c6_pending_relation.duplicate(true)
+	_c6_pending_relation.clear()
+	_c6_relation_host_space = target
+	_c6_relation_joint = HingeJoint3D.new()
+	_c6_relation_joint.name = "C6PassiveStructuralRelation"
+	add_child(_c6_relation_joint)
+	_c6_relation_joint.global_transform = Transform3D(
+		_c6_basis_with_z_axis(frame["axis_world"]),
+		frame["anchor_world"]
+	)
+	_c6_relation_joint.node_b = _c6_relation_joint.get_path_to(body)
+	_c6_relation_joint.exclude_nodes_from_collision = true
+	_c6_relation_install_physics_frame = Engine.get_physics_frames()
+	_c6_relation_rebind_count = 0
+	_c6_update_relation_marker()
+	return true
+
+
+func _c6_reconcile_relation_truth(context: String) -> void:
+	if _c6_relation.is_empty():
+		return
+	var world_token := int(_c6_relation.get("world_lineage", MatterLineageMap.NONE))
+	var island_token := int(_c6_relation.get("island_lineage", MatterLineageMap.NONE))
+	if _c6_find_lineage_cell(_recovery_world_space, world_token).is_empty():
+		_c6_kill_relation("%s: WORLD endpoint Matter died" % context)
+		return
+
+	var owner := _c6_find_unique_space_for_lineage(island_token)
+	if owner == null or owner == _recovery_world_space:
+		_c6_kill_relation("%s: island endpoint Matter died or lost unique authority" % context)
+		return
+
+	var body := owner.get_active_provider() as ConstructBody
+	if body == null:
+		_c6_kill_relation("%s: island endpoint no longer has dynamic authority" % context)
+		return
+
+	var needs_rebind := (
+		_c6_relation_host_space != owner
+		or _c6_relation_joint == null
+		or not is_instance_valid(_c6_relation_joint)
+		or _c6_relation_joint.node_b != _c6_relation_joint.get_path_to(body)
+	)
+	if needs_rebind:
+		if not _c6_rebind_relation_host(owner):
+			_c6_kill_relation("%s: host rebind failed" % context)
+			return
+	else:
+		_c6_update_relation_marker()
+
+
+func _c6_rebind_relation_host(owner: LocalMatterSpace) -> bool:
+	if _c6_relation.is_empty() or owner == null or not is_instance_valid(owner):
+		return false
+	var body := owner.get_active_provider() as ConstructBody
+	if body == null:
+		return false
+	var frame := _c6_resolve_world_relation_frame(_c6_relation)
+	if frame.is_empty():
+		return false
+
+	if _c6_relation_joint == null or not is_instance_valid(_c6_relation_joint):
+		_c6_relation_joint = HingeJoint3D.new()
+		_c6_relation_joint.name = "C6PassiveStructuralRelation"
+		add_child(_c6_relation_joint)
+		_c6_relation_joint.exclude_nodes_from_collision = true
+	_c6_relation_joint.global_transform = Transform3D(
+		_c6_basis_with_z_axis(frame["axis_world"]),
+		frame["anchor_world"]
+	)
+	_c6_relation_joint.force_update_transform()
+	_c6_relation_joint.node_b = _c6_relation_joint.get_path_to(body)
+	_c6_relation_host_space = owner
+	_c6_relation_rebind_count += 1
+	_c6_update_relation_marker()
+	return true
+
+
+func _c6_find_unique_space_for_lineage(token: int) -> LocalMatterSpace:
+	if token == MatterLineageMap.NONE:
+		return null
+	var found: LocalMatterSpace
+	for space in _registry.get_active_spaces():
+		if _c6_find_lineage_cell(space, token).is_empty():
+			continue
+		if found != null:
+			return null
+		found = space
+	return found
+
+
+func _c6_find_lineage_cell(space: LocalMatterSpace, token: int) -> Dictionary:
+	if (
+		space == null
+		or not is_instance_valid(space)
+		or space.is_retired()
+		or space.volume == null
+		or space.lineage == null
+		or token == MatterLineageMap.NONE
+	):
+		return {}
+	for z in range(space.lineage.size.z):
+		for y in range(space.lineage.size.y):
+			for x in range(space.lineage.size.x):
+				var cell := Vector3i(x, y, z)
+				if space.lineage.get_lineage(cell) == token:
+					return {"cell": cell}
+	return {}
+
+
+func _c6_resolve_world_relation_frame(relation: Dictionary) -> Dictionary:
+	if _recovery_world_space == null or _recovery_world_space.get_active_provider() == null:
+		return {}
+	var world_token := int(relation.get("world_lineage", MatterLineageMap.NONE))
+	var cell_result := _c6_find_lineage_cell(_recovery_world_space, world_token)
+	if cell_result.is_empty():
+		return {}
+	var world_cell: Vector3i = cell_result["cell"]
+	var offset: Vector3i = relation.get("world_to_island_offset", Vector3i.ZERO)
+	var axis_local: Vector3 = relation.get("axis_world_local", Vector3.ZERO)
+	if absi(offset.x) + absi(offset.y) + absi(offset.z) != 1 or axis_local.length_squared() < 0.5:
+		return {}
+
+	var provider := _recovery_world_space.get_active_provider()
+	# Lower-edge hinge: with a horizontal seam this lets the gravity-driven arm
+	# open away from ordinary WORLD collision instead of requiring global collision
+	# suppression as the C4 isolation probe did.
+	var anchor_local := (
+		Vector3(world_cell)
+		+ Vector3(0.5, 0.5, 0.5)
+		+ Vector3(offset) * 0.5
+		- Vector3.UP * 0.5
+	)
+	return {
+		"anchor_world": provider.to_global(anchor_local),
+		"axis_world": (provider.global_basis * axis_local).normalized(),
+	}
+
+
+func _c6_resolve_island_anchor_local(space: LocalMatterSpace) -> Dictionary:
+	if _c6_relation.is_empty():
+		return {}
+	var island_token := int(_c6_relation.get("island_lineage", MatterLineageMap.NONE))
+	var cell_result := _c6_find_lineage_cell(space, island_token)
+	if cell_result.is_empty():
+		return {}
+	var island_cell: Vector3i = cell_result["cell"]
+	var offset: Vector3i = _c6_relation.get("world_to_island_offset", Vector3i.ZERO)
+	return {
+		"cell": island_cell,
+		"anchor_local": (
+			Vector3(island_cell)
+			+ Vector3(0.5, 0.5, 0.5)
+			- Vector3(offset) * 0.5
+			- Vector3.UP * 0.5
+		),
+	}
+
+
+func _c6_update_relation_marker() -> void:
+	if _c6_relation.is_empty():
+		if _c6_relation_marker != null and is_instance_valid(_c6_relation_marker):
+			_c6_relation_marker.free()
+		_c6_relation_marker = null
+		return
+	var frame := _c6_resolve_world_relation_frame(_c6_relation)
+	if frame.is_empty():
+		return
+	if _c6_relation_marker == null or not is_instance_valid(_c6_relation_marker):
+		_c6_relation_marker = MeshInstance3D.new()
+		_c6_relation_marker.name = "C6StructuralSeamMarker"
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(C6_SEAM_MARKER_THICKNESS, C6_SEAM_MARKER_THICKNESS, C6_SEAM_MARKER_LENGTH)
+		_c6_relation_marker.mesh = mesh
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color(0.18, 0.88, 1.0, 1.0)
+		material.emission_enabled = true
+		material.emission = Color(0.04, 0.45, 0.62, 1.0)
+		material.emission_energy_multiplier = 1.2
+		_c6_relation_marker.material_override = material
+		_c6_relation_marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_c6_relation_marker)
+	_c6_relation_marker.global_transform = Transform3D(
+		_c6_basis_with_z_axis(frame["axis_world"]),
+		frame["anchor_world"]
+	)
+
+
+func _c6_basis_with_z_axis(axis: Vector3) -> Basis:
+	var z := axis.normalized()
+	var helper := Vector3.UP if absf(z.dot(Vector3.UP)) < 0.95 else Vector3.RIGHT
+	var x := helper.cross(z).normalized()
+	var y := z.cross(x).normalized()
+	return Basis(x, y, z).orthonormalized()
+
+
+func _c6_kill_relation(reason: String) -> void:
+	if _c6_relation_joint != null and is_instance_valid(_c6_relation_joint):
+		_c6_relation_joint.free()
+	_c6_relation_joint = null
+	if _c6_relation_marker != null and is_instance_valid(_c6_relation_marker):
+		_c6_relation_marker.free()
+	_c6_relation_marker = null
+	_c6_relation.clear()
+	_c6_relation_host_space = null
+	_last_event = "structural relation ended: %s" % reason
+
+
+func _c6_reset_relation_state() -> void:
+	if _c6_relation_joint != null and is_instance_valid(_c6_relation_joint):
+		_c6_relation_joint.free()
+	if _c6_relation_marker != null and is_instance_valid(_c6_relation_marker):
+		_c6_relation_marker.free()
+	_c6_relation_joint = null
+	_c6_relation_marker = null
+	_c6_relation_host_space = null
+	_c6_pending_relation.clear()
+	_c6_relation.clear()
+	_c6_relation_install_physics_frame = -1
+	_c6_relation_rebind_count = 0
+	_c6_last_authoring_result = {}
 
 
 func _refresh_camera_context() -> void:
