@@ -33,6 +33,7 @@ on:
       - "tests/p1_presentation_packed_key_probe.gd"
       - "tests/p1_presentation_granularity_probe.gd"
       - "tests/p1_presentation_runtime_granularity_probe.gd"
+      - "tests/p1_presentation_spatial_sweep_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -166,6 +167,10 @@ jobs:
       - name: Characterize runtime presentation granularity
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_presentation_runtime_granularity_probe.gd -PassMarker P1_PRESENTATION_RUNTIME_GRANULARITY_PASS
+
+      - name: Characterize spatial presentation granularity
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_presentation_spatial_sweep_probe.gd -PassMarker P1_PRESENTATION_SPATIAL_SWEEP_PASS
 
       - name: Verify lightweight W0 topology component equivalence
         shell: pwsh
