@@ -33,6 +33,7 @@ var _pending_causal_actor_witness_token := MatterLineageMap.NONE
 var _last_recovery_policy_usec := 0
 var _last_recovery_partition_request_usec := 0
 var _last_recovery_partition_publication_usec := 0
+var _last_recovery_publication_timing: Dictionary = {}
 
 
 func _ready() -> void:
@@ -65,6 +66,10 @@ func get_last_recovery_partition_request_usec() -> int:
 
 func get_last_recovery_partition_publication_usec() -> int:
 	return _last_recovery_partition_publication_usec
+
+
+func get_last_recovery_publication_timing() -> Dictionary:
+	return _last_recovery_publication_timing.duplicate(true)
 
 
 func _initialize_space() -> void:
@@ -256,13 +261,23 @@ func _prepare_causal_actor_handoff(selected_cells: Array[Vector3i]) -> void:
 
 func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 	var publication_started_usec := Time.get_ticks_usec()
+	_last_recovery_publication_timing = {}
 	var target := result.get("target_space") as LocalMatterSpace
 	if target == null or not is_instance_valid(target):
 		_clear_pending_causal_actor_handoff()
 		_last_event = "causal transfer committed without live target"
 		_last_recovery_partition_publication_usec = Time.get_ticks_usec() - publication_started_usec
+		_last_recovery_publication_timing = {
+			"actor_handoff_usec": 0,
+			"source_grid_usec": 0,
+			"source_state_usec": 0,
+			"registry_usec": 0,
+			"focus_camera_usec": 0,
+			"total_usec": _last_recovery_partition_publication_usec,
+		}
 		return
 
+	var actor_started_usec := Time.get_ticks_usec()
 	var actor_transferred := false
 	if _pending_causal_actor_handoff:
 		var source_origin: Vector3i = result.get("source_origin", Vector3i.ZERO)
@@ -278,6 +293,7 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 				target.get_active_provider(),
 				mapped_actor_local
 			)
+	var actor_handoff_usec := Time.get_ticks_usec() - actor_started_usec
 
 	# The source authority already committed above. Recovery WORLD uses chunked
 	# derived representation, so update exactly the transferred source cells
@@ -287,30 +303,49 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 	var transferred_source_cells: Array[Vector3i] = []
 	for candidate in result.get("source_cells", []):
 		transferred_source_cells.append(candidate)
+	var source_grid_usec := 0
+	var source_state_usec := 0
 	if not transferred_source_cells.is_empty():
 		var grid := get_node_or_null("P1MatterSurfaceGrid") as P1MatterSurfaceGrid
 		var state_presentation := get_node_or_null("P1MatterStatePresentation") as P1MatterStatePresentation
 		if grid != null:
+			var grid_started_usec := Time.get_ticks_usec()
 			grid.refresh_cells(_recovery_world_space, transferred_source_cells)
+			source_grid_usec = Time.get_ticks_usec() - grid_started_usec
 		if state_presentation != null:
+			var state_started_usec := Time.get_ticks_usec()
 			state_presentation.refresh_cells(_recovery_world_space, transferred_source_cells)
+			source_state_usec = Time.get_ticks_usec() - state_started_usec
 
 	# Registry publication happens only after the complete authority commit,
 	# optional exact actor handoff and source derived-state catch-up, so
 	# presentation consumers never observe a half-owned frame.
+	var registry_started_usec := Time.get_ticks_usec()
 	_registry.register_space(target)
+	var registry_usec := Time.get_ticks_usec() - registry_started_usec
+
+	var focus_camera_started_usec := Time.get_ticks_usec()
 	if actor_transferred:
 		_focus_space = target
 	else:
 		_focus_space = _recovery_world_space
 	_clear_pending_causal_actor_handoff()
 	_refresh_camera_context()
+	var focus_camera_usec := Time.get_ticks_usec() - focus_camera_started_usec
 	_last_event = (
 		"world Matter detached → riding fresh dynamic Space"
 		if actor_transferred
 		else "world Matter detached → fresh dynamic Space"
 	)
 	_last_recovery_partition_publication_usec = Time.get_ticks_usec() - publication_started_usec
+	_last_recovery_publication_timing = {
+		"actor_handoff_usec": actor_handoff_usec,
+		"source_grid_usec": source_grid_usec,
+		"source_state_usec": source_state_usec,
+		"registry_usec": registry_usec,
+		"focus_camera_usec": focus_camera_usec,
+		"total_usec": _last_recovery_partition_publication_usec,
+	}
 
 
 func _clear_pending_causal_actor_handoff() -> void:

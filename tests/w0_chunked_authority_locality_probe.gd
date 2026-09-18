@@ -92,8 +92,9 @@ func _run() -> void:
 	_check(player.support_space == target and player.support_body == target.get_active_provider(), "actor handoff still resolves to detached target after local authority commit")
 
 	var timing: Dictionary = result.get("timing", {})
+	var publication_parts: Dictionary = root.call("get_last_recovery_publication_timing")
 	print(
-		"W0_CHUNKED_AUTHORITY_LOCALITY_METRIC transferred=%d changed_mesh=%d changed_collision=%d changed_grid=%d changed_state=%d source_rebuild_us=%d publication_us=%d source_mesh_chunks=%d source_shapes=%d"
+		"W0_CHUNKED_AUTHORITY_LOCALITY_METRIC transferred=%d changed_mesh=%d changed_collision=%d changed_grid=%d changed_state=%d source_rebuild_us=%d publication_us=%d actor_handoff_us=%d source_grid_us=%d source_state_us=%d registry_us=%d focus_camera_us=%d source_mesh_chunks=%d source_shapes=%d"
 		% [
 			(result.get("source_cells", []) as Array).size(),
 			changed_mesh,
@@ -102,6 +103,11 @@ func _run() -> void:
 			changed_state,
 			int(timing.get("source_rebuild_usec", -1)),
 			int(root.call("get_last_recovery_partition_publication_usec")),
+			int(publication_parts.get("actor_handoff_usec", -1)),
+			int(publication_parts.get("source_grid_usec", -1)),
+			int(publication_parts.get("source_state_usec", -1)),
+			int(publication_parts.get("registry_usec", -1)),
+			int(publication_parts.get("focus_camera_usec", -1)),
 			mesh_after.size(),
 			provider.get_collision_shape_count(),
 		]

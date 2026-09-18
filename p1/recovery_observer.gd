@@ -476,6 +476,11 @@ func _on_authority_partition_committed(result: Dictionary) -> void:
 		if _host != null and _host.has_method("get_last_recovery_partition_publication_usec")
 		else -1
 	)
+	var publication_parts: Dictionary = (
+		_host.call("get_last_recovery_publication_timing")
+		if _host != null and _host.has_method("get_last_recovery_publication_timing")
+		else {}
+	)
 	_last_authority_timing = {
 		"validation_usec": int(timing.get("validation_usec", -1)),
 		"staging_usec": int(timing.get("staging_usec", -1)),
@@ -483,6 +488,11 @@ func _on_authority_partition_committed(result: Dictionary) -> void:
 		"target_initialize_usec": int(timing.get("target_initialize_usec", -1)),
 		"pre_signal_total_usec": int(timing.get("pre_signal_total_usec", -1)),
 		"recovery_publication_usec": publication_usec,
+		"publication_actor_handoff_usec": int(publication_parts.get("actor_handoff_usec", -1)),
+		"publication_source_grid_usec": int(publication_parts.get("source_grid_usec", -1)),
+		"publication_source_state_usec": int(publication_parts.get("source_state_usec", -1)),
+		"publication_registry_usec": int(publication_parts.get("registry_usec", -1)),
+		"publication_focus_camera_usec": int(publication_parts.get("focus_camera_usec", -1)),
 	}
 	_record("authority_partition_committed", {
 		"target_space_id": target.get_instance_id() if target != null and is_instance_valid(target) else 0,
@@ -493,4 +503,9 @@ func _on_authority_partition_committed(result: Dictionary) -> void:
 		"target_initialize_usec": _last_authority_timing["target_initialize_usec"],
 		"pre_signal_total_usec": _last_authority_timing["pre_signal_total_usec"],
 		"recovery_publication_usec": publication_usec,
+		"publication_actor_handoff_usec": _last_authority_timing["publication_actor_handoff_usec"],
+		"publication_source_grid_usec": _last_authority_timing["publication_source_grid_usec"],
+		"publication_source_state_usec": _last_authority_timing["publication_source_state_usec"],
+		"publication_registry_usec": _last_authority_timing["publication_registry_usec"],
+		"publication_focus_camera_usec": _last_authority_timing["publication_focus_camera_usec"],
 	})
