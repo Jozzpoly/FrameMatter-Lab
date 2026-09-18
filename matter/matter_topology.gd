@@ -58,6 +58,88 @@ static func extract_connected_cell_components(source: CellVolume) -> Array:
 	return components
 
 
+static func prove_connected_after_single_removal(
+	source_after_removal: CellVolume,
+	removed_cell: Vector3i,
+	max_expanded_cells: int = 256
+) -> Dictionary:
+	# One-sided graph proof. The caller must already know that the source was one
+	# connected component immediately before exactly one occupied cell was
+	# removed. Under that precondition, G-v remains connected iff all surviving
+	# neighbors of v belong to one connected component. This helper may return
+	# inconclusive early; it must never infer a split or fabricate components.
+	if source_after_removal == null:
+		return {"proven_connected": false, "reason": "missing volume", "visited_cells": 0, "occupied_neighbors": 0}
+	if not source_after_removal.in_bounds(removed_cell):
+		return {"proven_connected": false, "reason": "removed cell out of bounds", "visited_cells": 0, "occupied_neighbors": 0}
+	if source_after_removal.get_cell(removed_cell) != CellVolume.EMPTY:
+		return {"proven_connected": false, "reason": "removed cell is still occupied", "visited_cells": 0, "occupied_neighbors": 0}
+	if source_after_removal.count_solid() == 0:
+		return {"proven_connected": false, "reason": "source became empty", "visited_cells": 0, "occupied_neighbors": 0}
+	if max_expanded_cells <= 0:
+		return {"proven_connected": false, "reason": "zero proof budget", "visited_cells": 0, "occupied_neighbors": 0}
+
+	var neighbors: Array[Vector3i] = []
+	for offset in AXIAL_NEIGHBORS:
+		var neighbor := removed_cell + offset
+		if source_after_removal.in_bounds(neighbor) and source_after_removal.get_cell(neighbor) != CellVolume.EMPTY:
+			neighbors.append(neighbor)
+
+	if neighbors.is_empty():
+		# If the caller's prior-connected precondition is true, a zero-degree
+		# removed vertex can only leave an empty graph. A non-empty graph here
+		# means the precondition is not defensible, so fail inconclusive.
+		return {"proven_connected": false, "reason": "no surviving neighbor", "visited_cells": 0, "occupied_neighbors": 0}
+	if neighbors.size() == 1:
+		return {"proven_connected": true, "reason": "single surviving neighbor", "visited_cells": 1, "occupied_neighbors": 1}
+
+	var targets: Dictionary = {}
+	for neighbor in neighbors:
+		targets[neighbor] = true
+	var visited: Dictionary = {}
+	var queue: Array[Vector3i] = [neighbors[0]]
+	var cursor := 0
+	var expanded := 0
+	var reached_targets := 1
+	visited[neighbors[0]] = true
+
+	while cursor < queue.size():
+		if expanded >= max_expanded_cells:
+			return {
+				"proven_connected": false,
+				"reason": "proof budget exhausted",
+				"visited_cells": visited.size(),
+				"occupied_neighbors": neighbors.size(),
+			}
+		var cell: Vector3i = queue[cursor]
+		cursor += 1
+		expanded += 1
+		for offset in AXIAL_NEIGHBORS:
+			var candidate := cell + offset
+			if not source_after_removal.in_bounds(candidate):
+				continue
+			if visited.has(candidate) or source_after_removal.get_cell(candidate) == CellVolume.EMPTY:
+				continue
+			visited[candidate] = true
+			queue.append(candidate)
+			if targets.has(candidate):
+				reached_targets += 1
+				if reached_targets == neighbors.size():
+					return {
+						"proven_connected": true,
+						"reason": "all surviving neighbors reconnected",
+						"visited_cells": visited.size(),
+						"occupied_neighbors": neighbors.size(),
+					}
+
+	return {
+		"proven_connected": false,
+		"reason": "surviving neighbors are disconnected",
+		"visited_cells": visited.size(),
+		"occupied_neighbors": neighbors.size(),
+	}
+
+
 static func cells_form_single_component(cells: Array[Vector3i]) -> bool:
 	if cells.is_empty():
 		return false
