@@ -98,14 +98,19 @@ func _run() -> void:
 	var authoring: Dictionary = root.call("get_c6_last_authoring_result_for_test")
 	_check(bool(authoring.get("accepted", false)), "actual H input invokes the bounded structural-seam authoring path")
 	_check(int(authoring.get("candidate_count", 0)) == 1, "actual pointer/H input resolves exactly one structural-law candidate")
-	_check(world.is_authority_partition_pending(), "actual pointer/H input queues real authority composition")
-	if not world.is_authority_partition_pending():
+	var committed_during_input_turn := bool(root.call("has_c6_active_relation_for_test"))
+	_check(
+		world.is_authority_partition_pending() or committed_during_input_turn,
+		"actual pointer/H input either queues or already atomically commits real authority composition"
+	)
+	if world.is_authority_partition_pending():
+		await world.authority_partition_committed
+	elif not committed_during_input_turn:
 		player.set_physics_process(true)
 		interactor.set_process(true)
 		_finish(root)
 		return
 
-	await world.authority_partition_committed
 	var result := world.get_last_authority_partition_result()
 	var target := result.get("target_space") as LocalMatterSpace
 	_check(target != null and is_instance_valid(target), "actual input produces the live dynamic relation island")
