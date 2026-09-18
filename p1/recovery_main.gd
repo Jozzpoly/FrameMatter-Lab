@@ -152,17 +152,29 @@ func _initialize_space() -> void:
 	_recovery_anchor_cells_current.clear()
 	for anchor_cell in RECOVERY_ANCHOR_CELLS:
 		_recovery_anchor_cells_current.append(anchor_cell)
+
+	# World replacement is a lifecycle transaction. Clear every consumer-facing
+	# typed reference before registry callbacks or old Space nodes can retire.
+	_focus_space = null
+	_recovery_demo_space = null
+	_recovery_world_space = null
+	if _player != null:
+		_player.clear_support_for_world_reset()
+	if _camera_rig != null:
+		_camera_rig.set_context_target(null)
+	var state_presentation := get_node_or_null("P1MatterStatePresentation") as P1MatterStatePresentation
+	if state_presentation != null:
+		state_presentation.set_focus_space(null)
+
 	_registry.clear()
 	for child in $Spaces.get_children():
 		child.free()
 
-	_recovery_demo_space = null
 	_recovery_world_space = _build_world_matter_space()
 	# Presentation granularity is intentionally decoupled from physics-provider
 	# granularity. Edge 7 won the spatial/lifecycle tradeoff while the static
 	# physics provider remains edge 8 to avoid collision-shape inflation.
 	var surface_grid := get_node_or_null("P1MatterSurfaceGrid") as P1MatterSurfaceGrid
-	var state_presentation := get_node_or_null("P1MatterStatePresentation") as P1MatterStatePresentation
 	if surface_grid != null:
 		surface_grid.chunk_edge_override = RECOVERY_PRESENTATION_CHUNK_EDGE
 	if state_presentation != null:
