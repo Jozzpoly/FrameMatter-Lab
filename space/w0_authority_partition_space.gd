@@ -154,7 +154,14 @@ func _commit_authority_partition() -> void:
 	volume = source_after_volume
 	lineage = source_after_lineage
 	if source_provider is MatterRepresentation:
-		(source_provider as MatterRepresentation).set_volume(source_after_volume)
+		var representation := source_provider as MatterRepresentation
+		if representation.chunk_edge > 0 and representation.volume != null and representation.volume.size == source_after_volume.size:
+			representation.set_volume_dirty_cells(
+				source_after_volume,
+				_pending_authority_partition_cells
+			)
+		else:
+			representation.set_volume(source_after_volume)
 	elif source_provider is ConstructBody:
 		(source_provider as ConstructBody).set_volume(source_after_volume)
 	else:

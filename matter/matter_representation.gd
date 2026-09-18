@@ -19,6 +19,41 @@ func set_volume(new_volume: CellVolume) -> void:
 	rebuild()
 
 
+func set_volume_dirty_cells(new_volume: CellVolume, dirty_cells: Array[Vector3i]) -> void:
+	assert(new_volume != null)
+	_ensure_nodes()
+	var can_rebuild_locally := (
+		chunk_edge > 0
+		and volume != null
+		and volume.size == new_volume.size
+		and not _mesh_chunks.is_empty()
+		and not _collision_chunks.is_empty()
+		and not dirty_cells.is_empty()
+	)
+	volume = new_volume
+	if not can_rebuild_locally:
+		rebuild()
+		return
+
+	var started_usec := Time.get_ticks_usec()
+	_mesh_instance.mesh = null
+	_mesh_instance.visible = false
+	var dirty_mesh_origins: Dictionary = {}
+	var dirty_collision_origins: Dictionary = {}
+	for cell in dirty_cells:
+		if not volume.in_bounds(cell):
+			rebuild()
+			return
+		for origin in _dirty_mesh_chunk_origins(cell):
+			dirty_mesh_origins[origin] = true
+		dirty_collision_origins[_chunk_origin(cell)] = true
+	for origin_variant in dirty_mesh_origins.keys():
+		_rebuild_mesh_chunk(origin_variant)
+	for origin_variant in dirty_collision_origins.keys():
+		_rebuild_collision_chunk(origin_variant)
+	last_rebuild_usec = Time.get_ticks_usec() - started_usec
+
+
 func rebuild() -> void:
 	assert(volume != null)
 	_ensure_nodes()

@@ -110,6 +110,11 @@ func refresh_space(space: LocalMatterSpace) -> void:
 
 
 func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
+	var cells: Array[Vector3i] = [cell]
+	refresh_cells(space, cells)
+
+
+func refresh_cells(space: LocalMatterSpace, cells: Array[Vector3i]) -> void:
 	var started_usec := Time.get_ticks_usec()
 	last_refresh_space_id = (
 		space.get_instance_id()
@@ -121,7 +126,7 @@ func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
 		or not is_instance_valid(space)
 		or space.is_retired()
 		or space.volume == null
-		or not space.volume.in_bounds(cell)
+		or cells.is_empty()
 	):
 		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
@@ -129,20 +134,29 @@ func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
 	if edge <= 0:
 		refresh_space(space)
 		return
+	if space.volume.count_solid() == 0:
+		refresh_space(space)
+		return
 	var provider := space.get_active_provider()
 	var overlay := provider.get_node_or_null(OVERLAY_NAME) as MeshInstance3D
-	if overlay == null or space.volume.count_solid() == 0:
+	if overlay == null:
 		refresh_space(space)
 		return
 	var material := overlay.material_override as StandardMaterial3D
 	if material == null:
 		material = _create_grid_material()
 		overlay.material_override = material
-	for origin in _dirty_chunk_origins(space.volume.size, cell, edge):
-		_install_grid_chunk(overlay, space.volume, origin, edge, material)
+	var dirty_origins: Dictionary = {}
+	for cell in cells:
+		if not space.volume.in_bounds(cell):
+			refresh_space(space)
+			return
+		for origin in _dirty_chunk_origins(space.volume.size, cell, edge):
+			dirty_origins[origin] = true
+	for origin_variant in dirty_origins.keys():
+		_install_grid_chunk(overlay, space.volume, origin_variant, edge, material)
 	_overlay_signatures[space.get_instance_id()] = _overlay_signature(space)
 	last_refresh_usec = Time.get_ticks_usec() - started_usec
-
 
 func get_chunk_ids_for_test(space: LocalMatterSpace) -> Dictionary:
 	var result: Dictionary = {}

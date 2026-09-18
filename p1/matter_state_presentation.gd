@@ -114,6 +114,11 @@ func refresh_space(space: LocalMatterSpace) -> void:
 
 
 func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
+	var cells: Array[Vector3i] = [cell]
+	refresh_cells(space, cells)
+
+
+func refresh_cells(space: LocalMatterSpace, cells: Array[Vector3i]) -> void:
 	var started_usec := Time.get_ticks_usec()
 	last_refresh_space_id = (
 		space.get_instance_id()
@@ -123,7 +128,7 @@ func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
 	if (
 		not _is_live_space(space)
 		or space.volume == null
-		or not space.volume.in_bounds(cell)
+		or cells.is_empty()
 	):
 		last_refresh_usec = Time.get_ticks_usec() - started_usec
 		return
@@ -143,8 +148,15 @@ func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
 	if state_material == null:
 		state_material = _create_state_material(space)
 		state_root.material_override = state_material
-	for origin in _dirty_chunk_origins(space.volume.size, cell, edge):
-		_install_state_chunk(state_root, space.volume, origin, edge, state_material)
+	var dirty_origins: Dictionary = {}
+	for cell in cells:
+		if not space.volume.in_bounds(cell):
+			refresh_space(space)
+			return
+		for origin in _dirty_chunk_origins(space.volume.size, cell, edge):
+			dirty_origins[origin] = true
+	for origin_variant in dirty_origins.keys():
+		_install_state_chunk(state_root, space.volume, origin_variant, edge, state_material)
 	_state_signatures[space.get_instance_id()] = _state_signature(space)
 
 	if space == _focus_space:
@@ -156,11 +168,10 @@ func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
 			if focus_material == null:
 				focus_material = _create_focus_material()
 				focus_root.material_override = focus_material
-			for origin in _dirty_chunk_origins(space.volume.size, cell, edge):
-				_install_focus_chunk(focus_root, space.volume, origin, edge, focus_material)
+			for origin_variant in dirty_origins.keys():
+				_install_focus_chunk(focus_root, space.volume, origin_variant, edge, focus_material)
 			_focus_signatures[space.get_instance_id()] = _focus_signature(space)
 	last_refresh_usec = Time.get_ticks_usec() - started_usec
-
 
 func get_state_chunk_ids_for_test(space: LocalMatterSpace) -> Dictionary:
 	return _chunk_ids_for_root(get_state_overlay_for_space(space), "StateChunk_")

@@ -279,9 +279,25 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 				mapped_actor_local
 			)
 
-	# Registry publication happens only after the complete authority commit and
-	# optional exact actor handoff, so presentation consumers never observe a
-	# half-owned frame.
+	# The source authority already committed above. Recovery WORLD uses chunked
+	# derived representation, so update exactly the transferred source cells
+	# before registry publication. This advances presentation signatures to the
+	# new source revision; active_spaces_changed can then add the new target
+	# without forcing a second full WORLD rebuild.
+	var transferred_source_cells: Array[Vector3i] = []
+	for candidate in result.get("source_cells", []):
+		transferred_source_cells.append(candidate)
+	if not transferred_source_cells.is_empty():
+		var grid := get_node_or_null("P1MatterSurfaceGrid") as P1MatterSurfaceGrid
+		var state_presentation := get_node_or_null("P1MatterStatePresentation") as P1MatterStatePresentation
+		if grid != null:
+			grid.refresh_cells(_recovery_world_space, transferred_source_cells)
+		if state_presentation != null:
+			state_presentation.refresh_cells(_recovery_world_space, transferred_source_cells)
+
+	# Registry publication happens only after the complete authority commit,
+	# optional exact actor handoff and source derived-state catch-up, so
+	# presentation consumers never observe a half-owned frame.
 	_registry.register_space(target)
 	if actor_transferred:
 		_focus_space = target

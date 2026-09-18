@@ -27,6 +27,7 @@ on:
       - "tests/p1_chunked_static_provider_probe.gd"
       - "tests/p1_chunked_presentation_feasibility_probe.gd"
       - "tests/p1_chunked_presentation_runtime_probe.gd"
+      - "tests/w0_chunked_authority_locality_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -112,6 +113,10 @@ jobs:
       - name: Verify Owner-facing causal detach and actor ride
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0d_recovery_causal_loop_probe.gd -PassMarker W0D_RECOVERY_CAUSAL_LOOP_PASS
+
+      - name: Verify chunk-local authority detach rebuild
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0_chunked_authority_locality_probe.gd -PassMarker W0_CHUNKED_AUTHORITY_LOCALITY_PASS
 
       - name: Verify authority state deep-clone primitive
         shell: pwsh
