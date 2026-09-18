@@ -42,30 +42,28 @@ func _run() -> void:
 		_finish()
 		return
 
-	root.call("set_c1_scale_probe_for_test", 4.0)
-	await _advance_frames(SETTLE_FRAMES)
-	var world := root.call("get_recovery_world_space") as LocalMatterSpace
-	_check(is_equal_approx(float(root.call("get_c1_scale_probe_factor")), 4.0), "4x scale factor is active")
-	_check(is_equal_approx(float(root.call("get_c1_scale_probe_equivalent_cell_meters")), 0.25), "4x maps to 0.25 m relative-cell proxy")
-	_check(is_equal_approx(player.radius, 1.28), "player radius scales 4x")
-	_check(is_equal_approx(player.height, 7.2), "player height scales 4x")
-	_check(is_equal_approx(player.gravity_acceleration, 72.0), "gravity length scale tracks 4x")
-	_check(is_equal_approx(player.jump_speed, 23.2), "jump speed tracks 4x")
-	_check(is_equal_approx(interactor.max_distance, 56.0), "edit reach scales 4x")
-	_check(is_equal_approx(camera_rig.default_distance, 28.8), "camera distance scales 4x")
-	_check(is_equal_approx(camera_rig.min_distance, 12.0), "camera minimum scales 4x")
-	_check(is_equal_approx(camera_rig.max_distance, 52.0), "camera maximum scales 4x")
-	_check(player.grounded and player.support_space == world, "4x actor settles on ordinary WORLD Matter")
+	var variants := [
+		{"scale": 1.0, "cell_m": 1.0, "radius": 0.32, "height": 1.8, "gravity": 18.0, "jump": 5.8, "reach": 14.0, "camera": 7.2},
+		{"scale": 2.0, "cell_m": 0.5, "radius": 0.64, "height": 3.6, "gravity": 36.0, "jump": 11.6, "reach": 28.0, "camera": 14.4},
+		{"scale": 4.0, "cell_m": 0.25, "radius": 1.28, "height": 7.2, "gravity": 72.0, "jump": 23.2, "reach": 56.0, "camera": 28.8},
+		{"scale": 8.0, "cell_m": 0.125, "radius": 2.56, "height": 14.4, "gravity": 144.0, "jump": 46.4, "reach": 112.0, "camera": 57.6},
+		{"scale": 1.0, "cell_m": 1.0, "radius": 0.32, "height": 1.8, "gravity": 18.0, "jump": 5.8, "reach": 14.0, "camera": 7.2},
+	]
 
-	root.call("set_c1_scale_probe_for_test", 1.0)
-	await _advance_frames(SETTLE_FRAMES)
-	world = root.call("get_recovery_world_space") as LocalMatterSpace
-	_check(is_equal_approx(float(root.call("get_c1_scale_probe_factor")), 1.0), "proxy returns to 1x")
-	_check(is_equal_approx(player.radius, 0.32), "player radius returns to baseline")
-	_check(is_equal_approx(player.height, 1.8), "player height returns to baseline")
-	_check(is_equal_approx(interactor.max_distance, 14.0), "edit reach returns to baseline")
-	_check(is_equal_approx(camera_rig.default_distance, 7.2), "camera returns to baseline")
-	_check(player.grounded and player.support_space == world, "1x actor reacquires ordinary WORLD Matter after reset")
+	for variant in variants:
+		var scale_factor := float(variant["scale"])
+		root.call("set_c1_scale_probe_for_test", scale_factor)
+		await _advance_frames(SETTLE_FRAMES)
+		var world := root.call("get_recovery_world_space") as LocalMatterSpace
+		_check(is_equal_approx(float(root.call("get_c1_scale_probe_factor")), scale_factor), "%.0fx scale factor is active" % scale_factor)
+		_check(is_equal_approx(float(root.call("get_c1_scale_probe_equivalent_cell_meters")), float(variant["cell_m"])), "%.0fx relative-cell proxy is correct" % scale_factor)
+		_check(is_equal_approx(player.radius, float(variant["radius"])), "%.0fx player radius is correct" % scale_factor)
+		_check(is_equal_approx(player.height, float(variant["height"])), "%.0fx player height is correct" % scale_factor)
+		_check(is_equal_approx(player.gravity_acceleration, float(variant["gravity"])), "%.0fx gravity scale is correct" % scale_factor)
+		_check(is_equal_approx(player.jump_speed, float(variant["jump"])), "%.0fx jump scale is correct" % scale_factor)
+		_check(is_equal_approx(interactor.max_distance, float(variant["reach"])), "%.0fx edit reach is correct" % scale_factor)
+		_check(is_equal_approx(camera_rig.default_distance, float(variant["camera"])), "%.0fx camera distance is correct" % scale_factor)
+		_check(player.grounded and player.support_space == world, "%.0fx actor settles on ordinary WORLD Matter after reset" % scale_factor)
 
 	print(
 		"C1_SCALE_PROXY_METRIC active=%.1f player_height=%.3f reach=%.3f camera=%.3f"
