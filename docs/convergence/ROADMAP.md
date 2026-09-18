@@ -114,7 +114,7 @@ Stop condition:
 
 ## C3 — Authority Composition
 
-**Status: ACTIVE**
+**Status: PASS / BOUNDED**
 
 Question:
 
@@ -139,7 +139,7 @@ Stop condition:
 
 ## C4 — Passive Relation
 
-**Status: CONDITIONAL ON C3**
+**Status: ACTIVE**
 
 Question:
 
