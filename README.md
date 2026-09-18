@@ -2,91 +2,168 @@
 
 Research lab for an editable systemic-world substrate where local Matter can become static or dynamic physical space **without logical identity collapsing into engine representation**.
 
-This repository is intentionally **not** a Minecraft clone, vehicle game, portal demo, or final engine architecture. It exists to produce falsifiable evidence for the smallest substrate that could later support those directions.
+This repository is intentionally **not** a Minecraft clone, vehicle game, portal demo or final engine architecture. It exists to produce falsifiable evidence for the smallest substrate that could later support those directions.
 
 ## North star
 
 > Build an editable systemic-world substrate where local Matter, moving/static frames, actors and mechanisms can compose without logical identity being defined by render/physics objects.
 
-Long-term product pressure remains deliberately simple:
+Recurring product pressure:
 
-> walk → dig/build → activate a local Space → ride it → edit it while moving → use one simple mechanism → inspect/debug the consequences.
+> walk → dig/build → activate/release a local Space → ride it → edit it while moving → use a simple mechanism → understand/debug the consequences.
 
-That is a recurring pressure test, not a promise to build those features in sequence.
+For Owner-facing work, the visible/interactive surface is part of the research instrument. The Owner does not experience thousands of lines of substrate code; the Owner experiences the pixels, controls and causal feedback produced by that substrate.
 
 ## Current live state
 
-The repository now has defended evidence across several layers:
+The canonical branch scene is P1:
 
-- logical `CellVolume` Matter regenerates disposable mesh/collision representation,
-- the same logical Matter can be hosted by static or dynamic providers while logical `LocalMatterSpace` identity remains stable,
-- moving constructs survive live occupancy edits with Matter-derived mass/COM/inertia refresh,
-- actor support can remain a logical-Space relation through static↔dynamic provider replacement,
-- one logical moving Space can retire into compact topology successors with retained Matter lineage/world/velocity-field continuity,
-- independent frames can remain distinct while mechanically constrained; bounded joint state can survive split/partition/contraction cases,
-- exact merged-cuboid collision removed the demonstrated one-shape-per-cell scale bottleneck in dense/shell cases,
-- post-R1 profiling shows full mesh/cuboid/COM derivation—not installing a handful of merged shapes—now dominates representative full rebuilds,
-- bounded derived-region experiments prove strong edit locality is possible without making regions logical identity, but naive fixed regions can badly inflate final collider partitions,
-- the real LAB composes an embodied actor, direct selected-cell Matter remove/place, static→dynamic ride/walk, moving edit and freeze through the shared runtime,
-- the first direct Owner run confirmed that this loop can be exercised but exposed severe prototype interaction/readability friction rather than a demonstrated substrate failure,
-- P0.5 now wraps the same defended consumer with a closer orbit/zoom camera, explicit remove/place previews, Matter grid context, compact/debug HUD split and non-destructive test recovery.
+`res://p1/main.tscn`
 
-These are not production architecture, world-scale or product-quality claims.
+P1 contains materially stronger mechanical foundations than P0/P0.5, including:
 
-## Current active campaign
+- logical Matter authority independent of mesh/collision/body representation,
+- logical `LocalMatterSpace` identity independent of static/dynamic provider identity,
+- exact merged-cuboid collision as the current provider default,
+- query-based volumetric actor collision without implicit infinite-force rigid push authority,
+- actor support through provider replacement,
+- editable moving Matter,
+- bounded expandable local storage with explicit coordinate-frame rebase,
+- actor/camera relation maintenance through storage rebase,
+- live one→many topology succession,
+- explicit actor/camera succession to topology successors,
+- zero-launch static→dynamic release,
+- finite solver-owned central/torque impulses,
+- dynamic→static freeze at the current physical pose.
 
-The project deliberately stopped representation optimization before it became architecture by inertia.
+The strongest mechanical gate composes one causal loop:
 
-Active pressure is **P0.5 — direct Owner interaction through a less contaminated measurement surface**:
+> grounded actor → release → finite motion → ride → moving edit/build → storage rebase → mapped placement → destructive split → actor/camera succession → freeze successor.
 
-> walk on/around Matter → point at a clearly previewed local cell → remove/place Matter → activate the same logical Space → ride/walk on it → edit while moving → freeze it → inspect/debug only when useful.
+Representative strict mechanical errors remain around the micrometre scale in the tested cases.
 
-The defended P0 composition gate remains **PASS in a bounded translation+yaw scope**. P0.5 adds a separate structural interaction-surface gate and does not replace the underlying Matter/lifecycle test. The green P0.5 delivery run `#6` / `34915675303` passed both gates and exported Windows + Web packages.
+**Those results are retained. They do not make the first P1 Owner candidate acceptable.**
 
-The first pitch/roll P0 challenger also exposed a useful boundary: the current actor transports support in frame coordinates but validates/snaps with a world-down single ray. It remained grounded but drifted locally on tilted support. Arbitrary pitch/roll therefore remains an explicit actor/gravity/orientation frontier rather than being hidden by a LAB-specific adhesion hack.
+## First P1 Owner candidate — FAIL
 
-The next material evidence must again come from direct Owner use. P0.5 exists specifically so camera/movement feel, pointer targeting, remove/place clarity, perceived edit latency and the underlying moving-Matter loop can be judged with less prototype friction.
+The first packaged P1 candidate passed mechanical/integration/delivery automation but failed the actual Owner-facing measurement surface severely.
 
-If edit latency becomes limiting, R2A already provides measured locality evidence. If actor geometry/orientation dominates, the actor frontier should move next. If lifecycle/topology semantics fail under interaction, those exact invariants should be reopened instead of hidden behind consumer glue. If interaction is still the dominant problem, improve only the highest-value obstacle instead of turning P0.5 into an endless polish campaign.
+The Owner recording showed, among other problems:
 
-### Current P0.5 controls
+- large Matter surfaces collapsing toward black,
+- directly lit faces becoming flat pale/white planes,
+- almost no visible cell/edit granularity,
+- through-wall engineering target wire,
+- destructive close camera framing,
+- telemetry-dominated default UI,
+- weak visible STATIC/DYNAMIC and topology semantics.
 
-- `WASD` — move relative to the current view/support,
-- `Space` — jump,
-- `T` — activate static Space / freeze dynamic Space,
-- `LMB` — remove the previewed occupied Matter cell,
-- `RMB` — place Matter in the previewed adjacent empty in-bounds cell,
-- `MMB + mouse` — orbit camera,
-- mouse wheel — zoom,
-- `Home` — reset camera view,
-- `K` — recover actor onto the current active Space for test continuity,
-- `F1` — compact Owner HUD / full engineering telemetry,
-- `R` — reset LAB,
-- `M`, `C`, `F` — retained legacy instrumentation probes.
+A Windows D3D12 Forward+ rendered-evidence lane reproduced the critical black-surface failure in CI.
 
-### Owner-test builds
+A bounded G2-A experiment changed only the Environment ambient source from SKY to COLOR and zeroed sky contribution. On the same deterministic Windows rendered scene this changed approximately:
 
-P0.5 has a dedicated gated delivery workflow: **[Deliver P0.5 Owner Test](https://github.com/Jozzpoly/FrameMatter-Lab/actions/workflows/deliver-owner-test.yml)**.
+- near-black coverage `52.96% → 0.00%`,
+- luminance below `0.08`: `54.70% → 1.74%`,
+- mean luminance `0.142 → 0.366`.
 
-Every delivery run first executes the defended P0 smoke and the P0.5 interaction-baseline smoke. Packaging only proceeds when both pass. A successful run publishes two 30-day downloadable artifacts:
+That strongly attributes the most severe black collapse to a project-side rendering configuration failure rather than a demonstrated Godot rendering limitation. It does **not** establish overall visual quality.
 
-- `FrameMatter-P05-Windows` — standalone Windows x86-64 executable with embedded PCK; this is the preferred Owner-test build,
-- `FrameMatter-P05-Web` — browser export bundle for hosting/HTTP testing.
+Evidence:
 
-The web bundle itself exports successfully with Godot 4.7.2 + built-in Jolt. A permanent GitHub Pages URL is intentionally not claimed until Pages is enabled in repository settings; delivery artifacts do not depend on that setting.
+- `docs/evidence/p1-owner-interaction-failure.md`,
+- `docs/evidence/p1-g1-rendered-baseline.md`,
+- `docs/evidence/p1-quality-system-postmortem.md`.
 
-## Important current distinctions
+## Q0 Owner-centered quality system — DEFENDED FOR PROMOTION BOUNDARIES
+
+Q0 was introduced because the previous process could accumulate extensive green hidden-system evidence while the Owner-visible instrument remained obviously broken.
+
+Q0 now has bounded process evidence and adversarial self-tests. It is **not** a guarantee of product quality; it is a defended promotion-boundary system intended to make unearned Owner delivery structurally harder.
+
+The model separates six truth planes:
+
+1. Owner-intent truth,
+2. substrate truth,
+3. composition truth,
+4. observable truth,
+5. interaction truth,
+6. promotion/delivery truth.
+
+A PASS on one plane never implies another.
+
+The current promotion model is:
+
+> OPEN development → FROZEN runtime candidate → gate × scenario evidence on that exact runtime → independent read-only assurance → authorization → delivery of exactly that frozen runtime.
+
+Key machinery:
+
+- `docs/QUALITY-SYSTEM.md` — general Owner-centered quality model,
+- `quality/contracts/p1-owner-facing-recovery.v3.json` — sealed/versioned campaign contract,
+- `quality/p1-owner-readiness.json` — current 2D gate/scenario evidence state,
+- `quality/assurance/p1-independent-review.json` — independent-assurance state,
+- `ci/verify_owner_readiness.py` — contract/readiness and frozen-runtime enforcement,
+- `ci/verify_independent_assurance.py` — independent-review enforcement,
+- `.github/workflows/owner-readiness.yml` — adversarial CI validation,
+- `.github/workflows/deliver-owner-test.yml` — manual delivery that materializes only the approved frozen runtime.
+
+The guard is adversarially tested against scope weakening, sealed-contract mutation, proxy evidence drift, moving candidates, stale runtime evidence, missing representative scenarios and missing independent assurance. Negative controls prove the current blocked campaign cannot pass delivery enforcement.
+
+Evidence: `docs/evidence/p1-q0-owner-quality-system.md`.
+
+## Active campaign — P1 Owner-facing recovery / G2 lighting and form
+
+**Current P1 remains `OPEN` and `BLOCKED`. Do not treat it as Owner-ready and do not merge it to `main`.**
+
+Feature/substrate expansion remains frozen while the visible research instrument is repaired.
+
+Current execution sequence:
+
+- G1 — real rendered evidence harness: **PASS as instrumentation**,
+- G2 — lighting/environment/form readability: **ACTIVE**,
+- G3 — Matter visual language and cell scale,
+- G4 — camera as an experiment instrument,
+- G5 — interaction hierarchy,
+- G6 — world/motion/topology causality,
+- G7 — evidence-based Godot/host viability checkpoint,
+- G8 — freeze one runtime candidate, re-earn the full gate × scenario matrix, run adversarial rehearsal and independent assurance, then perform final readiness audit.
+
+The current Windows acceptance-relevant rendered path is Godot 4.7.2 Forward+ / D3D12. Linux Compatibility remains a secondary regression lane.
+
+G2 currently compares canonical lighting against test-only `balanced_fill` and `balanced_fill_ssao` challengers. A lighting azimuth-stress capture is used before any variant may be promoted.
+
+The visual acceptance contract is `docs/p1-visual-acceptance-contract.md`.
+
+No new Owner package is allowed before G8 and frozen-runtime readiness authorization.
+
+## Important distinctions
 
 - **Matter ≠ mesh/collision/body identity.**
-- **Space/frame identity ≠ current representation/provider.**
+- **Space identity ≠ current provider identity.**
 - **Space ≠ simulation domain.**
+- **storage coordinates ≠ Matter identity.**
 - **contact ≠ mechanical constraint ≠ rigid bind.**
-- **freeze/static transition ≠ canonical-world reintegration ≠ bake/resample.**
-- **dirty/invalidation region ≠ final physical representation partition.**
-- **support-frame transport ≠ gravity/orientation/adhesion semantics.**
-- **P0.5 presentation grid ≠ world/chunk/physics partition.**
-- **test recovery ≠ gameplay recovery design.**
-- **bounded/integrated automated PASS ≠ playability/product proof.**
+- **freeze/provider transition ≠ canonical-world reintegration ≠ bake/resample.**
+- **dirty/invalidation region ≠ final collider/render/world partition.**
+- **support transport ≠ gravity/orientation/adhesion semantics.**
+- **finite Space impulse controls ≠ vehicle framework.**
+- **mechanical integrated PASS ≠ observable PASS ≠ interaction PASS ≠ Owner readiness.**
+
+## Important open technical boundaries
+
+P1 still does not claim:
+
+- arbitrary pitch/roll locomotion or frame-local gravity/adhesion,
+- final character feel,
+- final actor↔construct reaction-force model,
+- scalable/infinite world storage,
+- final chunk/streaming architecture,
+- persistence/save-load identity,
+- canonical-world extraction/reintegration,
+- curved/planetary Matter,
+- production vehicle framework,
+- final production art/UI.
+
+These open boundaries do not excuse broken presentation of the systems already being tested.
 
 ## Stack
 
@@ -94,30 +171,24 @@ The web bundle itself exports successfully with Godot 4.7.2 + built-in Jolt. A p
 - built-in Jolt Physics
 - GDScript for rapid falsification
 - standard float precision + local coordinates
-- minimal custom integer-grid Matter model
+- integer-grid logical Matter
 - exact merged-cuboid collision as current provider default
-- intentionally simple truth/reference visuals and interaction surfaces
-
-`PER_CELL` collision remains as a historical/reference control, not a scalability candidate.
 
 ## Documentation
 
-- **[ROADMAP.md](ROADMAP.md)** — living adaptive decision map: active campaign, stop conditions and future frontiers.
-- **[docs/research-state.md](docs/research-state.md)** — current defended / provisional / falsified / open truth.
-- **[docs/evidence/](docs/evidence/)** — durable campaign evidence and measurements.
-- **[docs/archive/](docs/archive/)** — historical direction checkpoints once they stop being live guidance.
-- **[docs/roadmap-readiness-audit.md](docs/roadmap-readiness-audit.md)** — audit that motivated the current roadmap/documentation model; transitional historical material.
-
-## Evidence standard
-
-A gate is not a PASS because it looks correct once. We seek explicit correctness, stability and performance evidence, and we distinguish:
-
-**Hypothesis → bounded evidence → integrated evidence → reusable-substrate evidence → scale evidence → playability/product evidence.**
-
-A failure is useful evidence. Representations, controllers, execution mechanisms and even the host engine remain replaceable if stronger consumers falsify current assumptions.
+- **`ROADMAP.md`** — adaptive decision map and campaign boundaries.
+- **`docs/research-state.md`** — defended / provisional / falsified / open technical truth.
+- **`docs/QUALITY-SYSTEM.md`** — campaign quality and promotion model.
+- **`docs/INDEPENDENT-ASSURANCE.md`** — final read-only red-team contract.
+- **`docs/p1-owner-facing-recovery-campaign.md`** — P1 recovery execution plan.
+- **`docs/p1-visual-acceptance-contract.md`** — Owner-visible acceptance dimensions.
+- **`docs/evidence/`** — durable evidence, including failures and postmortems.
+- **`quality/`** — machine-readable campaign contract, readiness and assurance state.
 
 ## Working rule
 
-The project should stabilize **intent and defended invariants**, not prematurely stabilize class names, API layouts or implementation mechanisms.
+Stabilize **intent and defended invariants**, not prematurely class names, APIs, partition schemes or implementation mechanisms.
 
-When evidence and roadmap disagree, update the roadmap.
+Explore aggressively. Promote conservatively.
+
+When evidence and roadmap disagree, evidence wins. When hidden correctness and Owner-visible reality disagree, the candidate is not ready.

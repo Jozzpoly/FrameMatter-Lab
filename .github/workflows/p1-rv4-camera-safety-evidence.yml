@@ -1,0 +1,93 @@
+name: P1 R-V4 camera visual-safety evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/p1_rv4_camera_visual_safety_capture.gd"
+      - "ci/run_godot_rv4_camera_safety_capture.ps1"
+      - ".github/workflows/p1-rv4-camera-safety-evidence.yml"
+      - "p1/camera_rig.gd"
+      - "p1/camera_rig.tscn"
+      - "p1/player.tscn"
+      - "p1/main.gd"
+      - "p1/main.tscn"
+      - "actor/**"
+      - "matter/**"
+      - "construct/**"
+      - "space/**"
+      - "project.godot"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-rv4-camera-safety-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-forward-plus-rv4-camera-safety:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      P1_RV4_CAMERA_SAFETY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      P1_RV4_CAMERA_SAFETY_VARIANT: production
+      P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR: ${{ github.workspace }}\\artifacts\\p1-rv4-camera-safety\\production
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_RV4_CAMERA_SAFETY_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          if ($checkedOut -ne $env:P1_RV4_CAMERA_SAFETY_SOURCE_SHA) {
+            throw "R-V4 checkout mismatch: expected $env:P1_RV4_CAMERA_SAFETY_SOURCE_SHA, got $checkedOut"
+          }
+          "R-V4 exact source checkout: $checkedOut"
+          "R-V4 variant: $env:P1_RV4_CAMERA_SAFETY_VARIANT"
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict synchronous project import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Capture R-V4 production visual-safety policy
+        shell: pwsh
+        run: ./ci/run_godot_rv4_camera_safety_capture.ps1 -OutputDir $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR -Variant $env:P1_RV4_CAMERA_SAFETY_VARIANT
+
+      - name: Record R-V4 evidence provenance
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR | Out-Null
+          $checkedOut = (git rev-parse HEAD).Trim()
+          @"
+          FrameMatter P1 R-V4 camera visual-safety production evidence
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:P1_RV4_CAMERA_SAFETY_SOURCE_SHA
+          checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
+          variant=$env:P1_RV4_CAMERA_SAFETY_VARIANT
+          platform=windows-latest
+          renderer=Godot 4.7.2 Forward+ / D3D12
+          source_scene=res://p1/main.tscn
+          capture_script=res://tests/p1_rv4_camera_visual_safety_capture.gd
+          fixture=real Matter tight ring built and removed through canonical P1 edit path
+          policy=canonical collision-clear escape search with high-pitch presentation candidates
+          "@ | Set-Content -Path (Join-Path $env:P1_RV4_CAMERA_SAFETY_EVIDENCE_DIR "RV4-CAMERA-SAFETY-EVIDENCE-INFO.txt")
+
+      - name: Upload R-V4 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-RV4-CameraSafety-Production
+          path: artifacts/p1-rv4-camera-safety/production
+          retention-days: 30
+          if-no-files-found: warn

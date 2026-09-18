@@ -1,0 +1,76 @@
+name: P1 recovery visual evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "p1/recovery_*.gd"
+      - "p1/recovery_main.tscn"
+      - "tests/p1_recovery_visual_capture.gd"
+      - "ci/run_godot_recovery_visual_capture.ps1"
+      - "matter/**"
+      - "construct/**"
+      - "actor/**"
+      - "space/**"
+      - ".github/workflows/p1-recovery-visual-evidence.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-recovery-visual-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-forward-plus:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    env:
+      P1_RECOVERY_VISUAL_DIR: ${{ github.workspace }}\artifacts\p1-recovery-visual
+      P1_RECOVERY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact recovery source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_RECOVERY_SOURCE_SHA }}
+
+      - name: Prove exact source
+        shell: pwsh
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:P1_RECOVERY_SOURCE_SHA) { throw "checkout mismatch: $actual" }
+          "P1 recovery visual source: $actual"
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Capture recovery surface
+        shell: pwsh
+        run: ./ci/run_godot_recovery_visual_capture.ps1 -OutputDir $env:P1_RECOVERY_VISUAL_DIR
+
+      - name: Record provenance
+        shell: pwsh
+        run: |
+          @"
+          FrameMatter P1 recovery visual evidence
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:P1_RECOVERY_SOURCE_SHA
+          checked_out_commit=$((git rev-parse HEAD).Trim())
+          platform=windows-latest
+          renderer=Godot 4.7.2 Forward+ / D3D12
+          source_scene=res://p1/recovery_main.tscn
+          capture_script=res://tests/p1_recovery_visual_capture.gd
+          "@ | Set-Content -Path (Join-Path $env:P1_RECOVERY_VISUAL_DIR "RECOVERY-VISUAL-INFO.txt")
+
+      - name: Upload recovery visual evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-Recovery-Visual-Windows
+          path: artifacts/p1-recovery-visual
+          retention-days: 30

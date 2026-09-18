@@ -1,0 +1,493 @@
+class_name P1MatterSurfaceGrid
+extends Node
+
+# Derived presentation only. This node does not own Matter, lineage, topology,
+# collision, mass or provider lifecycle. It observes the P1 consumer contracts
+# and rebuilds a lightweight surface-granularity cue on each current provider.
+
+const OVERLAY_NAME := "P1MatterSurfaceGridOverlay"
+const SURFACE_OFFSET := 0.006
+const LINE_ALPHA := 0.14
+const LINE_COLOR := Color(0.035, 0.075, 0.11, LINE_ALPHA)
+
+var registry: P1SpaceRegistry
+var interactor: P1MatterInteractor
+var enabled := true
+var last_refresh_usec := 0
+var last_refresh_space_id := 0
+# Zero preserves provider-coupled granularity. Positive values are an
+# experiment/runtime override for static MatterRepresentation presentation only.
+var chunk_edge_override := 0
+
+var _overlay_signatures: Dictionary = {}
+
+
+func _ready() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	set_sources(
+		parent.get_node_or_null("P1SpaceRegistry") as P1SpaceRegistry,
+		parent.get_node_or_null("P1MatterInteractor") as P1MatterInteractor
+	)
+
+
+func set_sources(value_registry: P1SpaceRegistry, value_interactor: P1MatterInteractor) -> void:
+	if registry != null and is_instance_valid(registry):
+		_disconnect_registry(registry)
+	if interactor != null and is_instance_valid(interactor):
+		_disconnect_interactor(interactor)
+
+	registry = value_registry
+	interactor = value_interactor
+
+	if registry != null:
+		_connect_registry(registry)
+	if interactor != null:
+		_connect_interactor(interactor)
+	refresh_all()
+
+
+func set_chunk_edge_override(value: int) -> void:
+	assert(value >= 0)
+	if chunk_edge_override == value:
+		return
+	chunk_edge_override = value
+	refresh_all()
+
+
+func set_enabled(value: bool) -> void:
+	if enabled == value:
+		return
+	enabled = value
+	if enabled:
+		refresh_all()
+	else:
+		clear_all()
+
+
+func refresh_all() -> void:
+	if registry == null or not is_instance_valid(registry):
+		return
+	if not enabled:
+		clear_all()
+		return
+	for space in registry.get_active_spaces():
+		refresh_space(space)
+
+
+func refresh_space(space: LocalMatterSpace) -> void:
+	var started_usec := Time.get_ticks_usec()
+	var space_id := (
+		space.get_instance_id()
+		if space != null and is_instance_valid(space)
+		else 0
+	)
+	last_refresh_space_id = space_id
+	if space == null or not is_instance_valid(space) or space.is_retired() or space.volume == null:
+		if space_id != 0:
+			_overlay_signatures.erase(space_id)
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
+		return
+	var provider: Node3D = space.get_active_provider()
+	if provider == null or not is_instance_valid(provider):
+		_overlay_signatures.erase(space_id)
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
+		return
+
+	_remove_overlay_from_provider(provider)
+	_overlay_signatures.erase(space_id)
+	if not enabled or space.volume.count_solid() == 0:
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
+		return
+
+	var overlay := MeshInstance3D.new()
+	overlay.name = OVERLAY_NAME
+	overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var material := _create_grid_material()
+	overlay.material_override = material
+	provider.add_child(overlay)
+
+	var edge := _chunk_edge_for_space(space)
+	if edge > 0:
+		overlay.mesh = ArrayMesh.new()
+		for origin in _chunk_origins(space.volume.size, edge):
+			_install_grid_chunk(overlay, space.volume, origin, edge, material)
+	else:
+		overlay.mesh = build_exposed_surface_grid(space.volume)
+
+	_overlay_signatures[space_id] = _overlay_signature(space)
+	last_refresh_usec = Time.get_ticks_usec() - started_usec
+
+
+func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
+	var cells: Array[Vector3i] = [cell]
+	refresh_cells(space, cells)
+
+
+func refresh_cells(space: LocalMatterSpace, cells: Array[Vector3i]) -> void:
+	var started_usec := Time.get_ticks_usec()
+	last_refresh_space_id = (
+		space.get_instance_id()
+		if space != null and is_instance_valid(space)
+		else 0
+	)
+	if (
+		space == null
+		or not is_instance_valid(space)
+		or space.is_retired()
+		or space.volume == null
+		or cells.is_empty()
+	):
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
+		return
+	var edge := _chunk_edge_for_space(space)
+	if edge <= 0:
+		refresh_space(space)
+		return
+	if space.volume.count_solid() == 0:
+		refresh_space(space)
+		return
+	var provider := space.get_active_provider()
+	var overlay := provider.get_node_or_null(OVERLAY_NAME) as MeshInstance3D
+	if overlay == null:
+		refresh_space(space)
+		return
+	var material := overlay.material_override as StandardMaterial3D
+	if material == null:
+		material = _create_grid_material()
+		overlay.material_override = material
+	var dirty_origins: Dictionary = {}
+	for cell in cells:
+		if not space.volume.in_bounds(cell):
+			refresh_space(space)
+			return
+		for origin in _dirty_chunk_origins(space.volume.size, cell, edge):
+			dirty_origins[origin] = true
+	for origin_variant in dirty_origins.keys():
+		_install_grid_chunk(overlay, space.volume, origin_variant, edge, material)
+	_overlay_signatures[space.get_instance_id()] = _overlay_signature(space)
+	last_refresh_usec = Time.get_ticks_usec() - started_usec
+
+func get_chunk_ids_for_test(space: LocalMatterSpace) -> Dictionary:
+	var result: Dictionary = {}
+	var overlay := get_overlay_for_space(space)
+	if overlay == null:
+		return result
+	for child in overlay.get_children():
+		if child is MeshInstance3D and str(child.name).begins_with("GridChunk_"):
+			result[str(child.name)] = child.get_instance_id()
+	return result
+
+
+func _install_grid_chunk(
+	overlay: MeshInstance3D,
+	volume: CellVolume,
+	origin: Vector3i,
+	edge: int,
+	material: StandardMaterial3D
+) -> void:
+	var node_name := _grid_chunk_name(origin)
+	var existing := overlay.get_node_or_null(node_name)
+	if existing != null:
+		existing.free()
+	var mesh := build_exposed_surface_grid_region(
+		volume,
+		origin,
+		_chunk_end(volume.size, origin, edge)
+	)
+	if mesh.get_surface_count() == 0:
+		return
+	var child := MeshInstance3D.new()
+	child.name = node_name
+	child.mesh = mesh
+	child.material_override = material
+	child.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	overlay.add_child(child)
+
+
+func _create_grid_material() -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = LINE_COLOR
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return material
+
+
+func _chunk_edge_for_space(space: LocalMatterSpace) -> int:
+	if space == null or not is_instance_valid(space):
+		return 0
+	var provider := space.get_active_provider()
+	if provider is MatterRepresentation:
+		if chunk_edge_override > 0:
+			return chunk_edge_override
+		return maxi(0, (provider as MatterRepresentation).chunk_edge)
+	return 0
+
+
+func _chunk_origins(size: Vector3i, edge: int) -> Array[Vector3i]:
+	var result: Array[Vector3i] = []
+	for z in range(0, size.z, edge):
+		for y in range(0, size.y, edge):
+			for x in range(0, size.x, edge):
+				result.append(Vector3i(x, y, z))
+	return result
+
+
+func _dirty_chunk_origins(size: Vector3i, cell: Vector3i, edge: int) -> Array[Vector3i]:
+	var unique: Dictionary = {}
+	var candidates: Array[Vector3i] = [cell]
+	for offset in MatterTopology.AXIAL_NEIGHBORS:
+		var neighbor := cell + offset
+		if (
+			neighbor.x >= 0 and neighbor.x < size.x
+			and neighbor.y >= 0 and neighbor.y < size.y
+			and neighbor.z >= 0 and neighbor.z < size.z
+		):
+			candidates.append(neighbor)
+	for candidate in candidates:
+		unique[_chunk_origin(candidate, edge)] = true
+	var result: Array[Vector3i] = []
+	for origin_variant in unique.keys():
+		result.append(origin_variant)
+	return result
+
+
+func _grid_chunk_name(origin: Vector3i) -> String:
+	return "GridChunk_%d_%d_%d" % [origin.x, origin.y, origin.z]
+
+
+func _chunk_origin(cell: Vector3i, edge: int) -> Vector3i:
+	return Vector3i(
+		floori(float(cell.x) / float(edge)) * edge,
+		floori(float(cell.y) / float(edge)) * edge,
+		floori(float(cell.z) / float(edge)) * edge
+	)
+
+
+func _chunk_end(size: Vector3i, origin: Vector3i, edge: int) -> Vector3i:
+	return Vector3i(
+		mini(size.x, origin.x + edge),
+		mini(size.y, origin.y + edge),
+		mini(size.z, origin.z + edge)
+	)
+
+func clear_all() -> void:
+	if registry != null and is_instance_valid(registry):
+		for space in registry.get_active_spaces():
+			if space == null or not is_instance_valid(space):
+				continue
+			var provider: Node3D = space.get_active_provider()
+			if provider != null and is_instance_valid(provider):
+				_remove_overlay_from_provider(provider)
+	_overlay_signatures.clear()
+
+
+func _ensure_active_spaces() -> void:
+	if registry == null or not is_instance_valid(registry):
+		return
+	var live_ids: Dictionary = {}
+	for space in registry.get_active_spaces():
+		if space == null or not is_instance_valid(space) or space.is_retired():
+			continue
+		live_ids[space.get_instance_id()] = true
+		_ensure_space(space)
+	for cached_id in _overlay_signatures.keys():
+		if not live_ids.has(cached_id):
+			_overlay_signatures.erase(cached_id)
+
+
+func _ensure_space(space: LocalMatterSpace) -> void:
+	if space == null or not is_instance_valid(space) or space.is_retired() or space.volume == null:
+		return
+	var provider := space.get_active_provider()
+	if provider == null or not is_instance_valid(provider):
+		return
+	var space_id := space.get_instance_id()
+	var overlay := provider.get_node_or_null(OVERLAY_NAME) as MeshInstance3D
+	var signature := _overlay_signature(space)
+	if overlay != null and str(_overlay_signatures.get(space_id, "")) == signature:
+		return
+	refresh_space(space)
+
+
+func _overlay_signature(space: LocalMatterSpace) -> String:
+	var provider := space.get_active_provider()
+	var provider_id := provider.get_instance_id() if provider != null and is_instance_valid(provider) else 0
+	return "%d:%d" % [provider_id, space.volume.revision]
+
+func get_overlay_for_space(space: LocalMatterSpace) -> MeshInstance3D:
+	if space == null or not is_instance_valid(space) or space.is_retired():
+		return null
+	var provider: Node3D = space.get_active_provider()
+	if provider == null or not is_instance_valid(provider):
+		return null
+	return provider.get_node_or_null(OVERLAY_NAME) as MeshInstance3D
+
+
+func get_overlay_count() -> int:
+	if registry == null or not is_instance_valid(registry):
+		return 0
+	var count := 0
+	for space in registry.get_active_spaces():
+		if get_overlay_for_space(space) != null:
+			count += 1
+	return count
+
+
+static func build_exposed_surface_grid(volume: CellVolume) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	if volume == null:
+		return mesh
+	return build_exposed_surface_grid_region(volume, Vector3i.ZERO, volume.size)
+
+
+static func build_exposed_surface_grid_region(
+	volume: CellVolume,
+	from_cell: Vector3i,
+	to_cell: Vector3i
+) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	if volume == null or volume.count_solid() == 0:
+		return mesh
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_LINES)
+	var seen_segments: Dictionary = {}
+	var emitted := false
+	var scan_from := _scan_from(from_cell)
+	var scan_to := _scan_to(volume.size, to_cell)
+
+	for z in range(scan_from.z, scan_to.z):
+		for y in range(scan_from.y, scan_to.y):
+			for x in range(scan_from.x, scan_to.x):
+				var cell := Vector3i(x, y, z)
+				if volume.get_cell(cell) == CellVolume.EMPTY:
+					continue
+				var origin := Vector3(cell)
+				for face_index in range(CellMesher.FACE_DIRECTIONS.size()):
+					if volume.get_cell(cell + CellMesher.FACE_DIRECTIONS[face_index]) != CellVolume.EMPTY:
+						continue
+					var face_vertices: Array = CellMesher.FACE_VERTICES[face_index]
+					var normal: Vector3 = CellMesher.FACE_NORMALS[face_index]
+					var offset := normal * SURFACE_OFFSET
+					var raw_corners := [
+						origin + face_vertices[0],
+						origin + face_vertices[1],
+						origin + face_vertices[2],
+						origin + face_vertices[5],
+					]
+					for edge_index in range(4):
+						var raw_a: Vector3 = raw_corners[edge_index]
+						var raw_b: Vector3 = raw_corners[(edge_index + 1) % 4]
+						var segment_key := _coplanar_segment_key(volume.size, face_index, raw_a, raw_b)
+						if seen_segments.has(segment_key):
+							continue
+						seen_segments[segment_key] = cell
+						if not _cell_in_region(cell, from_cell, to_cell):
+							continue
+						surface.add_vertex(raw_a + offset)
+						surface.add_vertex(raw_b + offset)
+						emitted = true
+	if not emitted:
+		return mesh
+	return surface.commit(mesh)
+
+
+static func _scan_from(origin: Vector3i) -> Vector3i:
+	return Vector3i(maxi(0, origin.x - 1), maxi(0, origin.y - 1), maxi(0, origin.z - 1))
+
+
+static func _scan_to(size: Vector3i, end: Vector3i) -> Vector3i:
+	return Vector3i(mini(size.x, end.x + 1), mini(size.y, end.y + 1), mini(size.z, end.z + 1))
+
+
+static func _cell_in_region(cell: Vector3i, from_cell: Vector3i, to_cell: Vector3i) -> bool:
+	return (
+		cell.x >= from_cell.x and cell.x < to_cell.x
+		and cell.y >= from_cell.y and cell.y < to_cell.y
+		and cell.z >= from_cell.z and cell.z < to_cell.z
+	)
+
+static func _coplanar_segment_key(
+	size: Vector3i,
+	face_index: int,
+	a: Vector3,
+	b: Vector3
+) -> int:
+	return _plain_segment_key(size, a, b) * 6 + face_index
+
+
+static func _plain_segment_key(size: Vector3i, a: Vector3, b: Vector3) -> int:
+	var ai := _point_index(size, Vector3i(int(a.x), int(a.y), int(a.z)))
+	var bi := _point_index(size, Vector3i(int(b.x), int(b.y), int(b.z)))
+	if bi < ai:
+		var swap := ai
+		ai = bi
+		bi = swap
+	var point_count := (size.x + 1) * (size.y + 1) * (size.z + 1)
+	return ai * point_count + bi
+
+
+static func _point_index(size: Vector3i, point: Vector3i) -> int:
+	return point.x + (size.x + 1) * (point.y + (size.y + 1) * point.z)
+
+
+func _connect_registry(value: P1SpaceRegistry) -> void:
+	if not value.active_spaces_changed.is_connected(_on_active_spaces_changed):
+		value.active_spaces_changed.connect(_on_active_spaces_changed)
+	if not value.provider_changed.is_connected(_on_provider_changed):
+		value.provider_changed.connect(_on_provider_changed)
+	if not value.storage_rebased.is_connected(_on_storage_rebased):
+		value.storage_rebased.connect(_on_storage_rebased)
+	if not value.split_committed.is_connected(_on_split_committed):
+		value.split_committed.connect(_on_split_committed)
+
+
+func _disconnect_registry(value: P1SpaceRegistry) -> void:
+	if value.active_spaces_changed.is_connected(_on_active_spaces_changed):
+		value.active_spaces_changed.disconnect(_on_active_spaces_changed)
+	if value.provider_changed.is_connected(_on_provider_changed):
+		value.provider_changed.disconnect(_on_provider_changed)
+	if value.storage_rebased.is_connected(_on_storage_rebased):
+		value.storage_rebased.disconnect(_on_storage_rebased)
+	if value.split_committed.is_connected(_on_split_committed):
+		value.split_committed.disconnect(_on_split_committed)
+
+
+func _connect_interactor(value: P1MatterInteractor) -> void:
+	if not value.edit_applied.is_connected(_on_edit_applied):
+		value.edit_applied.connect(_on_edit_applied)
+
+
+func _disconnect_interactor(value: P1MatterInteractor) -> void:
+	if value.edit_applied.is_connected(_on_edit_applied):
+		value.edit_applied.disconnect(_on_edit_applied)
+
+
+func _on_active_spaces_changed() -> void:
+	_ensure_active_spaces()
+
+
+func _on_provider_changed(space: LocalMatterSpace) -> void:
+	refresh_space(space)
+
+
+func _on_storage_rebased(space: LocalMatterSpace, _report: Dictionary) -> void:
+	refresh_space(space)
+
+
+func _on_split_committed(_source: LocalMatterSpace, _result: LocalMatterSplitResult) -> void:
+	_ensure_active_spaces()
+
+
+func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, _mode: int, _split_queued: bool) -> void:
+	if _chunk_edge_for_space(space) > 0:
+		refresh_cell(space, cell)
+	else:
+		refresh_space(space)
+
+
+func _remove_overlay_from_provider(provider: Node3D) -> void:
+	var existing := provider.get_node_or_null(OVERLAY_NAME)
+	if existing != null:
+		existing.free()

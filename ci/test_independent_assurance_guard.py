@@ -1,0 +1,172 @@
+#!/usr/bin/env python3
+"""Adversarial self-test for independent assurance enforcement."""
+
+from __future__ import annotations
+
+import copy
+import json
+import pathlib
+import sys
+
+import verify_independent_assurance as guard
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+READINESS = json.loads((ROOT / "quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
+REPORT = json.loads((ROOT / "quality/assurance/p1-independent-review.json").read_text(encoding="utf-8"))
+RUNTIME = "0123456789abcdef0123456789abcdef01234567"
+OLD_RUNTIME = "89abcdef0123456789abcdef0123456789abcdef"
+failures: list[str] = []
+
+
+def check(condition: bool, label: str) -> None:
+    if not condition:
+        failures.append(label)
+
+
+def make_blocked_frozen() -> dict:
+    data = copy.deepcopy(READINESS)
+    data["status"] = "BLOCKED"
+    data["candidate_state"] = "FROZEN"
+    data["candidate_runtime_commit"] = RUNTIME
+    data["approved_runtime_commit"] = ""
+    data["promotion_authorized"] = False
+    data["owner_attention_event"] = {"allowed": False, "reason": "synthetic assurance self-test remains blocked"}
+    gate = data["required_gates"]["independent_assurance_review"]
+    gate["status"] = "PENDING"
+    gate["verified_runtime_commit"] = ""
+    gate["evidence"] = []
+    return data
+
+
+def make_ready() -> dict:
+    data = make_blocked_frozen()
+    data["status"] = "READY_FOR_OWNER"
+    data["approved_runtime_commit"] = RUNTIME
+    data["promotion_authorized"] = True
+    data["owner_attention_event"] = {"allowed": True, "reason": "synthetic assurance self-test"}
+    data["open_blockers"] = []
+    gate = data["required_gates"]["independent_assurance_review"]
+    gate["status"] = "PASS"
+    gate["verified_runtime_commit"] = RUNTIME
+    gate["evidence"] = ["quality/assurance/p1-independent-review.json"]
+    return data
+
+
+def make_pass_report() -> dict:
+    report = copy.deepcopy(REPORT)
+    report.update(
+        {
+            "campaign_contract_version": READINESS["campaign_contract_version"],
+            "status": "PASS",
+            "disposition": "PASS",
+            "reviewed_runtime_commit": RUNTIME,
+            "review_context_id": "synthetic-fresh-read-only-context",
+            "reviewer_context_separated_from_implementation": True,
+            "runtime_was_frozen": True,
+            "candidate_changes_authored_during_review": False,
+            "owner_goal_evaluated": True,
+            "claim_evidence_fit_evaluated": True,
+            "nominal_scenarios_reviewed": ["default_static_matter", "dynamic_translation_and_yaw"],
+            "off_nominal_scenarios_reviewed": ["close_camera_obstacle_stress", "fall_and_recovery"],
+            "evidence_examined": ["rendered baseline", "rehearsal video", "readiness matrix"],
+            "material_findings": [],
+        }
+    )
+    return report
+
+
+def make_historical_pass_report() -> dict:
+    report = make_pass_report()
+    report["campaign_contract_version"] = READINESS["campaign_contract_version"] - 1
+    report["reviewed_runtime_commit"] = OLD_RUNTIME
+    report["review_context_id"] = "synthetic-historical-separated-context"
+    return report
+
+
+def make_superseded_readiness() -> dict:
+    data = copy.deepcopy(READINESS)
+    gate = data["required_gates"]["independent_assurance_review"]
+    gate["status"] = "SUPERSEDED"
+    gate["verified_runtime_commit"] = OLD_RUNTIME
+    return data
+
+
+def main() -> None:
+    # The live report may legitimately be PENDING while a fresh review has not
+    # happened yet. Historical-PASS behavior must therefore be tested with an
+    # explicit synthetic fixture rather than by assuming the live file is old.
+    historical = make_historical_pass_report()
+    superseded = make_superseded_readiness()
+    errors = guard.validate_report(historical, superseded, require_pass=False)
+    check(not errors, "historical PASS report is valid while readiness explicitly marks assurance SUPERSEDED: %s" % errors)
+
+    not_superseded = copy.deepcopy(superseded)
+    not_superseded["required_gates"]["independent_assurance_review"]["status"] = "PENDING"
+    errors = guard.validate_report(historical, not_superseded, require_pass=False)
+    check(any("campaign_contract_version" in error for error in errors),
+          "older PASS report cannot silently certify a newer active contract unless explicitly SUPERSEDED")
+
+    # Also require the current live state itself to remain structurally valid,
+    # whether it is a legitimate PENDING report or a completed current review.
+    errors = guard.validate_report(REPORT, READINESS, require_pass=False)
+    check(not errors, "live assurance report must validate in its current campaign state: %s" % errors)
+
+    report = make_pass_report()
+    blocked = make_blocked_frozen()
+    errors = guard.validate_report(report, blocked, require_pass=False)
+    check(not errors, "completed separated review can be recorded while promotion remains BLOCKED: %s" % errors)
+    errors = guard.validate_report(report, blocked, require_pass=True)
+    check(any("approved_runtime_commit" in error for error in errors),
+          "completed review alone cannot satisfy delivery approval")
+    check(any("independent_assurance_review gate is not PASS" in error for error in errors),
+          "delivery still requires readiness assurance gate binding")
+
+    ready = make_ready()
+    errors = guard.validate_report(report, ready, require_pass=True)
+    check(not errors, "complete separated PASS review is accepted for approved delivery: %s" % errors)
+
+    wrong_runtime = copy.deepcopy(report)
+    wrong_runtime["reviewed_runtime_commit"] = OLD_RUNTIME
+    errors = guard.validate_report(wrong_runtime, blocked, require_pass=False)
+    check(any("does not match" in error for error in errors), "review of a different runtime is rejected before promotion")
+
+    self_review = copy.deepcopy(report)
+    self_review["reviewer_context_separated_from_implementation"] = False
+    errors = guard.validate_report(self_review, blocked, require_pass=False)
+    check(any("separated" in error for error in errors), "non-separated implementation self-review is rejected")
+
+    mutating_review = copy.deepcopy(report)
+    mutating_review["candidate_changes_authored_during_review"] = True
+    errors = guard.validate_report(mutating_review, blocked, require_pass=False)
+    check(any("candidate_changes_authored" in error for error in errors), "review that edits candidate is rejected")
+
+    finding = copy.deepcopy(report)
+    finding["material_findings"] = ["ordinary close camera view loses the active Space"]
+    errors = guard.validate_report(finding, blocked, require_pass=False)
+    check(any("material finding" in error for error in errors), "material finding blocks assurance PASS")
+
+    happy_only = copy.deepcopy(report)
+    happy_only["off_nominal_scenarios_reviewed"] = []
+    errors = guard.validate_report(happy_only, blocked, require_pass=False)
+    check(any("off_nominal" in error for error in errors), "happy-path-only assurance is rejected")
+
+    missing_goal = copy.deepcopy(report)
+    missing_goal["owner_goal_evaluated"] = False
+    errors = guard.validate_report(missing_goal, blocked, require_pass=False)
+    check(any("owner_goal_evaluated" in error for error in errors), "assurance that ignores Owner goal is rejected")
+
+    if failures:
+        for failure in failures:
+            print("INDEPENDENT_ASSURANCE_SELFTEST_FAIL: " + failure, file=sys.stderr)
+        raise SystemExit(1)
+    print(
+        "INDEPENDENT_ASSURANCE_SELFTEST_PASS: guard accepts a structurally valid live PENDING/current report, preserves "
+        "explicitly SUPERSEDED historical PASS evidence without letting it certify a newer active contract, accepts a "
+        "separated current frozen-runtime review before promotion, still rejects delivery until approval/gate binding, "
+        "and rejects wrong-runtime, self-review, candidate mutation, material findings, happy-path-only review and "
+        "omission of the Owner goal."
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,86 @@
+name: P1 G5 interaction evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "p1/**"
+      - "matter/**"
+      - "construct/**"
+      - "actor/**"
+      - "space/**"
+      - "tests/p1_interaction_visual_capture.gd"
+      - "ci/run_godot_interaction_capture.ps1"
+      - "project.godot"
+      - ".github/workflows/p1-interaction-evidence.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-g5-interaction-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-forward-plus-interaction:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      P1_INTERACTION_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-interaction-evidence\production
+      P1_INTERACTION_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_INTERACTION_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          if ($checkedOut -ne $env:P1_INTERACTION_SOURCE_SHA) {
+            throw "G5 evidence checkout mismatch: expected $env:P1_INTERACTION_SOURCE_SHA, got $checkedOut"
+          }
+          "G5 exact source checkout: $checkedOut"
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict synchronous project import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Capture promoted G5 production evidence
+        shell: pwsh
+        run: ./ci/run_godot_interaction_capture.ps1 -OutputDir $env:P1_INTERACTION_EVIDENCE_DIR
+
+      - name: Record G5 evidence provenance
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:P1_INTERACTION_EVIDENCE_DIR | Out-Null
+          $checkedOut = (git rev-parse HEAD).Trim()
+          @"
+          FrameMatter P1 G5 production interaction evidence
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:P1_INTERACTION_SOURCE_SHA
+          checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
+          platform=windows-latest
+          renderer=Godot 4.7.2 Forward+ / D3D12
+          source_scene=res://p1/main.tscn
+          capture_script=res://tests/p1_interaction_visual_capture.gd
+          interaction_policy=production pointer acquisition + HUD exclusion + depth-tested face-led cue
+          evidence_scope=REMOVE / PLACE / EXPAND prediction hierarchy
+          "@ | Set-Content -Path (Join-Path $env:P1_INTERACTION_EVIDENCE_DIR "INTERACTION-EVIDENCE-INFO.txt")
+
+      - name: Upload G5 interaction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-G5-Interaction-Evidence-Windows-Production
+          path: artifacts/p1-interaction-evidence/production
+          retention-days: 30
+          if-no-files-found: warn

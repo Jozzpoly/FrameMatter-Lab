@@ -1,0 +1,168 @@
+extends SceneTree
+
+const ACQUIRE_FRAMES := 14
+const POST_TRANSITION_FRAMES := 8
+const POST_SPLIT_FRAMES := 10
+
+var _failures: Array[String] = []
+
+
+func _init() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	var packed := load("res://p1/main.tscn") as PackedScene
+	_check(packed != null, "P1 interactive scene loads for topology consumer probe")
+	if packed == null:
+		_finish()
+		return
+
+	var p1 := packed.instantiate()
+	get_root().add_child(p1)
+	await process_frame
+	await _advance_frames(ACQUIRE_FRAMES)
+
+	var source := p1.call("get_space") as LocalMatterSpace
+	var player := p1.call("get_player") as SpaceQueryCharacter
+	var camera_rig := p1.call("get_camera_rig") as P1CameraRig
+	var interactor := p1.call("get_interactor") as P1MatterInteractor
+	_check(source != null and player != null and camera_rig != null and interactor != null, "P1 exposes composed consumer roles")
+	if source == null or player == null or camera_rig == null or interactor == null:
+		p1.free()
+		_finish()
+		return
+
+	_check(player.grounded and player.support_space == source, "actor starts supported by source Space")
+	_check(bool(p1.call("activate_dynamic_probe_for_test")), "topology consumer activates source Space dynamically")
+	await source.provider_transition_committed
+	await _advance_frames(POST_TRANSITION_FRAMES)
+	_check(source.get_active_provider() is ConstructBody, "source owns dynamic provider before destructive edit")
+	_check(player.grounded and player.support_space == source, "actor remains on source before cut")
+
+	var source_space_id: int = source.get_instance_id()
+	var source_provider_id: int = source.get_active_provider().get_instance_id()
+	var actor_world_before_cut: Vector3 = player.global_position
+	var removed := 0
+	# The authored deck spans x=[2,13], z=[2,13]. Removing x=6 across the
+	# complete z span leaves no decoration bridge and separates left/right Matter.
+	for z in range(2, 14):
+		var cell := Vector3i(6, 0, z)
+		var changed := interactor.apply_edit_to_cell(source, cell, P1MatterInteractor.EditMode.REMOVE)
+		_check(changed, "topology cut removes source deck cell %s" % str(cell))
+		if changed:
+			removed += 1
+		if z < 13:
+			_check(not source.is_topology_split_pending(), "partial cut remains one connected dynamic Space")
+
+	_check(removed == 12, "full causal cut removes all twelve separating cells")
+	_check(source.is_topology_split_pending(), "final destructive edit queues connected-component split")
+
+	var split_witness: Dictionary = player.get_support_contact_witness()
+	_check(bool(split_witness.get("valid", false)), "actor exposes an exact retained Matter witness at the split boundary")
+	var split_witness_cell: Vector3i = split_witness.get("cell", Vector3i(-999, -999, -999))
+	var split_witness_token := MatterLineageMap.NONE
+	if bool(split_witness.get("valid", false)) and source.lineage != null and source.lineage.in_bounds(split_witness_cell):
+		split_witness_token = source.lineage.get_lineage(split_witness_cell)
+	_check(split_witness_token != MatterLineageMap.NONE, "split witness resolves retained source Matter lineage")
+
+	# Capture the source-local support point at the exact transaction boundary.
+	# Local coordinates should map through LocalMatterSplitResult without using
+	# later dynamic motion as a proxy for handoff continuity.
+	var actor_source_local_at_split: Vector3 = player.support_local_center
+	var transfers_before: int = player.observed_support_transfers
+	await source.topology_split_committed
+	var result: LocalMatterSplitResult = source.get_last_split_result()
+	_check(result != null, "retired source retains explicit split mapping result")
+
+	var expected_handoff_world := Vector3.ZERO
+	if result != null:
+		expected_handoff_world = result.source_transform * actor_source_local_at_split
+	var handoff_world_error: float = player.global_position.distance_to(expected_handoff_world)
+	_check(handoff_world_error < 0.0001, "source→successor actor handoff preserves the exact world support point")
+	_check(player.observed_support_transfers == transfers_before + 1, "topology succession records one explicit actor support transfer")
+	_check(player.grounded, "actor remains grounded at topology handoff")
+	var expected_successor := result.get_successor_for_source_cell(split_witness_cell) if result != null else null
+	_check(expected_successor != null, "exact supporting Matter cell maps to one split successor")
+	_check(player.support_space == expected_successor, "actor transfers to the successor that owns its exact supporting Matter")
+	if expected_successor != null:
+		var witness_origin: Vector3i = result.get_source_origin_for_source_cell(split_witness_cell)
+		var mapped_witness_cell := split_witness_cell - witness_origin
+		_check(
+			expected_successor.lineage.get_lineage(mapped_witness_cell) == split_witness_token,
+			"same supporting Matter lineage exists in the selected successor"
+		)
+		var handoff_witness: Dictionary = player.get_support_contact_witness()
+		_check(bool(handoff_witness.get("valid", false)), "exact support witness survives split handoff")
+		_check(
+			handoff_witness.get("cell", Vector3i(-999, -999, -999)) == mapped_witness_cell,
+			"post-split actor witness maps to the same Matter cell in successor coordinates"
+		)
+		_check(player.support_body == expected_successor.get_active_provider(), "actor support body immediately matches witness-owned successor provider")
+		_check(camera_rig.context_target == expected_successor.get_active_provider(), "camera context immediately follows actor-owned successor")
+
+	var actor_world_at_handoff: Vector3 = player.global_position
+	await _advance_frames(POST_SPLIT_FRAMES)
+
+	var active_spaces := p1.call("get_active_spaces") as Array[LocalMatterSpace]
+	_check(source.is_retired(), "interactive source retires after topology split")
+	_check(source.get_active_provider() == null, "retired interactive source retains no provider")
+	_check(active_spaces.size() == 2, "interactive consumer now tracks two live successor Spaces")
+	_check(not active_spaces.has(source), "retired source is not presented as active world state")
+
+	var provider_ids: Dictionary = {}
+	for successor in active_spaces:
+		_check(successor != null and not successor.is_retired(), "each consumer successor is live")
+		if successor == null:
+			continue
+		var provider := successor.get_active_provider()
+		_check(provider is ConstructBody, "each detached successor has an independent dynamic provider")
+		if provider != null:
+			provider_ids[provider.get_instance_id()] = true
+	_check(provider_ids.size() == 2, "detached Matter no longer shares one rigid provider")
+
+	_check(player.grounded, "actor remains grounded through post-split successor motion")
+	_check(player.support_space != null and active_spaces.has(player.support_space), "actor support remains on one live successor")
+	_check(player.support_space != source, "actor no longer references retired source")
+	if player.support_space != null:
+		_check(player.support_body == player.support_space.get_active_provider(), "actor support body matches successor provider")
+		_check(camera_rig.context_target == player.support_space.get_active_provider(), "camera context follows actor-owned successor")
+
+	var post_handoff_motion: float = player.global_position.distance_to(actor_world_at_handoff)
+	var whole_window_delta: float = player.global_position.distance_to(actor_world_before_cut)
+	_check(post_handoff_motion < 1.0, "bounded successor motion remains finite during ten-frame observation window")
+	print(
+		"P1_LIVE_TOPOLOGY_METRIC source_space_id=%d source_provider_id=%d removed=%d successors=%d handoff_world_error=%.8f post_handoff_motion=%.6f whole_window_delta=%.6f" % [
+			source_space_id,
+			source_provider_id,
+			removed,
+			active_spaces.size(),
+			handoff_world_error,
+			post_handoff_motion,
+			whole_window_delta,
+		]
+	)
+
+	p1.free()
+	_finish()
+
+
+func _advance_frames(count: int) -> void:
+	for _frame in range(count):
+		await physics_frame
+		await process_frame
+
+
+func _check(condition: bool, description: String) -> void:
+	if not condition:
+		_failures.append(description)
+
+
+func _finish() -> void:
+	if _failures.is_empty():
+		print("P1_LIVE_TOPOLOGY_PASS: destructive edits create real successor Spaces and exact supporting Matter lineage selects the actor successor without heuristic remapping.")
+		quit(0)
+		return
+	for failure in _failures:
+		push_error("P1_LIVE_TOPOLOGY_FAIL: " + failure)
+	quit(1)

@@ -7,6 +7,7 @@ const SOLID := 1
 var size: Vector3i
 var revision := 0
 var _cells := PackedInt32Array()
+var _solid_count := 0
 
 
 func _init(volume_size: Vector3i = Vector3i(8, 8, 8)) -> void:
@@ -39,8 +40,13 @@ func set_cell(cell: Vector3i, material_id: int) -> bool:
 	if not in_bounds(cell):
 		return false
 	var index := index_of(cell)
-	if _cells[index] == material_id:
+	var previous_material := _cells[index]
+	if previous_material == material_id:
 		return false
+	if previous_material == EMPTY and material_id != EMPTY:
+		_solid_count += 1
+	elif previous_material != EMPTY and material_id == EMPTY:
+		_solid_count -= 1
 	_cells[index] = material_id
 	revision += 1
 	return true
@@ -57,12 +63,16 @@ func fill_box(from_inclusive: Vector3i, to_exclusive: Vector3i, material_id: int
 
 
 func count_solid() -> int:
-	var count := 0
-	for material_id in _cells:
-		if material_id != EMPTY:
-			count += 1
-	return count
+	return _solid_count
 
 
 func duplicate_cells() -> PackedInt32Array:
 	return _cells.duplicate()
+
+
+func duplicate_volume() -> CellVolume:
+	var result := CellVolume.new(size)
+	result._cells = _cells.duplicate()
+	result._solid_count = _solid_count
+	result.revision = revision
+	return result

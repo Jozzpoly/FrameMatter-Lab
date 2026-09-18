@@ -1,0 +1,161 @@
+name: P1 G8 adversarial rehearsal
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/p1_g8_adversarial_rehearsal_capture.gd"
+      - "ci/run_godot_g8_adversarial_rehearsal.ps1"
+      - "quality/p1-owner-readiness.json"
+      - ".github/workflows/p1-g8-adversarial-rehearsal.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-g8-adversarial-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-forward-plus-frozen-candidate:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      P1_G8_EVIDENCE_DIR: ${{ github.workspace }}\artifacts\p1-g8-adversarial
+      P1_G8_GOVERNANCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout governance harness exactly
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_G8_GOVERNANCE_SHA }}
+          path: governance
+          fetch-depth: 1
+
+      - name: Resolve frozen candidate from readiness
+        id: freeze
+        shell: pwsh
+        run: |
+          $governance = (git -C governance rev-parse HEAD).Trim()
+          if ($governance -ne $env:P1_G8_GOVERNANCE_SHA) {
+            throw "G8 governance checkout mismatch: expected $env:P1_G8_GOVERNANCE_SHA, got $governance"
+          }
+          $manifest = Get-Content -LiteralPath "governance/quality/p1-owner-readiness.json" -Raw | ConvertFrom-Json
+          if ($manifest.candidate_state -ne "FROZEN") {
+            throw "G8 requires candidate_state=FROZEN, got $($manifest.candidate_state)"
+          }
+          $candidate = [string]$manifest.candidate_runtime_commit
+          if ($candidate -notmatch '^[0-9a-fA-F]{40}$') {
+            throw "G8 readiness has no full frozen candidate SHA: $candidate"
+          }
+          "candidate_sha=$candidate" >> $env:GITHUB_OUTPUT
+          "governance_sha=$governance" >> $env:GITHUB_OUTPUT
+          "G8 frozen candidate resolved: $candidate"
+
+      - name: Checkout exact frozen runtime
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.freeze.outputs.candidate_sha }}
+          path: runtime
+          fetch-depth: 1
+
+      - name: Verify frozen runtime and resolve test-only harness
+        id: harness
+        shell: pwsh
+        run: |
+          $candidate = "${{ steps.freeze.outputs.candidate_sha }}"
+          $checkedOut = (git -C runtime rev-parse HEAD).Trim()
+          if ($checkedOut -ne $candidate) {
+            throw "G8 runtime checkout mismatch: expected $candidate, got $checkedOut"
+          }
+          git -C runtime diff --exit-code HEAD -- .
+
+          $governanceHarness = "governance/tests/p1_g8_adversarial_rehearsal_capture.gd"
+          $runtimeHarness = "runtime/tests/p1_g8_adversarial_rehearsal_capture.gd"
+          $trackedHarness = git -C runtime ls-files --error-unmatch "tests/p1_g8_adversarial_rehearsal_capture.gd" 2>$null
+
+          if ($LASTEXITCODE -eq 0) {
+            $governanceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $governanceHarness).Hash
+            $runtimeHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $runtimeHarness).Hash
+            if ($governanceHash -ne $runtimeHash) {
+              throw "Frozen runtime already tracks a G8 harness, but its bytes differ from governance: runtime=$runtimeHash governance=$governanceHash"
+            }
+            $status = @(git -C runtime status --porcelain --untracked-files=all)
+            if ($status.Count -ne 0) {
+              throw "Frozen runtime is not clean with byte-identical tracked G8 harness: $($status -join '; ')"
+            }
+            "mode=tracked-byte-identical" >> $env:GITHUB_OUTPUT
+            "G8 harness already tracked in frozen runtime and is byte-identical to governance."
+          } else {
+            Copy-Item `
+              -LiteralPath $governanceHarness `
+              -Destination $runtimeHarness `
+              -Force
+            git -C runtime diff --exit-code HEAD -- .
+            $status = @(git -C runtime status --porcelain --untracked-files=all)
+            $expected = "?? tests/p1_g8_adversarial_rehearsal_capture.gd"
+            if ($status.Count -ne 1 -or $status[0] -ne $expected) {
+              throw "Frozen runtime contains unexpected working-tree changes after harness injection: $($status -join '; ')"
+            }
+            "mode=injected-untracked" >> $env:GITHUB_OUTPUT
+            "G8 runtime tracked bytes remain exact candidate; only injected untracked harness is present."
+          }
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict synchronous import of frozen runtime
+        shell: pwsh
+        working-directory: runtime
+        run: ../governance/ci/run_godot_import.ps1
+
+      - name: Record continuous G8 adversarial rehearsal
+        shell: pwsh
+        working-directory: governance
+        run: |
+          ./ci/run_godot_g8_adversarial_rehearsal.ps1 `
+            -RuntimePath (Join-Path $env:GITHUB_WORKSPACE "runtime") `
+            -OutputDir $env:P1_G8_EVIDENCE_DIR
+
+      - name: Verify frozen tracked runtime remained unchanged
+        if: always()
+        shell: pwsh
+        run: |
+          git -C runtime diff --exit-code HEAD -- .
+          $checkedOut = (git -C runtime rev-parse HEAD).Trim()
+          if ($checkedOut -ne "${{ steps.freeze.outputs.candidate_sha }}") {
+            throw "G8 runtime HEAD moved during rehearsal: $checkedOut"
+          }
+
+      - name: Record G8 evidence provenance
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:P1_G8_EVIDENCE_DIR | Out-Null
+          $candidate = (git -C runtime rev-parse HEAD).Trim()
+          $governance = (git -C governance rev-parse HEAD).Trim()
+          @"
+          FrameMatter P1 G8 adversarial rehearsal
+          workflow_run=$env:GITHUB_RUN_ID
+          frozen_candidate_commit=$candidate
+          governance_harness_commit=$governance
+          readiness_candidate=${{ steps.freeze.outputs.candidate_sha }}
+          event_commit=$env:GITHUB_SHA
+          platform=windows-latest
+          renderer=Godot 4.7.2 Forward+ / D3D12
+          source_scene=res://p1/main.tscn from frozen candidate checkout
+          harness_mode=${{ steps.harness.outputs.mode }}
+          harness_path=tests/p1_g8_adversarial_rehearsal_capture.gd; governance and runtime bytes required identical when candidate already tracks it
+          continuous_recording=p1-g8-adversarial-rehearsal.avi
+          evidence_scope=close Matter camera stress / rapid edit burst / zero-launch release / finite motion / moving edit+storage rebase / topology succession / sibling independence / mixed successor state / production automatic fall recovery
+          "@ | Set-Content -Path (Join-Path $env:P1_G8_EVIDENCE_DIR "G8-EVIDENCE-INFO.txt")
+
+      - name: Upload G8 adversarial evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-G8-Adversarial-Frozen-Candidate-Windows
+          path: artifacts/p1-g8-adversarial
+          retention-days: 30
+          if-no-files-found: warn

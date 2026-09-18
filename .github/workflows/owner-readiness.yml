@@ -1,0 +1,127 @@
+name: Validate Owner readiness contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "quality/**"
+      - "ci/verify_owner_readiness.py"
+      - "ci/test_owner_readiness_guard.py"
+      - "ci/verify_independent_assurance.py"
+      - "ci/test_independent_assurance_guard.py"
+      - "docs/QUALITY-SYSTEM.md"
+      - "docs/INDEPENDENT-ASSURANCE.md"
+      - "docs/p1-owner-facing-recovery-campaign.md"
+      - "docs/p1-visual-acceptance-contract.md"
+      - "docs/evidence/p1-*.md"
+      - ".github/workflows/owner-readiness.yml"
+      - ".github/workflows/deliver-owner-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-readiness-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout governance state with history
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate readiness manifest and evidence references
+        run: python ci/verify_owner_readiness.py --mode validate
+
+      - name: Adversarially self-test the readiness guard
+        run: python ci/test_owner_readiness_guard.py
+
+      - name: Validate independent assurance report state
+        run: python ci/verify_independent_assurance.py --mode validate
+
+      - name: Adversarially self-test independent assurance
+        run: python ci/test_independent_assurance_guard.py
+
+      - name: Prove BLOCKED state cannot pass delivery enforcement
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
+          print(data["status"])
+          PY
+          )
+          if [ "$status" = "BLOCKED" ]; then
+            set +e
+            python ci/verify_owner_readiness.py --mode delivery > /tmp/readiness-negative.log 2>&1
+            result=$?
+            set -e
+            cat /tmp/readiness-negative.log
+            if [ "$result" -eq 0 ]; then
+              echo "OWNER_READINESS_NEGATIVE_CONTROL_FAIL: BLOCKED campaign unexpectedly passed delivery enforcement"
+              exit 1
+            fi
+            grep -q 'OWNER_READINESS_ERROR:' /tmp/readiness-negative.log
+            echo "OWNER_READINESS_NEGATIVE_CONTROL_PASS: BLOCKED campaign is rejected by delivery enforcement"
+          else
+            echo "Campaign is not BLOCKED; negative control is intentionally skipped."
+          fi
+
+      - name: Prove READY state passes delivery enforcement
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
+          print(data["status"])
+          PY
+          )
+          if [ "$status" = "READY_FOR_OWNER" ]; then
+            python ci/verify_owner_readiness.py --mode delivery
+            python ci/verify_independent_assurance.py --mode delivery
+            candidate=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
+          print(data["candidate_runtime_commit"])
+          PY
+            )
+            approved=$(python ci/verify_owner_readiness.py --mode approved-runtime)
+            test "$approved" = "$candidate"
+            echo "OWNER_READINESS_READY_DELIVERY_PASS: approved runtime $approved"
+          else
+            echo "Campaign is not READY_FOR_OWNER; positive delivery control is intentionally skipped."
+          fi
+
+      - name: Show current promotion state
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("quality/p1-owner-readiness.json").read_text(encoding="utf-8"))
+          print("campaign:", data["campaign_id"])
+          print("contract:", data["campaign_contract"])
+          print("contract_version:", data["campaign_contract_version"])
+          print("status:", data["status"])
+          print("candidate_state:", data["candidate_state"])
+          print("candidate_runtime_commit:", data["candidate_runtime_commit"] or "<none>")
+          print("promotion_authorized:", data["promotion_authorized"])
+          print("approved_runtime_commit:", data["approved_runtime_commit"] or "<none>")
+          print("owner_attention_allowed:", data["owner_attention_event"]["allowed"])
+          print("open_blockers:", len(data["open_blockers"]))
+          for name, gate in data["required_gates"].items():
+              print(
+                  f"gate {name}: {gate['status']} type={gate['evidence_type']} "
+                  f"runtime={gate['verified_runtime_commit'] or '<none>'} evidence={len(gate['evidence'])}"
+              )
+          for name, row in data["scenario_coverage"].items():
+              print(
+                  f"scenario {name}: {row['status']} runtime={row['verified_runtime_commit'] or '<none>'} "
+                  f"evidence={len(row['evidence'])}"
+              )
+          PY

@@ -60,3 +60,9 @@ func count_assigned() -> int:
 
 func duplicate_tokens() -> PackedInt64Array:
 	return _tokens.duplicate()
+
+
+func duplicate_map() -> MatterLineageMap:
+	var result := MatterLineageMap.new(size)
+	result._tokens = _tokens.duplicate()
+	return result

@@ -1,0 +1,89 @@
+name: P1 R-V5 chaotic Owner-surface evidence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "tests/p1_rv5_chaotic_owner_surface_rehearsal.gd"
+      - "ci/run_godot_rv5_chaotic_owner_surface.ps1"
+      - ".github/workflows/p1-rv5-chaotic-owner-surface.yml"
+      - "p1/**"
+      - "actor/**"
+      - "matter/**"
+      - "construct/**"
+      - "space/**"
+      - "project.godot"
+  workflow_dispatch:
+
+concurrency:
+  group: p1-rv5-chaotic-owner-surface-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-forward-plus-chaotic-owner-surface:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      P1_RV5_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      P1_RV5_EVIDENCE_DIR: ${{ github.workspace }}\\artifacts\\p1-rv5-chaotic-owner-surface
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.P1_RV5_SOURCE_SHA }}
+
+      - name: Verify exact source checkout
+        shell: pwsh
+        run: |
+          $checkedOut = (git rev-parse HEAD).Trim()
+          if ($checkedOut -ne $env:P1_RV5_SOURCE_SHA) {
+            throw "R-V5 checkout mismatch: expected $env:P1_RV5_SOURCE_SHA, got $checkedOut"
+          }
+          "R-V5 exact source checkout: $checkedOut"
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: false
+
+      - name: Strict synchronous project import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Record accumulated chaotic Owner-surface rehearsal
+        shell: pwsh
+        run: ./ci/run_godot_rv5_chaotic_owner_surface.ps1 -OutputDir $env:P1_RV5_EVIDENCE_DIR
+
+      - name: Record R-V5 evidence provenance
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:P1_RV5_EVIDENCE_DIR | Out-Null
+          $checkedOut = (git rev-parse HEAD).Trim()
+          @"
+          FrameMatter P1 R-V5 chaotic Owner-surface rehearsal
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:P1_RV5_SOURCE_SHA
+          checked_out_commit=$checkedOut
+          event_commit=$env:GITHUB_SHA
+          platform=windows-latest
+          renderer=Godot 4.7.2 Forward+ / D3D12
+          source_scene=res://p1/main.tscn
+          capture_script=res://tests/p1_rv5_chaotic_owner_surface_rehearsal.gd
+          continuous_recording=p1-rv5-chaotic-owner-surface.avi
+          recording_fps=30
+          required_persistent_edits=26
+          evidence_scope=accumulated holes/concavities/protrusions/narrow features + near/mid camera + REMOVE/PLACE target composition + post-entropy STATIC/DYNAMIC motion + final refreeze
+          verdict_scope=mechanical rehearsal only until rendered artifact/movie receives human review
+          "@ | Set-Content -Path (Join-Path $env:P1_RV5_EVIDENCE_DIR "RV5-EVIDENCE-INFO.txt")
+
+      - name: Upload R-V5 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-P1-RV5-Chaotic-Owner-Surface-Windows
+          path: artifacts/p1-rv5-chaotic-owner-surface
+          retention-days: 30
+          if-no-files-found: warn
