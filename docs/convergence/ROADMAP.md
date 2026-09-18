@@ -172,7 +172,7 @@ Stop condition:
 
 ## C5 — Living World
 
-**Status: ACTIVE**
+**Status: PASS / BOUNDED; reconnect pressure deferred**
 
 Question:
 
@@ -197,7 +197,7 @@ Stop condition:
 
 ## C6 — Autonomous Qualification
 
-**Status: CONDITIONAL ON C5**
+**Status: ACTIVE**
 
 Question:
 
