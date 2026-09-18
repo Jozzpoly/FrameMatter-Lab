@@ -1,6 +1,15 @@
 class_name SpaceQueryCharacter
 extends Node3D
 
+const SCALE_PROBE_BASE_RADIUS := 0.32
+const SCALE_PROBE_BASE_HEIGHT := 1.80
+const SCALE_PROBE_BASE_GRAVITY := 18.0
+const SCALE_PROBE_BASE_JUMP_SPEED := 5.8
+const SCALE_PROBE_BASE_GROUND_SNAP := 0.24
+const SCALE_PROBE_BASE_QUERY_MARGIN := 0.002
+const SCALE_PROBE_BASE_FACING_POSITION := Vector3(0.0, 0.1, -0.42)
+const SCALE_PROBE_BASE_FACING_SIZE := Vector3(0.16, 0.16, 0.42)
+
 # P1 actor challenger: volumetric collision through Godot/Jolt direct-space
 # shape queries, without becoming a kinematic PhysicsBody that can inject
 # implicit push authority into dynamic constructs.
@@ -46,6 +55,32 @@ func _ready() -> void:
 	_shape = CapsuleShape3D.new()
 	_shape.radius = radius
 	_shape.height = maxf(height, radius * 2.0)
+
+
+# C1-only relative-scale proxy. It deliberately changes the embodied actor's
+# size relative to unchanged 1-cell Matter; it is not a representation change.
+func apply_scale_probe(length_scale: float) -> void:
+	var scale_factor := maxf(1.0, length_scale)
+	radius = SCALE_PROBE_BASE_RADIUS * scale_factor
+	height = SCALE_PROBE_BASE_HEIGHT * scale_factor
+	gravity_acceleration = SCALE_PROBE_BASE_GRAVITY * scale_factor
+	jump_speed = SCALE_PROBE_BASE_JUMP_SPEED * scale_factor
+	ground_snap_distance = SCALE_PROBE_BASE_GROUND_SNAP * scale_factor
+	query_margin = SCALE_PROBE_BASE_QUERY_MARGIN * scale_factor
+	if _shape != null:
+		_shape.radius = radius
+		_shape.height = maxf(height, radius * 2.0)
+
+	var body := get_node_or_null("Body") as MeshInstance3D
+	if body != null and body.mesh is CapsuleMesh:
+		var capsule := body.mesh as CapsuleMesh
+		capsule.radius = radius
+		capsule.height = height
+	var facing := get_node_or_null("FacingMarker") as MeshInstance3D
+	if facing != null:
+		facing.position = SCALE_PROBE_BASE_FACING_POSITION * scale_factor
+		if facing.mesh is BoxMesh:
+			(facing.mesh as BoxMesh).size = SCALE_PROBE_BASE_FACING_SIZE * scale_factor
 
 
 func request_jump() -> void:
