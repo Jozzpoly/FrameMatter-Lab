@@ -89,6 +89,35 @@ Rigid brace/bypass across different authorities is deferred until reconnect sema
 
 The C1 play recording remains a material signal that the capsule/query actor and weak reciprocal reaction increasingly lag behind the physical world at larger scale. Keep it visible; do not let it interrupt C5 before world-language history is tested.
 
+## C5A result — PASS
+
+Qualified source:
+
+`b23c47d1c326f732ef6bf9791c9989d5b39b3b31`
+
+Evidence:
+
+`docs/evidence/convergence-c5a-relation-history-2026-09-18.md`
+
+Earned statement:
+
+> relation validity follows live Matter identity and history; same-address geometry cannot resurrect destroyed endpoint identity.
+
+## Active C5B pressure — topology succession
+
+Now test a surviving relation endpoint through a real dynamic topology split.
+
+The relation record must keep the same lineage identity while:
+
+- old dynamic Space/body retires;
+- endpoint Matter maps into exactly one successor;
+- compact local coordinates change;
+- host joint may be destroyed/recreated;
+- seam world frame stays continuous;
+- relation resumes on the successor and remains solver-driven.
+
+Use a fixture where the endpoint-owning successor has a non-zero source origin so the frame mapping is actually exercised rather than trivially identity-mapped.
+
 ## Next legitimate move
 
-Implement C5A as a strict relation-history probe around retained/destroyed/fresh lineage. Only if it passes should C5 continue into topology succession.
+Implement C5B topology-succession pressure only. Do not add reconnect/brace semantics yet.
