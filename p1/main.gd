@@ -535,6 +535,7 @@ func _ensure_input_actions() -> void:
 	_ensure_key_action("p1_camera_reset", KEY_HOME)
 	_ensure_key_action("p1_reset", KEY_R)
 	_ensure_key_action("p1_edit_toggle", KEY_E)
+	_ensure_key_action("p1_structural_seam", KEY_H)
 	_ensure_key_action("p1_space_toggle", KEY_T)
 	_ensure_key_action("p1_space_forward_impulse", KEY_UP)
 	_ensure_key_action("p1_space_back_impulse", KEY_DOWN)
