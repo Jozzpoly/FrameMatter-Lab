@@ -20,6 +20,9 @@ var focus_source: Node
 var enabled := true
 var last_refresh_usec := 0
 var last_refresh_space_id := 0
+# Zero preserves provider-coupled granularity. Positive values are an
+# experiment/runtime override for static MatterRepresentation presentation only.
+var chunk_edge_override := 0
 
 var _focus_space: LocalMatterSpace
 var _state_signatures: Dictionary = {}
@@ -75,6 +78,14 @@ func set_focus_space(space: LocalMatterSpace) -> void:
 
 func get_focus_space() -> LocalMatterSpace:
 	return _focus_space
+
+
+func set_chunk_edge_override(value: int) -> void:
+	assert(value >= 0)
+	if chunk_edge_override == value:
+		return
+	chunk_edge_override = value
+	refresh_all()
 
 
 func set_enabled(value: bool) -> void:
@@ -372,6 +383,8 @@ func _chunk_edge_for_space(space: LocalMatterSpace) -> int:
 		return 0
 	var provider := space.get_active_provider()
 	if provider is MatterRepresentation:
+		if chunk_edge_override > 0:
+			return chunk_edge_override
 		return maxi(0, (provider as MatterRepresentation).chunk_edge)
 	return 0
 
