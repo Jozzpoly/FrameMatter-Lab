@@ -45,6 +45,7 @@ var _orbiting := false
 var _runtime_yaw: float = default_yaw
 var _runtime_pitch: float = default_pitch
 var _probe_shape: SphereShape3D
+var _scale_probe_baseline: Dictionary = {}
 
 @onready var _yaw_pivot: Node3D = $YawPivot
 @onready var _pitch_pivot: Node3D = $YawPivot/PitchPivot
@@ -60,7 +61,51 @@ func _ready() -> void:
 	_runtime_pitch = _pitch
 	_probe_shape = SphereShape3D.new()
 	_probe_shape.radius = camera_probe_radius
+	_capture_scale_probe_baseline()
 	_apply_user_orbit_immediately()
+
+
+func apply_scale_probe(length_scale: float) -> void:
+	if _scale_probe_baseline.is_empty():
+		_capture_scale_probe_baseline()
+	var scale_factor := maxf(1.0, length_scale)
+	focus_height = float(_scale_probe_baseline["focus_height"]) * scale_factor
+	default_distance = float(_scale_probe_baseline["default_distance"]) * scale_factor
+	min_distance = float(_scale_probe_baseline["min_distance"]) * scale_factor
+	max_distance = float(_scale_probe_baseline["max_distance"]) * scale_factor
+	zoom_step = float(_scale_probe_baseline["zoom_step"]) * scale_factor
+	context_blend_start = float(_scale_probe_baseline["context_blend_start"]) * scale_factor
+	context_blend_full = float(_scale_probe_baseline["context_blend_full"]) * scale_factor
+	max_context_focus_shift = float(_scale_probe_baseline["max_context_focus_shift"]) * scale_factor
+	emergency_relation_start = float(_scale_probe_baseline["emergency_relation_start"]) * scale_factor
+	emergency_relation_full = float(_scale_probe_baseline["emergency_relation_full"]) * scale_factor
+	emergency_vertical_lift_cap = float(_scale_probe_baseline["emergency_vertical_lift_cap"]) * scale_factor
+	camera_probe_radius = float(_scale_probe_baseline["camera_probe_radius"]) * scale_factor
+	escape_clearance_target = float(_scale_probe_baseline["escape_clearance_target"]) * scale_factor
+	if _probe_shape != null:
+		_probe_shape.radius = camera_probe_radius
+	if _spring_arm != null:
+		_spring_arm.margin = float(_scale_probe_baseline["spring_arm_margin"]) * scale_factor
+	reset_view()
+
+
+func _capture_scale_probe_baseline() -> void:
+	_scale_probe_baseline = {
+		"focus_height": focus_height,
+		"default_distance": default_distance,
+		"min_distance": min_distance,
+		"max_distance": max_distance,
+		"zoom_step": zoom_step,
+		"context_blend_start": context_blend_start,
+		"context_blend_full": context_blend_full,
+		"max_context_focus_shift": max_context_focus_shift,
+		"emergency_relation_start": emergency_relation_start,
+		"emergency_relation_full": emergency_relation_full,
+		"emergency_vertical_lift_cap": emergency_vertical_lift_cap,
+		"camera_probe_radius": camera_probe_radius,
+		"escape_clearance_target": escape_clearance_target,
+		"spring_arm_margin": _spring_arm.margin if _spring_arm != null else 0.12,
+	}
 
 
 func set_target(node: Node3D) -> void:
