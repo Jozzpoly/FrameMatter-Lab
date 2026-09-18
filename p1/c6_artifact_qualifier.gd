@@ -82,11 +82,16 @@ func run(root: Node) -> Dictionary:
 	_check(bool(authoring.get("accepted", false)), "exported actual H input reaches structural-seam authoring")
 	_check(int(authoring.get("candidate_count", 0)) == 1, "exported pointer/H resolves exactly one bounded structural-law candidate")
 	_check(world.volume.count_solid() == occupied_before, "exported seam authoring changes meaning without destroying Matter")
-	_check(world.is_authority_partition_pending(), "exported actual input queues W0 authority composition")
-	if not world.is_authority_partition_pending():
+	var committed_during_input_turn := bool(root.call("has_c6_active_relation_for_test"))
+	_check(
+		world.is_authority_partition_pending() or committed_during_input_turn,
+		"exported H input either queues or already atomically commits W0 authority composition"
+	)
+	if world.is_authority_partition_pending():
+		await world.authority_partition_committed
+	elif not committed_during_input_turn:
 		return _report(false)
 
-	await world.authority_partition_committed
 	var result := world.get_last_authority_partition_result()
 	var target := result.get("target_space") as LocalMatterSpace
 	var relation: Dictionary = root.call("get_c6_active_relation_for_test")
