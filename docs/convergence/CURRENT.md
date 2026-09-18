@@ -8,94 +8,98 @@ If live repository/CI evidence contradicts this file, live evidence wins and thi
 
 ## Active objective
 
-**C3 — Authority Composition is active.**
+**C4 — Passive Relation is active.**
 
 Question:
 
-> can a change in local structural law itself cause ordinary WORLD Matter to decompose into distinct physical authorities without deleting/recreating the Matter?
+> can the C2 structural seam remain meaningful after C3 authority composition and derive one passive rotational degree of freedom, so ordinary gravity produces constrained motion without a prefab mechanism mode?
 
-C2 is now closed as a bounded technical PASS.
+C3 is closed as a bounded PASS.
 
-## Protected baseline
+## Protected chain
 
-C0 exact-artifact Spark remains frozen at:
+### C0 — Spark
 
-`028c12764692b8d79ba9b2c634ed9fbd6a2d7f70`
+Ordinary WORLD Matter can causally acquire dynamic autonomy while preserving retained Matter identity, actor continuity and live editability.
 
-Every Convergence stage must preserve that causal world behavior unless deliberately challenging it.
+### C1 — Scale
 
-## C1 result — bounded Owner PASS
+Owner play established relative scale as a strong experiential multiplier. Roughly 50–25 cm proxies are the strongest current signal; ~12.5 cm remains interesting. SCALE remains a future track, not current driver.
 
-C1 established that relative actor : Matter scale materially changes immersion and construction instinct.
+### C2 — Structural Law
 
-Strongest current Owner range:
+`material continuity != rigid connectivity`
 
-- mode 2 ≈ 50 cm proxy;
-- mode 3 ≈ 25 cm proxy.
+Same Matter occupancy can derive one or two rigid components from one local lineage-owned adjacency law, including alternate rigid bypass behavior.
 
-Mode 4 ≈ 12.5 cm is extreme but still informative.
-
-This preserves SCALE / REPRESENTATION as a meaningful future track without making it primary.
-
-C1 also exposed growing actor embodiment debt: the query capsule's weak bidirectional world reaction and extreme-scale camera/body problems. Preserve that pressure; do not pre-empt C3 with an actor rewrite.
-
-Evidence:
-
-`docs/evidence/convergence-c1-owner-scale-play-2026-09-18.md`
-
-## C2 result — PASS
+### C3 — Authority Composition
 
 Qualified source:
 
-`9e226f9eadd3037485244ae80ce227be9dd70fad`
+`0d541e022ec4fa82ce5678321e30ded50b74015c`
 
 Evidence:
 
-`docs/evidence/convergence-c2-structural-law-2026-09-18.md`
+`docs/evidence/convergence-c3-authority-composition-2026-09-18.md`
 
-Earned statement:
+Earned chain:
 
-> material continuity != rigid connectivity
+> same ordinary Matter → local law → derived rigid split → anchored WORLD remainder + zero-launch dynamic island
 
-The same occupied Matter can derive one or two rigid components depending only on one lineage-owned local adjacency law. A rigid bypass reconnects the components; removing the bypass splits them again.
+No Matter was destroyed to cause that split.
 
-C2 changed no world authority and created no body/joint.
+## C4 execution boundary
 
-## C3 boundary
+The relation truth must exist independently of body IDs.
 
-C3 may compose only already-earned pieces:
+Experiment-local relation identity may use:
 
-1. ordinary static WORLD Matter;
-2. C2 derived rigid-connectivity result;
-3. explicit anchor criterion identifying the canonical remainder;
-4. existing W0 authority-partition transaction;
-5. dynamic target initialized at zero linear/angular velocity.
+- lineage token on the WORLD side;
+- lineage token on the island side;
+- local seam frame / axis.
+
+This is a **lab dialect**, not a final MaterialAnchor/Bond schema.
+
+After C3 transfer:
+
+- resolve which current authority owns each retained lineage endpoint;
+- use exactly one passive `HingeJoint3D` as disposable solver host;
+- no motor;
+- no angular limits;
+- gravity is the only driver;
+- compare against an otherwise equivalent unjointed C3 control.
+
+For the first C4 specimen the anchored endpoint is canonical static WORLD. Godot can host the dynamic endpoint against an implicit fixed StaticBody when only one joint body is specified; this is acceptable only for this bounded WORLD↔dynamic test.
 
 Required evidence:
 
-- before the local law: one rigid organization;
-- after the local law: anchored remainder + one unanchored rigid island;
-- ordinary material occupancy/lineage is retained before authority commit;
-- W0 moves exactly the derived unanchored component;
-- source remains canonical/static;
-- target becomes dynamic with fresh Space/provider identity;
-- lineage is conserved and disjoint across owners;
-- no world-space Matter jump;
-- no hidden launch;
-- no Matter REMOVE is used to cause the decomposition.
+1. relation metadata contains no provider/body identity;
+2. lineage endpoints remain live on opposite authorities after C3;
+3. control island falls freely;
+4. related island remains anchored at the seam;
+5. related island develops substantial solver-driven relative rotation;
+6. Matter/lineage are not mutated by relation motion;
+7. C2, C3 and exact-artifact C0 remain PASS.
 
-Stop after that claim.
+## Explicit nonclaims
 
-## Explicitly not C3
+C4 does not yet prove:
 
-- no HingeJoint;
-- no passive rotational relation yet;
-- no mechanism UI;
-- no generic structural graph;
-- no final anchor ontology;
-- no actor rewrite;
-- no representation rewrite.
+- dynamic↔dynamic relations;
+- relation succession/rebase;
+- live edit survival;
+- brace/bypass suppression;
+- relation destruction;
+- final hinge/Bearing semantics;
+- a generic mechanical graph;
+- Owner-facing mechanism authoring.
+
+Those belong to C5 or later.
+
+## Embodiment debt
+
+C1 Owner play exposed that the query capsule and weak reciprocal world reaction increasingly lag behind the implied physical body, especially at larger relative scale. Preserve this as a material future EMBODIMENT/WORK signal. Do not pre-empt C4 with an actor rewrite.
 
 ## Next legitimate move
 
-Build the smallest deterministic C3 composition probe. If it passes and exact-artifact C0 remains green, advance to C4 Passive Relation.
+Run one bounded passive-relation control/challenger. Stop C4 after the claim is earned; do not generalize the host implementation.
