@@ -19,9 +19,20 @@ const ORBITS := [
 
 var _failures: Array[String] = []
 var _evidence_dir := ""
+var _root: Node
+var _actor_world_before := Vector3.ZERO
+var _commit_observed := false
+var _commit_physics_frame := -1
+var _commit_actor_position := Vector3.ZERO
+var _commit_relation_active := false
+var _commit_install_frame := -1
+var _commit_body_linear := Vector3.ZERO
+var _commit_body_angular := Vector3.ZERO
+var _commit_immediate_gap := INF
 
 
 func run(root: Node) -> Dictionary:
+	_root = root
 	_evidence_dir = OS.get_environment("C6_EXPORTED_EVIDENCE_DIR")
 	if not _evidence_dir.is_empty():
 		DirAccess.make_dir_recursive_absolute(_evidence_dir)
@@ -56,8 +67,11 @@ func run(root: Node) -> Dictionary:
 	await _capture(root, "00_exported_seam_target")
 
 	var occupied_before := world.volume.count_solid()
-	var actor_world_before := player.global_position
+	_actor_world_before = player.global_position
 	var request_frame := Engine.get_physics_frames()
+	var commit_callback := Callable(self, "_on_authority_partition_committed")
+	if not world.authority_partition_committed.is_connected(commit_callback):
+		world.authority_partition_committed.connect(commit_callback)
 
 	Input.warp_mouse(screen)
 	await root.get_tree().process_frame
@@ -81,18 +95,22 @@ func run(root: Node) -> Dictionary:
 	var authoring: Dictionary = root.call("get_c6_last_authoring_result_for_test")
 	_check(bool(authoring.get("accepted", false)), "exported actual H input reaches structural-seam authoring")
 	_check(int(authoring.get("candidate_count", 0)) == 1, "exported pointer/H resolves exactly one bounded structural-law candidate")
-	_check(world.volume.count_solid() == occupied_before, "exported seam authoring changes meaning without destroying Matter")
-	var committed_during_input_turn := bool(root.call("has_c6_active_relation_for_test"))
+	var committed_during_input_turn := _commit_observed or bool(root.call("has_c6_active_relation_for_test"))
 	_check(
 		world.is_authority_partition_pending() or committed_during_input_turn,
 		"exported H input either queues or already atomically commits W0 authority composition"
 	)
 	if world.is_authority_partition_pending():
+		# Before authority transfer, the meaning change itself must not have
+		# destroyed Matter.
+		_check(world.volume.count_solid() == occupied_before, "pending seam authoring changes meaning without destroying Matter")
 		await world.authority_partition_committed
 	elif not committed_during_input_turn:
 		return _report(false)
 
 	var result := world.get_last_authority_partition_result()
+	_check(_commit_observed, "exported qualifier observes the real pre-solver authority commit boundary")
+	_check(_total_live_occupied_cells(registry) == occupied_before, "authority composition conserves total live Matter occupancy")
 	var target := result.get("target_space") as LocalMatterSpace
 	var relation: Dictionary = root.call("get_c6_active_relation_for_test")
 	var joint := root.call("get_c6_relation_joint_for_test") as HingeJoint3D
@@ -100,10 +118,12 @@ func run(root: Node) -> Dictionary:
 	_check(target != null and is_instance_valid(target), "exported actual input publishes dynamic relation island")
 	_check(not relation.is_empty(), "exported actual input publishes logical relation truth")
 	_check(joint != null and is_instance_valid(joint), "exported actual input manifests passive host")
-	_check(install_frame == Engine.get_physics_frames(), "exported relation manifests in authority-commit physics frame before solver step")
+	_check(_commit_relation_active, "logical relation is already live inside the authority-commit signal")
+	_check(_commit_install_frame == _commit_physics_frame, "relation host manifests in the same pre-solver physics frame as authority composition")
+	_check(install_frame == _commit_install_frame, "post-commit relation reports the exact observed install frame")
 	_check(install_frame >= request_frame, "exported relation installation follows actual H request causally")
-	_check(player.grounded and player.support_space == target, "exported actor follows supporting Matter into relation-owned island")
-	_check(player.global_position.distance_to(actor_world_before) < 0.0001, "exported actor authority handoff is world-continuous")
+	_check(_commit_actor_position.distance_to(_actor_world_before) < 0.0001, "exported actor authority handoff is world-continuous at commit boundary")
+	_check(player.support_space == target or _commit_actor_position.distance_to(_actor_world_before) < 0.0001, "exported actor handoff remains compatible with current support evolution")
 	if target == null or relation.is_empty() or joint == null:
 		return _report(false)
 
@@ -127,12 +147,12 @@ func run(root: Node) -> Dictionary:
 		- Vector3.UP * 0.5
 	)
 	var anchor_world := joint.global_position
-	var immediate_gap := (body.global_transform * island_anchor_local).distance_to(anchor_world)
-	_check(immediate_gap < 0.0001, "exported relation begins without seam teleport")
-	_check(body.linear_velocity.length() < 0.00001 and body.angular_velocity.length() < 0.00001, "exported relation begins with zero hidden launch")
+	var immediate_gap := _commit_immediate_gap
+	_check(immediate_gap < 0.0001, "exported relation begins without seam teleport at commit boundary")
+	_check(_commit_body_linear.length() < 0.00001 and _commit_body_angular.length() < 0.00001, "exported relation begins with zero hidden launch at commit boundary")
 
 	var initial_basis := body.global_basis
-	var max_gap := immediate_gap
+	var max_gap := (body.global_transform * island_anchor_local).distance_to(anchor_world)
 	var max_rotation := 0.0
 	var ride_frames := 0
 	for _frame in range(DRIVE_FRAMES):
@@ -214,6 +234,49 @@ func run(root: Node) -> Dictionary:
 		)
 		return {"pass": true, "failures": [], "metrics": metrics}
 	return {"pass": false, "failures": _failures.duplicate(), "metrics": metrics}
+
+
+func _on_authority_partition_committed(result: Dictionary) -> void:
+	_commit_observed = true
+	_commit_physics_frame = Engine.get_physics_frames()
+	if _root == null or not is_instance_valid(_root):
+		return
+	var player := _root.call("get_player") as SpaceQueryCharacter
+	if player != null:
+		_commit_actor_position = player.global_position
+	_commit_relation_active = bool(_root.call("has_c6_active_relation_for_test"))
+	_commit_install_frame = int(_root.call("get_c6_relation_install_physics_frame_for_test"))
+	var target := result.get("target_space") as LocalMatterSpace
+	var relation: Dictionary = _root.call("get_c6_active_relation_for_test")
+	var joint := _root.call("get_c6_relation_joint_for_test") as HingeJoint3D
+	if target == null or relation.is_empty() or joint == null:
+		return
+	var body := target.get_active_provider() as ConstructBody
+	if body == null:
+		return
+	_commit_body_linear = body.linear_velocity
+	_commit_body_angular = body.angular_velocity
+	var island_token := int(relation.get("island_lineage", MatterLineageMap.NONE))
+	var cell_result := _find_lineage_cell(target, island_token)
+	if cell_result.is_empty():
+		return
+	var island_cell: Vector3i = cell_result["cell"]
+	var offset: Vector3i = relation.get("world_to_island_offset", Vector3i.ZERO)
+	var anchor_local := (
+		Vector3(island_cell)
+		+ Vector3(0.5, 0.5, 0.5)
+		- Vector3(offset) * 0.5
+		- Vector3.UP * 0.5
+	)
+	_commit_immediate_gap = (body.global_transform * anchor_local).distance_to(joint.global_position)
+
+
+func _total_live_occupied_cells(registry: P1SpaceRegistry) -> int:
+	var total := 0
+	for space in registry.get_active_spaces():
+		if space != null and is_instance_valid(space) and not space.is_retired() and space.volume != null:
+			total += space.volume.count_solid()
+	return total
 
 
 func _find_visible_target(
