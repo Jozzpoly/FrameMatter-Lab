@@ -12,6 +12,7 @@ extends "res://p1/main.gd"
 
 const RECOVERY_WORLD_SIZE := Vector3i(32, 8, 32)
 const RECOVERY_WORLD_ORIGIN := Vector3(-16.0, -4.0, -16.0)
+const RECOVERY_PRESENTATION_CHUNK_EDGE := 7
 const RECOVERY_CAUSAL_BRIDGE_CELL := Vector3i(14, 5, 16)
 const RECOVERY_CAUSAL_SUPPORT_CELL := Vector3i(18, 5, 17)
 const RECOVERY_BOUNDED_POLICY_BUDGET := 64
@@ -103,6 +104,15 @@ func _initialize_space() -> void:
 
 	_recovery_demo_space = null
 	_recovery_world_space = _build_world_matter_space()
+	# Presentation granularity is intentionally decoupled from physics-provider
+	# granularity. Edge 7 won the spatial/lifecycle tradeoff while the static
+	# physics provider remains edge 8 to avoid collision-shape inflation.
+	var surface_grid := get_node_or_null("P1MatterSurfaceGrid") as P1MatterSurfaceGrid
+	var state_presentation := get_node_or_null("P1MatterStatePresentation") as P1MatterStatePresentation
+	if surface_grid != null:
+		surface_grid.chunk_edge_override = RECOVERY_PRESENTATION_CHUNK_EDGE
+	if state_presentation != null:
+		state_presentation.chunk_edge_override = RECOVERY_PRESENTATION_CHUNK_EDGE
 	_recovery_source_known_single_connected = (
 		MatterTopology.extract_connected_cell_components(_recovery_world_space.volume).size() == 1
 	)

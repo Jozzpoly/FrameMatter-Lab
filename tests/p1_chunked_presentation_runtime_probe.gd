@@ -38,7 +38,9 @@ func _run() -> void:
 		_finish(root)
 		return
 
-	_check(provider.chunk_edge == 8, "runtime presentation probe uses edge-8 Recovery WORLD chunks")
+	_check(provider.chunk_edge == 8, "runtime presentation probe keeps edge-8 Recovery WORLD physics chunks")
+	_check(grid.chunk_edge_override == 7, "Recovery surface grid uses independently selected edge-7 presentation chunks")
+	_check(state.chunk_edge_override == 7, "Recovery state/focus presentation uses independently selected edge-7 chunks")
 	_check(player.grounded and player.support_space == world and player.support_body == provider, "actor begins on the same logical chunked provider")
 
 	var grid_root := grid.get_overlay_for_space(world)
@@ -55,7 +57,9 @@ func _run() -> void:
 	var grid_before := grid.get_chunk_ids_for_test(world)
 	var state_before := state.get_state_chunk_ids_for_test(world)
 	var focus_before := state.get_focus_chunk_ids_for_test(world)
-	_check(grid_before.size() > 1 and state_before.size() > 1 and focus_before.size() > 1, "WORLD presentation is actually regionized")
+	_check(grid_before.size() > 16 and grid_before.size() < 50, "WORLD edge-7 grid materializes bounded independent presentation chunks")
+	_check(state_before.size() > 16 and state_before.size() < 50, "WORLD edge-7 state contour materializes bounded independent chunks")
+	_check(focus_before.size() > 16 and focus_before.size() < 50, "WORLD edge-7 focus crown materializes bounded independent chunks")
 	_check(_same_keys(_segment_set(P1MatterSurfaceGrid.build_exposed_surface_grid(world.volume)), _segment_set_from_root(grid_root)), "initial chunk grid exactly equals whole-volume grid")
 	_check(_same_keys(_segment_set(P1MatterStatePresentation.build_side_surface_contour(world.volume)), _segment_set_from_root(state_root)), "initial chunk state exactly equals whole-volume contour")
 	_check(_same_keys(_segment_set(P1MatterStatePresentation.build_top_surface_perimeter(world.volume)), _segment_set_from_root(focus_root)), "initial chunk focus exactly equals whole-volume crown")
