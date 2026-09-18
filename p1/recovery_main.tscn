@@ -143,7 +143,7 @@ text = "WORLD MATTER   ·   STATIC   ·   2 LIVE SPACES"
 [node name="Hint" type="Label" parent="HUD/Panel/MarginContainer/VBoxContainer"]
 theme_override_colors/font_color = Color(0.68, 0.76, 0.84, 1)
 theme_override_font_sizes/font_size = 11
-text = "LMB remove   ·   RMB build   ·   WASD move   ·   Space jump   ·   MMB orbit"
+text = "LMB remove   ·   RMB build   ·   H structural seam   ·   WASD move   ·   Space jump   ·   MMB orbit"
 
 [node name="P1InteractionFeedback" type="Control" parent="HUD"]
 anchors_preset = 15
