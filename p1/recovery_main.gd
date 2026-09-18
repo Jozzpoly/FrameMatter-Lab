@@ -49,6 +49,8 @@ func _ready() -> void:
 	# P1RecoveryDirectEdit instead of the old modal E + LMB consumer path.
 	_interactor.set_process_unhandled_input(false)
 	_last_event = "recovery: edit ordinary Matter; detached Matter becomes physical"
+	if OS.get_cmdline_user_args().has("--c0-artifact-baseline"):
+		call_deferred("_run_c0_artifact_baseline")
 
 
 func get_recovery_world_space() -> LocalMatterSpace:
@@ -511,3 +513,128 @@ func _refresh_camera_context() -> void:
 		context_space.get_content_center_local(),
 		_space_planar_radius(context_space)
 	)
+
+
+# Convergence C0 exact-artifact qualification. This is intentionally embedded
+# behind an explicit user argument so the exported Owner scene itself, not a
+# source-only test runner, must reproduce the protected Spark causal loop.
+func _run_c0_artifact_baseline() -> void:
+	var failures: Array[String] = []
+	await _c0_advance_frames(24)
+
+	var world := _recovery_world_space
+	var registry := _registry
+	var player := _player
+	var interactor := _interactor
+	_c0_check(world != null and is_instance_valid(world), "ordinary WORLD Matter exists", failures)
+	_c0_check(registry != null and registry.get_active_count() == 1, "startup has one canonical Matter world", failures)
+	_c0_check(_recovery_demo_space == null, "startup has no pre-authored mover", failures)
+	_c0_check(player != null and player.grounded and player.support_space == world, "actor begins supported by ordinary WORLD Matter", failures)
+	if not failures.is_empty():
+		_c0_finish(failures)
+		return
+
+	var witness: Dictionary = player.get_support_contact_witness()
+	_c0_check(bool(witness.get("valid", false)), "actor has exact Matter support witness", failures)
+	if not bool(witness.get("valid", false)):
+		_c0_finish(failures)
+		return
+	var witness_cell: Vector3i = witness.get("cell", Vector3i(-999, -999, -999))
+	var witness_token: int = world.lineage.get_lineage(witness_cell)
+	_c0_check(witness_token != MatterLineageMap.NONE, "support witness owns live Matter lineage", failures)
+	var actor_world_before := player.global_position
+
+	_c0_check(
+		interactor.apply_edit_to_cell(world, RECOVERY_CAUSAL_BRIDGE_CELL, P1MatterInteractor.EditMode.REMOVE),
+		"ordinary Matter bridge can be removed through production mutation authority",
+		failures
+	)
+	_c0_check(world.volume.get_cell(RECOVERY_CAUSAL_BRIDGE_CELL) == CellVolume.EMPTY, "causal bridge Matter is destroyed", failures)
+	_c0_check(world.is_authority_partition_pending(), "topology consequence queues authority repartition", failures)
+	if not world.is_authority_partition_pending():
+		_c0_finish(failures)
+		return
+
+	await world.authority_partition_committed
+	var result := world.get_last_authority_partition_result()
+	var target := result.get("target_space") as LocalMatterSpace
+	_c0_check(target != null and is_instance_valid(target), "detached Matter receives a fresh live owner", failures)
+	if target == null or not is_instance_valid(target):
+		_c0_finish(failures)
+		return
+
+	var actor_handoff_error := player.global_position.distance_to(actor_world_before)
+	var source_origin: Vector3i = result.get("source_origin", Vector3i.ZERO)
+	var target_witness_cell := witness_cell - source_origin
+	_c0_check(registry.get_active_count() == 2, "canonical WORLD and detached Matter coexist", failures)
+	_c0_check(world.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "canonical WORLD remains static", failures)
+	_c0_check(target.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC, "detached Matter becomes dynamic without launch ceremony", failures)
+	_c0_check(player.grounded and player.support_space == target, "actor follows supporting Matter into derived frame", failures)
+	_c0_check(actor_handoff_error < 0.0001, "actor handoff is world-continuous", failures)
+	_c0_check(world.lineage.get_lineage(witness_cell) == MatterLineageMap.NONE, "support lineage leaves canonical authority", failures)
+	_c0_check(
+		target.lineage.in_bounds(target_witness_cell)
+		and target.lineage.get_lineage(target_witness_cell) == witness_token,
+		"same supporting Matter lineage survives under detached authority",
+		failures
+	)
+
+	var provider := target.get_active_provider()
+	var target_start_y := provider.global_position.y if provider != null else 0.0
+	var actor_start_y := player.global_position.y
+	await _c0_advance_frames(16)
+	var target_fall := target_start_y - (provider.global_position.y if provider != null else target_start_y)
+	var actor_fall := actor_start_y - player.global_position.y
+	_c0_check(target_fall > 0.05, "gravity moves causally detached Matter", failures)
+	_c0_check(actor_fall > 0.05, "actor rides the same falling Matter", failures)
+	_c0_check(player.grounded and player.support_space == target, "support relation persists during motion", failures)
+
+	# Protect the experiential Spark property that dynamic Matter remains editable.
+	# Use a known corner of the detached authored shelf, mapped through the exact
+	# authority-transfer origin rather than treating local coordinates as identity.
+	var moving_edit_source_cell := Vector3i(15, 5, 14)
+	var moving_edit_cell := moving_edit_source_cell - source_origin
+	_c0_check(target.volume.in_bounds(moving_edit_cell), "moving edit target maps inside detached Matter", failures)
+	var moving_edit_token := (
+		target.lineage.get_lineage(moving_edit_cell)
+		if target.volume.in_bounds(moving_edit_cell)
+		else MatterLineageMap.NONE
+	)
+	_c0_check(moving_edit_token != MatterLineageMap.NONE, "moving edit target owns Matter lineage", failures)
+	if moving_edit_token != MatterLineageMap.NONE:
+		_c0_check(
+			interactor.apply_edit_to_cell(target, moving_edit_cell, P1MatterInteractor.EditMode.REMOVE),
+			"moving detached Matter accepts a live edit",
+			failures
+		)
+		_c0_check(target.lineage.get_lineage(moving_edit_cell) == MatterLineageMap.NONE, "moving edit destroys exactly that Matter identity", failures)
+	await _c0_advance_frames(3)
+	_c0_check(is_instance_valid(target) and not target.is_retired(), "edited detached Matter remains part of the living world", failures)
+	_c0_check(target.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC, "moving edit does not collapse physical autonomy", failures)
+
+	print(
+		"C0_EXPORTED_SPARK_BASELINE_METRIC target_fall=%.6f actor_fall=%.6f handoff_error=%.8f active_spaces=%d"
+		% [target_fall, actor_fall, actor_handoff_error, registry.get_active_count()]
+	)
+	_c0_finish(failures)
+
+
+func _c0_advance_frames(count: int) -> void:
+	for _frame in range(count):
+		await get_tree().physics_frame
+		await get_tree().process_frame
+
+
+func _c0_check(condition: bool, description: String, failures: Array[String]) -> void:
+	if not condition:
+		failures.append(description)
+
+
+func _c0_finish(failures: Array[String]) -> void:
+	if failures.is_empty():
+		print("C0_EXPORTED_SPARK_BASELINE_PASS: exact exported Owner scene reproduces ordinary Matter cut -> derived dynamic autonomy -> continuous actor ride -> live moving edit.")
+		get_tree().quit(0)
+		return
+	for failure in failures:
+		push_error("C0_EXPORTED_SPARK_BASELINE_FAIL: " + failure)
+	get_tree().quit(1)
