@@ -139,7 +139,7 @@ Stop condition:
 
 ## C4 — Passive Relation
 
-**Status: ACTIVE**
+**Status: PASS / BOUNDED**
 
 Question:
 
@@ -172,7 +172,7 @@ Stop condition:
 
 ## C5 — Living World
 
-**Status: CONDITIONAL ON C4**
+**Status: ACTIVE**
 
 Question:
 
