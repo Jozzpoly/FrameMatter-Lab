@@ -38,7 +38,7 @@ C0 is the protected baseline for later Convergence builds.
 
 ## C1 — relative scale / authoring probe
 
-**Status: ACTIVE**
+**Status: PASS AS BOUNDED OWNER FINDING / TRACK RETAINED**
 
 Question:
 
@@ -66,17 +66,27 @@ Owner gate:
 - identify first useful qualitative transition, if any;
 - report whether finer scale meaningfully changes building instinct.
 
+Owner result:
+
+- relative scale materially changed immersion and construction instinct;
+- modes 2–3 (≈50 cm / ≈25 cm proxy) are the strongest current Owner range;
+- 8x / ≈12.5 cm is extreme but still informative;
+- novelty is explicitly judged insufficient to redirect the project;
+- SCALE / REPRESENTATION remains a real future track, while WORLD LANGUAGE stays primary.
+
 Stop rules:
 
-- if even 8x does not materially improve the instinct, do not automatically pursue smaller cells;
-- investigate interaction grammar/world language as the stronger blocker;
-- do not implement adaptive representation before a useful target scale exists.
+- do not promote the proxy into a final resolution decision;
+- do not implement adaptive representation merely because the scale signal is positive;
+- preserve the result and let later world-language play decide when representation work earns priority.
+
+Evidence: `docs/evidence/convergence-c1-owner-scale-play-2026-09-18.md`.
 
 ---
 
 ## C2 — Structural Law
 
-**Status: QUEUED AFTER C1 DECISION**
+**Status: ACTIVE**
 
 Question:
 
