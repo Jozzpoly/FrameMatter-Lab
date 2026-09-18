@@ -543,6 +543,17 @@ func _run_c0_artifact_baseline() -> void:
 	var witness_token: int = world.lineage.get_lineage(witness_cell)
 	_c0_check(witness_token != MatterLineageMap.NONE, "support witness owns live Matter lineage", failures)
 	var actor_world_before := player.global_position
+	print(
+		"C0_PRE_CUT_DIAGNOSTIC player=%s support_space_id=%d world_id=%d witness=%s witness_token=%d bridge=%s"
+		% [
+			str(player.global_position),
+			player.support_space.get_instance_id() if player.support_space != null else 0,
+			world.get_instance_id(),
+			str(witness_cell),
+			witness_token,
+			str(RECOVERY_CAUSAL_BRIDGE_CELL),
+		]
+	)
 
 	_c0_check(
 		interactor.apply_edit_to_cell(world, RECOVERY_CAUSAL_BRIDGE_CELL, P1MatterInteractor.EditMode.REMOVE),
@@ -566,6 +577,19 @@ func _run_c0_artifact_baseline() -> void:
 	var actor_handoff_error := player.global_position.distance_to(actor_world_before)
 	var source_origin: Vector3i = result.get("source_origin", Vector3i.ZERO)
 	var target_witness_cell := witness_cell - source_origin
+	print(
+		"C0_POST_PARTITION_DIAGNOSTIC source_origin=%s target_size=%s player=%s player_support_id=%d target_id=%d target_witness=%s source_witness_token=%d target_witness_token=%d"
+		% [
+			str(source_origin),
+			str(target.volume.size),
+			str(player.global_position),
+			player.support_space.get_instance_id() if player.support_space != null else 0,
+			target.get_instance_id(),
+			str(target_witness_cell),
+			world.lineage.get_lineage(witness_cell),
+			target.lineage.get_lineage(target_witness_cell) if target.lineage.in_bounds(target_witness_cell) else MatterLineageMap.NONE,
+		]
+	)
 	_c0_check(registry.get_active_count() == 2, "canonical WORLD and detached Matter coexist", failures)
 	_c0_check(world.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC, "canonical WORLD remains static", failures)
 	_c0_check(target.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC, "detached Matter becomes dynamic without launch ceremony", failures)
