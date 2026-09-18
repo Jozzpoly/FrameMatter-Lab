@@ -1,6 +1,6 @@
 # FrameMatter Lab — current research state
 
-> **LIVE OVERRIDE (2026-09-18):** the detailed state below preserves the P1/Q0-era evidence model but its “current stop condition” text is stale. Active truth is: C0 exact-artifact Spark baseline PASS and frozen at `028c12764692b8d79ba9b2c634ed9fbd6a2d7f70`; C1 relative-scale probe is ACTIVE on `research/convergence-c1-scale-probe`; current technical boundary is lifecycle-safe world reset before Owner scale judgement. See `docs/convergence/CURRENT.md`.
+> **LIVE OVERRIDE (2026-09-18):** the detailed state below preserves the P1/Q0-era evidence model but its “current stop condition” text is stale. Active truth is: C0 exact-artifact Spark baseline PASS and frozen at `028c12764692b8d79ba9b2c634ed9fbd6a2d7f70`; C1 relative-scale probe is TECHNICALLY PASS on `research/convergence-c1-scale-probe`; the current boundary is Owner scale/authoring judgement before C2. See `docs/convergence/CURRENT.md`.
 
 Status: **live truth synthesis**. Durable measurements and failures live in `docs/evidence/`; decision order lives in `ROADMAP.md`; promotion policy lives in `docs/QUALITY-SYSTEM.md` and `quality/`.
 
