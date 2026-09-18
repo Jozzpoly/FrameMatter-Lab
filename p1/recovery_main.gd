@@ -303,6 +303,15 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 	var transferred_source_cells: Array[Vector3i] = []
 	for candidate in result.get("source_cells", []):
 		transferred_source_cells.append(candidate)
+	# If the actor successfully moved with detached Matter, WORLD ceases to be
+	# focus in this same publication transaction. Set the authoritative consumer
+	# focus before active_spaces_changed so state presentation transitions to the
+	# target instead of rebuilding a source crown that would be discarded.
+	if actor_transferred:
+		_focus_space = target
+	else:
+		_focus_space = _recovery_world_space
+
 	var source_grid_usec := 0
 	var source_state_usec := 0
 	if not transferred_source_cells.is_empty():
@@ -314,7 +323,11 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 			source_grid_usec = Time.get_ticks_usec() - grid_started_usec
 		if state_presentation != null:
 			var state_started_usec := Time.get_ticks_usec()
-			state_presentation.refresh_cells(_recovery_world_space, transferred_source_cells)
+			state_presentation.refresh_cells(
+				_recovery_world_space,
+				transferred_source_cells,
+				not actor_transferred
+			)
 			source_state_usec = Time.get_ticks_usec() - state_started_usec
 
 	# Registry publication happens only after the complete authority commit,
@@ -325,10 +338,6 @@ func _on_recovery_authority_partition_committed(result: Dictionary) -> void:
 	var registry_usec := Time.get_ticks_usec() - registry_started_usec
 
 	var focus_camera_started_usec := Time.get_ticks_usec()
-	if actor_transferred:
-		_focus_space = target
-	else:
-		_focus_space = _recovery_world_space
 	_clear_pending_causal_actor_handoff()
 	_refresh_camera_context()
 	var focus_camera_usec := Time.get_ticks_usec() - focus_camera_started_usec

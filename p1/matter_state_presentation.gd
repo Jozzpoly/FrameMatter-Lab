@@ -118,7 +118,11 @@ func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
 	refresh_cells(space, cells)
 
 
-func refresh_cells(space: LocalMatterSpace, cells: Array[Vector3i]) -> void:
+func refresh_cells(
+	space: LocalMatterSpace,
+	cells: Array[Vector3i],
+	refresh_focus: bool = true
+) -> void:
 	var started_usec := Time.get_ticks_usec()
 	last_refresh_space_id = (
 		space.get_instance_id()
@@ -159,7 +163,7 @@ func refresh_cells(space: LocalMatterSpace, cells: Array[Vector3i]) -> void:
 		_install_state_chunk(state_root, space.volume, origin_variant, edge, state_material)
 	_state_signatures[space.get_instance_id()] = _state_signature(space)
 
-	if space == _focus_space:
+	if refresh_focus and space == _focus_space:
 		var focus_root := provider.get_node_or_null(FOCUS_OVERLAY_NAME) as MeshInstance3D
 		if focus_root == null:
 			_refresh_focus(space)
