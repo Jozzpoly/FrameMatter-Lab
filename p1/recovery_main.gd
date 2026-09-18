@@ -73,6 +73,10 @@ func get_c1_scale_probe_equivalent_cell_meters() -> float:
 	return 1.0 / maxf(1.0, _c1_scale_probe_factor)
 
 
+func set_c1_scale_probe_for_test(scale_factor: float) -> void:
+	_apply_c1_scale_probe(scale_factor, true)
+
+
 func get_recovery_causal_bridge_cell_for_test() -> Vector3i:
 	return RECOVERY_CAUSAL_BRIDGE_CELL
 
