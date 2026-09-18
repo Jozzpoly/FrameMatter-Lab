@@ -138,6 +138,10 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0_single_removal_connectivity_probe.gd -PassMarker W0_SINGLE_REMOVAL_CONNECTIVITY_PASS
 
+      - name: Verify bounded detach classification
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0_bounded_detach_classification_probe.gd -PassMarker W0_BOUNDED_DETACH_CLASSIFICATION_PASS
+
       - name: Verify lightweight W0 topology component equivalence
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0_topology_cell_components_probe.gd -PassMarker W0_TOPOLOGY_CELL_COMPONENTS_PASS

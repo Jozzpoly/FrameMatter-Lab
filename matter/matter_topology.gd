@@ -140,6 +140,178 @@ static func prove_connected_after_single_removal(
 	}
 
 
+static func prove_partition_after_single_removal_from_connected_source(
+	source_after_removal: CellVolume,
+	removed_cell: Vector3i,
+	live_anchor_cells: Array[Vector3i],
+	max_component_cells: int = 128
+) -> Dictionary:
+	# One-sided bounded partition proof. PRECONDITION: immediately before this
+	# exact single-cell removal, the source Matter graph was one connected
+	# component. Every component of G-v must therefore contain at least one
+	# surviving axial neighbor of v. Small components can be fully enumerated;
+	# at most one large unresolved component can be inferred as the anchored
+	# remainder when no completed component contains a live anchor.
+	if source_after_removal == null:
+		return _bounded_partition_inconclusive("missing volume")
+	if not source_after_removal.in_bounds(removed_cell):
+		return _bounded_partition_inconclusive("removed cell out of bounds")
+	if source_after_removal.get_cell(removed_cell) != CellVolume.EMPTY:
+		return _bounded_partition_inconclusive("removed cell is still occupied")
+	if source_after_removal.count_solid() == 0:
+		return _bounded_partition_inconclusive("source became empty")
+	if max_component_cells <= 0:
+		return _bounded_partition_inconclusive("zero component budget")
+	if live_anchor_cells.is_empty():
+		return _bounded_partition_inconclusive("no live anchor cells")
+
+	var anchor_set: Dictionary = {}
+	for anchor in live_anchor_cells:
+		if (
+			not source_after_removal.in_bounds(anchor)
+			or source_after_removal.get_cell(anchor) == CellVolume.EMPTY
+		):
+			return _bounded_partition_inconclusive("anchor cell is not live")
+		anchor_set[anchor] = true
+
+	var neighbors: Array[Vector3i] = []
+	var neighbor_set: Dictionary = {}
+	for offset in AXIAL_NEIGHBORS:
+		var neighbor := removed_cell + offset
+		if source_after_removal.in_bounds(neighbor) and source_after_removal.get_cell(neighbor) != CellVolume.EMPTY:
+			neighbors.append(neighbor)
+			neighbor_set[neighbor] = true
+	if neighbors.is_empty():
+		return _bounded_partition_inconclusive("no surviving neighbor")
+	if neighbors.size() == 1:
+		return {
+			"proven": true,
+			"reason": "single surviving neighbor",
+			"detached_components": [],
+			"anchored_component_count": 1,
+			"unknown_component_count": 0,
+			"visited_cells": 1,
+			"occupied_neighbors": 1,
+		}
+
+	var consumed_neighbors: Dictionary = {}
+	var completed_components: Array = []
+	var unknown_component_count := 0
+	var total_visited_cells := 0
+
+	for seed in neighbors:
+		if consumed_neighbors.has(seed):
+			continue
+		var visited: Dictionary = {seed: true}
+		var queue: Array[Vector3i] = [seed]
+		var cursor := 0
+		var contains_anchor := anchor_set.has(seed)
+		var exceeded_budget := false
+		consumed_neighbors[seed] = true
+
+		while cursor < queue.size():
+			if cursor >= max_component_cells:
+				exceeded_budget = true
+				break
+			var cell: Vector3i = queue[cursor]
+			cursor += 1
+			if anchor_set.has(cell):
+				contains_anchor = true
+			if neighbor_set.has(cell):
+				consumed_neighbors[cell] = true
+			for offset in AXIAL_NEIGHBORS:
+				var candidate := cell + offset
+				if not source_after_removal.in_bounds(candidate):
+					continue
+				if visited.has(candidate) or source_after_removal.get_cell(candidate) == CellVolume.EMPTY:
+					continue
+				visited[candidate] = true
+				queue.append(candidate)
+
+		total_visited_cells += mini(cursor, max_component_cells)
+		if exceeded_budget:
+			unknown_component_count += 1
+			continue
+
+		var cells: Array[Vector3i] = []
+		for cell_variant in visited.keys():
+			var cell: Vector3i = cell_variant
+			cells.append(cell)
+		completed_components.append({
+			"cells": cells,
+			"contains_anchor": contains_anchor,
+		})
+
+	if unknown_component_count > 1:
+		return {
+			"proven": false,
+			"reason": "multiple unresolved components",
+			"detached_components": [],
+			"anchored_component_count": 0,
+			"unknown_component_count": unknown_component_count,
+			"visited_cells": total_visited_cells,
+			"occupied_neighbors": neighbors.size(),
+		}
+
+	var anchored_completed := 0
+	var detached_components: Array = []
+	for component_variant in completed_components:
+		var component: Dictionary = component_variant
+		if bool(component["contains_anchor"]):
+			anchored_completed += 1
+		else:
+			detached_components.append(component["cells"])
+
+	if unknown_component_count == 1:
+		if anchored_completed > 0:
+			return {
+				"proven": false,
+				"reason": "unresolved component may be detached",
+				"detached_components": [],
+				"anchored_component_count": 0,
+				"unknown_component_count": 1,
+				"visited_cells": total_visited_cells,
+				"occupied_neighbors": neighbors.size(),
+			}
+		# Every live anchor belongs to some component of G-v. All completed
+		# components were exhaustively proven anchor-free, and exactly one
+		# component remains unresolved, so that remainder is the sole anchored
+		# component without requiring a scan of its full membership.
+		return {
+			"proven": true,
+			"reason": "single unresolved anchored remainder",
+			"detached_components": detached_components,
+			"anchored_component_count": 1,
+			"unknown_component_count": 1,
+			"visited_cells": total_visited_cells,
+			"occupied_neighbors": neighbors.size(),
+		}
+
+	if anchored_completed == 0:
+		return _bounded_partition_inconclusive("no completed anchored component")
+	return {
+		"proven": true,
+		"reason": "all components completed",
+		"detached_components": detached_components,
+		"anchored_component_count": anchored_completed,
+		"unknown_component_count": 0,
+		"visited_cells": total_visited_cells,
+		"occupied_neighbors": neighbors.size(),
+	}
+
+
+static func _bounded_partition_inconclusive(reason: String) -> Dictionary:
+	return {
+		"proven": false,
+		"reason": reason,
+		"detached_components": [],
+		"anchored_component_count": 0,
+		"unknown_component_count": 0,
+		"visited_cells": 0,
+		"occupied_neighbors": 0,
+	}
+
+
 static func cells_form_single_component(cells: Array[Vector3i]) -> bool:
 	if cells.is_empty():
 		return false
