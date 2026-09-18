@@ -447,6 +447,13 @@ func _on_edit_rejected(reason: String) -> void:
 
 
 func _on_active_spaces_changed() -> void:
+	# Recovery reset can replace the canonical WORLD object itself. Reacquire the
+	# logical world reference before recording so observation never retains a
+	# freed typed LocalMatterSpace across reset generations.
+	if _host != null and is_instance_valid(_host) and _host.has_method("get_recovery_world_space"):
+		var candidate := _host.call("get_recovery_world_space") as LocalMatterSpace
+		_world_space = candidate if candidate != null and is_instance_valid(candidate) else null
+
 	# Keep lifecycle callbacks O(1)-ish. Full volume/collision census belongs to
 	# the periodic observer sample, not inside authority/split publication.
 	_record("active_spaces_changed", {
