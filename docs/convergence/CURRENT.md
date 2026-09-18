@@ -8,104 +8,94 @@ If live repository/CI evidence contradicts this file, live evidence wins and thi
 
 ## Active objective
 
-**C2 — Structural Law is now active.**
+**C3 — Authority Composition is active.**
 
 Question:
 
-> can Matter remain materially continuous while one local interface stops transmitting full rigid connectivity?
+> can a change in local structural law itself cause ordinary WORLD Matter to decompose into distinct physical authorities without deleting/recreating the Matter?
 
-This is deliberately narrower than Bearing, joints, authority decomposition or a mechanism system.
-
-The first target is only:
-
-> same Matter occupancy + same lineage + one bounded local adjacency rule → either one rigid component or two.
+C2 is now closed as a bounded technical PASS.
 
 ## Protected baseline
 
-C0 exact-artifact Spark remains frozen and protected:
+C0 exact-artifact Spark remains frozen at:
 
 `028c12764692b8d79ba9b2c634ed9fbd6a2d7f70`
 
-Later Convergence experiments must preserve:
+Every Convergence stage must preserve that causal world behavior unless deliberately challenging it.
 
-- ordinary visible terrain is Matter;
-- causal world change can derive physical autonomy;
-- retained Matter lineage transfers rather than clones;
-- actor/support handoff remains continuous;
-- detached Matter is solver-driven and remains editable.
+## C1 result — bounded Owner PASS
 
-## C1 result — CLOSED AS BOUNDED OWNER FINDING
+C1 established that relative actor : Matter scale materially changes immersion and construction instinct.
 
-Technically qualified runtime:
+Strongest current Owner range:
 
-`15426dccc87f9f9b49608beffb65aa5655bdd4f3`
+- mode 2 ≈ 50 cm proxy;
+- mode 3 ≈ 25 cm proxy.
 
-Owner evidence:
+Mode 4 ≈ 12.5 cm is extreme but still informative.
+
+This preserves SCALE / REPRESENTATION as a meaningful future track without making it primary.
+
+C1 also exposed growing actor embodiment debt: the query capsule's weak bidirectional world reaction and extreme-scale camera/body problems. Preserve that pressure; do not pre-empt C3 with an actor rewrite.
+
+Evidence:
 
 `docs/evidence/convergence-c1-owner-scale-play-2026-09-18.md`
 
-Result:
+## C2 result — PASS
 
-- relative scale produced substantially more fun and a different immersion than expected;
-- Owner reports modes 2–3 (≈50 cm / ≈25 cm proxies) as the strongest current range;
-- 8x / ≈12.5 cm is extreme but still useful and worth further testing;
-- more scale exploration, possibly beyond 8x, remains legitimate later;
-- Owner explicitly warns that almost no new world capability was added and novelty alone will fade quickly.
+Qualified source:
 
-Interpretation:
+`9e226f9eadd3037485244ae80ce227be9dd70fad`
 
-**scale is a real experiential multiplier, not the next primary research track.**
+Evidence:
 
-Do not convert the C1 proxy into a final resolution decision.
+`docs/evidence/convergence-c2-structural-law-2026-09-18.md`
 
-## New pressure discovered but not activated
+Earned statement:
 
-C1 made actor embodiment debt materially clearer:
+> material continuity != rigid connectivity
 
-- the capsule/query actor increasingly feels detached from the physical causality of the world;
-- bidirectional actor↔Matter reaction is insufficient for the implied body/mass;
-- extreme scales expose camera/body framing failures.
+The same occupied Matter can derive one or two rigid components depending only on one lineage-owned local adjacency law. A rigid bypass reconnects the components; removing the bypass splits them again.
 
-This is now a durable EMBODIMENT/WORK pressure signal, but **not the active task**.
+C2 changed no world authority and created no body/joint.
 
-## C2 execution boundary
+## C3 boundary
 
-The current Matter topology control assumes:
+C3 may compose only already-earned pieces:
 
-`occupied axial neighbor => connected`
+1. ordinary static WORLD Matter;
+2. C2 derived rigid-connectivity result;
+3. explicit anchor criterion identifying the canonical remainder;
+4. existing W0 authority-partition transaction;
+5. dynamic target initialized at zero linear/angular velocity.
 
-C2 must preserve that as the control and add the smallest challenger view that can answer:
+Required evidence:
 
-> may rigid connectivity cross this specific occupied adjacency?
+- before the local law: one rigid organization;
+- after the local law: anchored remainder + one unanchored rigid island;
+- ordinary material occupancy/lineage is retained before authority commit;
+- W0 moves exactly the derived unanchored component;
+- source remains canonical/static;
+- target becomes dynamic with fresh Space/provider identity;
+- lineage is conserved and disjoint across owners;
+- no world-space Matter jump;
+- no hidden launch;
+- no Matter REMOVE is used to cause the decomposition.
 
-Normal adjacency: yes.
+Stop after that claim.
 
-One experiment-local seam: no.
+## Explicitly not C3
 
-Required C2 evidence:
-
-1. identical occupied Matter and lineage;
-2. control resolves as one rigid component;
-3. one seam override resolves as two rigid components;
-4. adding a rigid bypass reconnects them as one component;
-5. removing the bypass restores two;
-6. no changes to CellVolume authority;
-7. no dynamic body, joint, UI, Space creation or authority transfer.
-
-Stop after this claim is earned.
+- no HingeJoint;
+- no passive rotational relation yet;
+- no mechanism UI;
+- no generic structural graph;
+- no final anchor ontology;
+- no actor rewrite;
+- no representation rewrite.
 
 ## Next legitimate move
 
-Audit the smallest seam around `MatterTopology`, then implement a disposable `RigidConnectivityChallenger` plus strict probe.
-
-Do **not** begin C3 authority composition until C2 independently passes.
-
-## Explicitly not next
-
-- no final finer-resolution Matter;
-- no octree/VDB/adaptive representation;
-- no HingeJoint/Bearing implementation;
-- no generic relation/mechanics framework;
-- no actor rewrite yet;
-- no performance campaign without demonstrated pressure;
-- no merge of historical PR #1.
+Build the smallest deterministic C3 composition probe. If it passes and exact-artifact C0 remains green, advance to C4 Passive Relation.
