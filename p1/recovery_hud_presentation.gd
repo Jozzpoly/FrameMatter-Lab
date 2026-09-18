@@ -23,7 +23,7 @@ func _bind() -> void:
 	_status = _host.get_node_or_null("HUD/Panel/MarginContainer/VBoxContainer/Status") as Label
 	_hint = _host.get_node_or_null("HUD/Panel/MarginContainer/VBoxContainer/Hint") as Label
 	if _panel != null:
-		_panel.offset_right = _panel.offset_left + 700.0
+		_panel.offset_right = _panel.offset_left + 900.0
 		_panel.offset_bottom = _panel.offset_top + 58.0
 	_refresh()
 
@@ -34,6 +34,8 @@ func _refresh() -> void:
 	var focus := _host.call("get_space") as LocalMatterSpace if _host.has_method("get_space") else null
 	var world := _host.call("get_recovery_world_space") as LocalMatterSpace if _host.has_method("get_recovery_world_space") else null
 	var spaces: Array[LocalMatterSpace] = _host.call("get_active_spaces") if _host.has_method("get_active_spaces") else []
+	var c1_scale := float(_host.call("get_c1_scale_probe_factor")) if _host.has_method("get_c1_scale_probe_factor") else 1.0
+	var c1_cell_m := float(_host.call("get_c1_scale_probe_equivalent_cell_meters")) if _host.has_method("get_c1_scale_probe_equivalent_cell_meters") else 1.0
 	if focus == null or not is_instance_valid(focus) or focus.is_retired():
 		_status.text = "FRAME MATTER · NO FOCUS"
 		_hint.text = "WASD move   ·   Space jump   ·   MMB orbit"
@@ -42,16 +44,18 @@ func _refresh() -> void:
 	var is_world := focus == world
 	var kind := "STATIC" if focus.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC else "DYNAMIC"
 	var role := "WORLD MATTER" if is_world else "DETACHED MATTER"
-	_status.text = "%s   ·   %s   ·   %d LIVE SPACE%s" % [
+	_status.text = "%s   ·   %s   ·   %d LIVE SPACE%s   ·   C1 SCALE %.0fx (~%.1f cm CELL PROXY)" % [
 		role,
 		kind,
 		spaces.size(),
 		"" if spaces.size() == 1 else "S",
+		c1_scale,
+		c1_cell_m * 100.0,
 	]
 
 	if is_world:
-		_hint.text = "LMB remove   ·   RMB build   ·   cut support to detach Matter   ·   WASD move   ·   Space jump   ·   MMB orbit"
+		_hint.text = "LMB remove · RMB build · 1/2/3/4 = 1x/2x/4x/8x scale proxy (resets world) · WASD move · Space jump · MMB orbit"
 		return
 
 	var toggle_label := "T freeze" if focus.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC else "T release"
-	_hint.text = "LMB remove   ·   RMB build   ·   %s   ·   arrows push/turn   ·   WASD move   ·   Space jump   ·   MMB orbit" % toggle_label
+	_hint.text = "LMB remove · RMB build · %s · 1/2/3/4 scale proxy (resets world) · arrows push/turn · WASD move · Space jump · MMB orbit" % toggle_label
