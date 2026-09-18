@@ -61,32 +61,32 @@ func _run() -> void:
 	_compare_region_union("source_grid", source_after, source_origins, "grid")
 	_compare_region_union("source_state", source_after, source_origins, "state")
 
-	var bridge_grid_string := _measure(func() -> void: _build_production_regions(bridge_after, bridge_origins, "grid"))
-	var bridge_grid_packed := _measure(func() -> void: _build_packed_regions(bridge_after, bridge_origins, "grid"))
-	var bridge_state_string := _measure(func() -> void: _build_production_regions(bridge_after, bridge_origins, "state"))
-	var bridge_state_packed := _measure(func() -> void: _build_packed_regions(bridge_after, bridge_origins, "state"))
-	var bridge_focus_string := _measure(func() -> void: _build_production_regions(bridge_after, bridge_origins, "focus"))
-	var bridge_focus_packed := _measure(func() -> void: _build_packed_regions(bridge_after, bridge_origins, "focus"))
-	var source_grid_string := _measure(func() -> void: _build_production_regions(source_after, source_origins, "grid"))
-	var source_grid_packed := _measure(func() -> void: _build_packed_regions(source_after, source_origins, "grid"))
-	var source_state_string := _measure(func() -> void: _build_production_regions(source_after, source_origins, "state"))
-	var source_state_packed := _measure(func() -> void: _build_packed_regions(source_after, source_origins, "state"))
+	var bridge_grid_production := _measure(func() -> void: _build_production_regions(bridge_after, bridge_origins, "grid"))
+	var bridge_grid_reference := _measure(func() -> void: _build_string_reference_regions(bridge_after, bridge_origins, "grid"))
+	var bridge_state_production := _measure(func() -> void: _build_production_regions(bridge_after, bridge_origins, "state"))
+	var bridge_state_reference := _measure(func() -> void: _build_string_reference_regions(bridge_after, bridge_origins, "state"))
+	var bridge_focus_production := _measure(func() -> void: _build_production_regions(bridge_after, bridge_origins, "focus"))
+	var bridge_focus_reference := _measure(func() -> void: _build_string_reference_regions(bridge_after, bridge_origins, "focus"))
+	var source_grid_production := _measure(func() -> void: _build_production_regions(source_after, source_origins, "grid"))
+	var source_grid_reference := _measure(func() -> void: _build_string_reference_regions(source_after, source_origins, "grid"))
+	var source_state_production := _measure(func() -> void: _build_production_regions(source_after, source_origins, "state"))
+	var source_state_reference := _measure(func() -> void: _build_string_reference_regions(source_after, source_origins, "state"))
 
 	print(
-		"P1_PRESENTATION_PACKED_KEY_METRIC bridge_chunks=%d source_chunks=%d bridge_grid_string_us=%d bridge_grid_packed_us=%d bridge_state_string_us=%d bridge_state_packed_us=%d bridge_focus_string_us=%d bridge_focus_packed_us=%d source_grid_string_us=%d source_grid_packed_us=%d source_state_string_us=%d source_state_packed_us=%d"
+		"P1_PRESENTATION_PACKED_KEY_METRIC bridge_chunks=%d source_chunks=%d bridge_grid_production_us=%d bridge_grid_reference_us=%d bridge_state_production_us=%d bridge_state_reference_us=%d bridge_focus_production_us=%d bridge_focus_reference_us=%d source_grid_production_us=%d source_grid_reference_us=%d source_state_production_us=%d source_state_reference_us=%d"
 		% [
 			bridge_origins.size(),
 			source_origins.size(),
-			bridge_grid_string,
-			bridge_grid_packed,
-			bridge_state_string,
-			bridge_state_packed,
-			bridge_focus_string,
-			bridge_focus_packed,
-			source_grid_string,
-			source_grid_packed,
-			source_state_string,
-			source_state_packed,
+			bridge_grid_production,
+			bridge_grid_reference,
+			bridge_state_production,
+			bridge_state_reference,
+			bridge_focus_production,
+			bridge_focus_reference,
+			source_grid_production,
+			source_grid_reference,
+			source_state_production,
+			source_state_reference,
 		]
 	)
 	_finish(root)
@@ -98,8 +98,8 @@ func _compare_region_union(label: String, volume: CellVolume, origins: Array[Vec
 	for origin in origins:
 		var end := _chunk_end(volume.size, origin)
 		_merge_segments(production, _segment_set(_production_region(volume, origin, end, kind)))
-		_merge_segments(packed, _segment_set(_packed_region(volume, origin, end, kind)))
-	_check(_same_keys(production, packed), "%s packed keys preserve exact segment geometry" % label)
+		_merge_segments(packed, _segment_set(_string_reference_region(volume, origin, end, kind)))
+	_check(_same_keys(production, packed), "%s production packed keys preserve exact string-reference segment geometry" % label)
 
 
 func _build_production_regions(volume: CellVolume, origins: Array[Vector3i], kind: String) -> void:
@@ -107,9 +107,9 @@ func _build_production_regions(volume: CellVolume, origins: Array[Vector3i], kin
 		_production_region(volume, origin, _chunk_end(volume.size, origin), kind)
 
 
-func _build_packed_regions(volume: CellVolume, origins: Array[Vector3i], kind: String) -> void:
+func _build_string_reference_regions(volume: CellVolume, origins: Array[Vector3i], kind: String) -> void:
 	for origin in origins:
-		_packed_region(volume, origin, _chunk_end(volume.size, origin), kind)
+		_string_reference_region(volume, origin, _chunk_end(volume.size, origin), kind)
 
 
 func _production_region(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i, kind: String) -> ArrayMesh:
@@ -120,15 +120,15 @@ func _production_region(volume: CellVolume, from_cell: Vector3i, to_cell: Vector
 	return P1MatterStatePresentation.build_top_surface_perimeter_region(volume, from_cell, to_cell)
 
 
-func _packed_region(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i, kind: String) -> ArrayMesh:
+func _string_reference_region(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i, kind: String) -> ArrayMesh:
 	if kind == "grid":
-		return _packed_grid(volume, from_cell, to_cell)
+		return _string_grid(volume, from_cell, to_cell)
 	if kind == "state":
-		return _packed_state(volume, from_cell, to_cell)
-	return _packed_focus(volume, from_cell, to_cell)
+		return _string_state(volume, from_cell, to_cell)
+	return _string_focus(volume, from_cell, to_cell)
 
 
-func _packed_grid(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -> ArrayMesh:
+func _string_grid(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_LINES)
@@ -157,7 +157,7 @@ func _packed_grid(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) ->
 					for edge_index in range(4):
 						var a: Vector3 = corners[edge_index]
 						var b: Vector3 = corners[(edge_index + 1) % 4]
-						var key := _oriented_key(volume.size, face_index, a, b)
+						var key := _string_oriented_key(face_index, a, b)
 						if seen.has(key):
 							continue
 						seen[key] = true
@@ -172,7 +172,7 @@ func _packed_grid(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) ->
 	return surface.commit(mesh)
 
 
-func _packed_state(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -> ArrayMesh:
+func _string_state(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	var records: Dictionary = {}
 	var scan_from := _scan_from(from_cell)
@@ -194,7 +194,7 @@ func _packed_state(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -
 					for edge_index in range(4):
 						var a: Vector3 = corners[edge_index]
 						var b: Vector3 = corners[(edge_index + 1) % 4]
-						var key := _oriented_key(volume.size, face_index, a, b)
+						var key := _string_oriented_key(face_index, a, b)
 						if not records.has(key):
 							records[key] = {"count": 0, "a": a, "b": b, "face": face_index, "owner": cell}
 						var record: Dictionary = records[key]
@@ -219,7 +219,7 @@ func _packed_state(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -
 	return surface.commit(mesh)
 
 
-func _packed_focus(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -> ArrayMesh:
+func _string_focus(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	var records: Dictionary = {}
 	var scan_from := _scan_from(from_cell)
@@ -241,7 +241,7 @@ func _packed_focus(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -
 					for edge_index in range(4):
 						var a: Vector3 = corners[edge_index]
 						var b: Vector3 = corners[(edge_index + 1) % 4]
-						var key := _plain_key(volume.size, a, b)
+						var key := _string_plain_key(a, b)
 						if not records.has(key):
 							records[key] = {"count": 0, "a": a, "b": b, "owner": cell}
 						var record: Dictionary = records[key]
@@ -265,23 +265,26 @@ func _packed_focus(volume: CellVolume, from_cell: Vector3i, to_cell: Vector3i) -
 	return surface.commit(mesh)
 
 
-func _oriented_key(size: Vector3i, face_index: int, a: Vector3, b: Vector3) -> int:
-	return _plain_key(size, a, b) * 6 + face_index
+func _string_oriented_key(face_index: int, a: Vector3, b: Vector3) -> String:
+	return "%d|%s" % [face_index, _string_plain_key(a, b)]
 
 
-func _plain_key(size: Vector3i, a: Vector3, b: Vector3) -> int:
-	var ai := _point_index(size, Vector3i(int(a.x), int(a.y), int(a.z)))
-	var bi := _point_index(size, Vector3i(int(b.x), int(b.y), int(b.z)))
-	if bi < ai:
+func _string_plain_key(a: Vector3, b: Vector3) -> String:
+	var ai := Vector3i(int(a.x), int(a.y), int(a.z))
+	var bi := Vector3i(int(b.x), int(b.y), int(b.z))
+	if _vector3i_less(bi, ai):
 		var swap := ai
 		ai = bi
 		bi = swap
-	var point_count := (size.x + 1) * (size.y + 1) * (size.z + 1)
-	return ai * point_count + bi
+	return "%d,%d,%d|%d,%d,%d" % [ai.x, ai.y, ai.z, bi.x, bi.y, bi.z]
 
 
-func _point_index(size: Vector3i, point: Vector3i) -> int:
-	return point.x + (size.x + 1) * (point.y + (size.y + 1) * point.z)
+func _vector3i_less(a: Vector3i, b: Vector3i) -> bool:
+	if a.x != b.x:
+		return a.x < b.x
+	if a.y != b.y:
+		return a.y < b.y
+	return a.z < b.z
 
 
 func _dirty_origins(size: Vector3i, cells: Array[Vector3i]) -> Array[Vector3i]:
@@ -400,7 +403,7 @@ func _finish(root: Node) -> void:
 	if root != null and is_instance_valid(root):
 		root.queue_free()
 	if _failures.is_empty():
-		print("P1_PRESENTATION_PACKED_KEY_PASS: packed integer edge keys preserve exact regional grid/state/focus geometry for bridge and detached-source batches while exposing deduplication cost independently of chunk granularity.")
+		print("P1_PRESENTATION_PACKED_KEY_PASS: production packed integer edge keys preserve exact regional grid/state/focus geometry against the independent legacy string-key reference for bridge and detached-source batches.")
 		quit(0)
 		return
 	for failure in _failures:

@@ -509,7 +509,7 @@ static func build_side_surface_contour(volume: CellVolume) -> ArrayMesh:
 					for edge_index in range(4):
 						var a: Vector3 = corners[edge_index]
 						var b: Vector3 = corners[(edge_index + 1) % 4]
-						var key := _oriented_edge_key(face_index, a, b)
+						var key := _oriented_edge_key(volume.size, face_index, a, b)
 						if not edge_records.has(key):
 							edge_records[key] = {"count": 0, "a": a, "b": b, "face": face_index}
 						var record: Dictionary = edge_records[key]
@@ -561,7 +561,7 @@ static func build_side_surface_contour_region(
 					for edge_index in range(4):
 						var a: Vector3 = corners[edge_index]
 						var b: Vector3 = corners[(edge_index + 1) % 4]
-						var key := _oriented_edge_key(face_index, a, b)
+						var key := _oriented_edge_key(volume.size, face_index, a, b)
 						if not edge_records.has(key):
 							edge_records[key] = {"count": 0, "a": a, "b": b, "face": face_index, "owner": cell}
 						var record: Dictionary = edge_records[key]
@@ -604,7 +604,7 @@ static func build_surface_contour(volume: CellVolume) -> ArrayMesh:
 					for edge_index in range(4):
 						var a: Vector3 = corners[edge_index]
 						var b: Vector3 = corners[(edge_index + 1) % 4]
-						var key := _oriented_edge_key(face_index, a, b)
+						var key := _oriented_edge_key(volume.size, face_index, a, b)
 						if not edge_records.has(key):
 							edge_records[key] = {"count": 0, "a": a, "b": b, "face": face_index}
 						var record: Dictionary = edge_records[key]
@@ -649,7 +649,7 @@ static func build_top_surface_perimeter(volume: CellVolume) -> ArrayMesh:
 					for edge_index in range(4):
 						var a: Vector3 = corners[edge_index]
 						var b: Vector3 = corners[(edge_index + 1) % 4]
-						var key := _plain_edge_key(a, b)
+						var key := _plain_edge_key(volume.size, a, b)
 						if not edge_records.has(key):
 							edge_records[key] = {"count": 0, "a": a, "b": b}
 						var record: Dictionary = edge_records[key]
@@ -698,7 +698,7 @@ static func build_top_surface_perimeter_region(
 					for edge_index in range(4):
 						var a: Vector3 = corners[edge_index]
 						var b: Vector3 = corners[(edge_index + 1) % 4]
-						var key := _plain_edge_key(a, b)
+						var key := _plain_edge_key(volume.size, a, b)
 						if not edge_records.has(key):
 							edge_records[key] = {"count": 0, "a": a, "b": b, "owner": cell}
 						var record: Dictionary = edge_records[key]
@@ -844,29 +844,25 @@ static func _add_segment(surface: SurfaceTool, a: Vector3, b: Vector3) -> void:
 	surface.add_vertex(b)
 
 
-static func _oriented_edge_key(face_index: int, a: Vector3, b: Vector3) -> String:
-	var ai := Vector3i(int(a.x), int(a.y), int(a.z))
-	var bi := Vector3i(int(b.x), int(b.y), int(b.z))
-	if _vector3i_less(bi, ai):
+static func _oriented_edge_key(
+	size: Vector3i,
+	face_index: int,
+	a: Vector3,
+	b: Vector3
+) -> int:
+	return _plain_edge_key(size, a, b) * 6 + face_index
+
+
+static func _plain_edge_key(size: Vector3i, a: Vector3, b: Vector3) -> int:
+	var ai := _point_index(size, Vector3i(int(a.x), int(a.y), int(a.z)))
+	var bi := _point_index(size, Vector3i(int(b.x), int(b.y), int(b.z)))
+	if bi < ai:
 		var swap := ai
 		ai = bi
 		bi = swap
-	return "%d|%d,%d,%d|%d,%d,%d" % [face_index, ai.x, ai.y, ai.z, bi.x, bi.y, bi.z]
+	var point_count := (size.x + 1) * (size.y + 1) * (size.z + 1)
+	return ai * point_count + bi
 
 
-static func _plain_edge_key(a: Vector3, b: Vector3) -> String:
-	var ai := Vector3i(int(a.x), int(a.y), int(a.z))
-	var bi := Vector3i(int(b.x), int(b.y), int(b.z))
-	if _vector3i_less(bi, ai):
-		var swap := ai
-		ai = bi
-		bi = swap
-	return "%d,%d,%d|%d,%d,%d" % [ai.x, ai.y, ai.z, bi.x, bi.y, bi.z]
-
-
-static func _vector3i_less(a: Vector3i, b: Vector3i) -> bool:
-	if a.x != b.x:
-		return a.x < b.x
-	if a.y != b.y:
-		return a.y < b.y
-	return a.z < b.z
+static func _point_index(size: Vector3i, point: Vector3i) -> int:
+	return point.x + (size.x + 1) * (point.y + (size.y + 1) * point.z)

@@ -379,7 +379,7 @@ static func build_exposed_surface_grid_region(
 					for edge_index in range(4):
 						var raw_a: Vector3 = raw_corners[edge_index]
 						var raw_b: Vector3 = raw_corners[(edge_index + 1) % 4]
-						var segment_key := _coplanar_segment_key(face_index, raw_a, raw_b)
+						var segment_key := _coplanar_segment_key(volume.size, face_index, raw_a, raw_b)
 						if seen_segments.has(segment_key):
 							continue
 						seen_segments[segment_key] = cell
@@ -408,28 +408,28 @@ static func _cell_in_region(cell: Vector3i, from_cell: Vector3i, to_cell: Vector
 		and cell.z >= from_cell.z and cell.z < to_cell.z
 	)
 
-static func _coplanar_segment_key(face_index: int, a: Vector3, b: Vector3) -> String:
-	var ai := Vector3i(int(a.x), int(a.y), int(a.z))
-	var bi := Vector3i(int(b.x), int(b.y), int(b.z))
-	if _vector3i_less(bi, ai):
+static func _coplanar_segment_key(
+	size: Vector3i,
+	face_index: int,
+	a: Vector3,
+	b: Vector3
+) -> int:
+	return _plain_segment_key(size, a, b) * 6 + face_index
+
+
+static func _plain_segment_key(size: Vector3i, a: Vector3, b: Vector3) -> int:
+	var ai := _point_index(size, Vector3i(int(a.x), int(a.y), int(a.z)))
+	var bi := _point_index(size, Vector3i(int(b.x), int(b.y), int(b.z)))
+	if bi < ai:
 		var swap := ai
 		ai = bi
 		bi = swap
-	# Keep face orientation in the key. Coplanar same-normal duplicates collapse,
-	# while a true crease keeps one slightly offset segment for each surface.
-	return "%d|%d,%d,%d|%d,%d,%d" % [
-		face_index,
-		ai.x, ai.y, ai.z,
-		bi.x, bi.y, bi.z,
-	]
+	var point_count := (size.x + 1) * (size.y + 1) * (size.z + 1)
+	return ai * point_count + bi
 
 
-static func _vector3i_less(a: Vector3i, b: Vector3i) -> bool:
-	if a.x != b.x:
-		return a.x < b.x
-	if a.y != b.y:
-		return a.y < b.y
-	return a.z < b.z
+static func _point_index(size: Vector3i, point: Vector3i) -> int:
+	return point.x + (size.x + 1) * (point.y + (size.y + 1) * point.z)
 
 
 func _connect_registry(value: P1SpaceRegistry) -> void:
