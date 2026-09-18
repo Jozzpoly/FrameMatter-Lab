@@ -16,6 +16,8 @@ const RECOVERY_PRESENTATION_CHUNK_EDGE := 7
 const RECOVERY_CAUSAL_BRIDGE_CELL := Vector3i(14, 5, 16)
 const RECOVERY_CAUSAL_SUPPORT_CELL := Vector3i(18, 5, 17)
 const RECOVERY_BOUNDED_POLICY_BUDGET := 64
+const C1_SCALE_PROXY_REACH_BASE := 14.0
+const C1_SCALE_PROXY_FACTORS := [1.0, 2.0, 4.0, 8.0]
 const RECOVERY_ANCHOR_CELLS: Array[Vector3i] = [
 	Vector3i(1, 0, 1),
 	Vector3i(30, 0, 1),
@@ -38,6 +40,7 @@ var _last_recovery_partition_publication_usec := 0
 var _last_recovery_publication_timing: Dictionary = {}
 var _recovery_anchor_cells_current: Array[Vector3i] = []
 var _recovery_source_known_single_connected := false
+var _c1_scale_probe_factor := 1.0
 var _pending_recovery_source_connected_after_partition := false
 var _last_recovery_policy_mode := "none"
 var _last_recovery_policy_visited_cells := 0
@@ -51,6 +54,7 @@ func _ready() -> void:
 	_last_event = "recovery: edit ordinary Matter; detached Matter becomes physical"
 	if OS.get_cmdline_user_args().has("--c0-artifact-baseline"):
 		call_deferred("_run_c0_artifact_baseline")
+	_apply_c1_scale_probe(1.0, false)
 
 
 func get_recovery_world_space() -> LocalMatterSpace:
@@ -59,6 +63,14 @@ func get_recovery_world_space() -> LocalMatterSpace:
 
 func get_recovery_demo_space() -> LocalMatterSpace:
 	return _recovery_demo_space
+
+
+func get_c1_scale_probe_factor() -> float:
+	return _c1_scale_probe_factor
+
+
+func get_c1_scale_probe_equivalent_cell_meters() -> float:
+	return 1.0 / maxf(1.0, _c1_scale_probe_factor)
 
 
 func get_recovery_causal_bridge_cell_for_test() -> Vector3i:
@@ -91,6 +103,42 @@ func get_last_recovery_partition_publication_usec() -> int:
 
 func get_last_recovery_publication_timing() -> Dictionary:
 	return _last_recovery_publication_timing.duplicate(true)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		var key := event as InputEventKey
+		if key.pressed and not key.echo:
+			var requested_scale := 0.0
+			match key.physical_keycode:
+				KEY_1:
+					requested_scale = C1_SCALE_PROXY_FACTORS[0]
+				KEY_2:
+					requested_scale = C1_SCALE_PROXY_FACTORS[1]
+				KEY_3:
+					requested_scale = C1_SCALE_PROXY_FACTORS[2]
+				KEY_4:
+					requested_scale = C1_SCALE_PROXY_FACTORS[3]
+			if requested_scale > 0.0:
+				_apply_c1_scale_probe(requested_scale, true)
+				get_viewport().set_input_as_handled()
+				return
+	super._unhandled_input(event)
+
+
+func _apply_c1_scale_probe(scale_factor: float, reset_world: bool) -> void:
+	var clamped := clampf(scale_factor, 1.0, 8.0)
+	_c1_scale_probe_factor = clamped
+	_player.apply_scale_probe(clamped)
+	set_player_speed_scale(clamped)
+	_interactor.max_distance = C1_SCALE_PROXY_REACH_BASE * clamped
+	_camera_rig.apply_scale_probe(clamped)
+	if reset_world:
+		_reset_experiment()
+		_last_event = "C1 scale proxy %.0fx (~%.3f m relative cell); world reset for clean comparison" % [
+			clamped,
+			1.0 / clamped,
+		]
 
 
 func _initialize_space() -> void:
