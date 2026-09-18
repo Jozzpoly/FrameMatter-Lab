@@ -544,12 +544,15 @@ func _run_c0_artifact_baseline() -> void:
 	_c0_check(witness_token != MatterLineageMap.NONE, "support witness owns live Matter lineage", failures)
 	var actor_world_before := player.global_position
 	print(
-		"C0_PRE_CUT_DIAGNOSTIC player=%s support_space_id=%d world_id=%d witness=%s witness_token=%d bridge=%s"
+		"C0_PRE_CUT_DIAGNOSTIC player=%s support_local_center=%s support_space_id=%d world_id=%d witness=%s witness_local_point=%s witness_world_point=%s witness_token=%d bridge=%s"
 		% [
 			str(player.global_position),
+			str(player.support_local_center),
 			player.support_space.get_instance_id() if player.support_space != null else 0,
 			world.get_instance_id(),
 			str(witness_cell),
+			str(witness.get("local_point", Vector3.ZERO)),
+			str(witness.get("world_point", Vector3.ZERO)),
 			witness_token,
 			str(RECOVERY_CAUSAL_BRIDGE_CELL),
 		]
