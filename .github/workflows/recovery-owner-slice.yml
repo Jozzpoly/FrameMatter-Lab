@@ -26,6 +26,7 @@ on:
       - "tests/p1_chunked_provider_feasibility_probe.gd"
       - "tests/p1_chunked_static_provider_probe.gd"
       - "tests/p1_chunked_presentation_feasibility_probe.gd"
+      - "tests/p1_chunked_presentation_runtime_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -95,6 +96,10 @@ jobs:
       - name: Characterize chunked presentation feasibility
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_chunked_presentation_feasibility_probe.gd -PassMarker P1_CHUNKED_PRESENTATION_FEASIBILITY_PASS
+
+      - name: Verify bounded chunked presentation runtime
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_chunked_presentation_runtime_probe.gd -PassMarker P1_CHUNKED_PRESENTATION_RUNTIME_PASS
 
       - name: Verify one-world startup and Owner control scope
         shell: pwsh

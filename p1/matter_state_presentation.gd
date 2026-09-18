@@ -112,6 +112,73 @@ func refresh_space(space: LocalMatterSpace) -> void:
 	_refresh_focus(space)
 	last_refresh_usec = Time.get_ticks_usec() - started_usec
 
+
+func refresh_cell(space: LocalMatterSpace, cell: Vector3i) -> void:
+	var started_usec := Time.get_ticks_usec()
+	last_refresh_space_id = (
+		space.get_instance_id()
+		if space != null and is_instance_valid(space)
+		else 0
+	)
+	if (
+		not _is_live_space(space)
+		or space.volume == null
+		or not space.volume.in_bounds(cell)
+	):
+		last_refresh_usec = Time.get_ticks_usec() - started_usec
+		return
+	var edge := _chunk_edge_for_space(space)
+	if edge <= 0:
+		refresh_space(space)
+		return
+	if space.volume.count_solid() == 0:
+		refresh_space(space)
+		return
+	var provider := space.get_active_provider()
+	var state_root := provider.get_node_or_null(STATE_OVERLAY_NAME) as MeshInstance3D
+	if state_root == null:
+		refresh_space(space)
+		return
+	var state_material := state_root.material_override as StandardMaterial3D
+	if state_material == null:
+		state_material = _create_state_material(space)
+		state_root.material_override = state_material
+	for origin in _dirty_chunk_origins(space.volume.size, cell, edge):
+		_install_state_chunk(state_root, space.volume, origin, edge, state_material)
+	_state_signatures[space.get_instance_id()] = _state_signature(space)
+
+	if space == _focus_space:
+		var focus_root := provider.get_node_or_null(FOCUS_OVERLAY_NAME) as MeshInstance3D
+		if focus_root == null:
+			_refresh_focus(space)
+		else:
+			var focus_material := focus_root.material_override as StandardMaterial3D
+			if focus_material == null:
+				focus_material = _create_focus_material()
+				focus_root.material_override = focus_material
+			for origin in _dirty_chunk_origins(space.volume.size, cell, edge):
+				_install_focus_chunk(focus_root, space.volume, origin, edge, focus_material)
+			_focus_signatures[space.get_instance_id()] = _focus_signature(space)
+	last_refresh_usec = Time.get_ticks_usec() - started_usec
+
+
+func get_state_chunk_ids_for_test(space: LocalMatterSpace) -> Dictionary:
+	return _chunk_ids_for_root(get_state_overlay_for_space(space), "StateChunk_")
+
+
+func get_focus_chunk_ids_for_test(space: LocalMatterSpace) -> Dictionary:
+	return _chunk_ids_for_root(get_focus_overlay_for_space(space), "FocusChunk_")
+
+
+func _chunk_ids_for_root(root: MeshInstance3D, prefix: String) -> Dictionary:
+	var result: Dictionary = {}
+	if root == null:
+		return result
+	for child in root.get_children():
+		if child is MeshInstance3D and str(child.name).begins_with(prefix):
+			result[str(child.name)] = child.get_instance_id()
+	return result
+
 func clear_all() -> void:
 	if registry != null and is_instance_valid(registry):
 		for space in registry.get_active_spaces():
@@ -179,16 +246,19 @@ func _refresh_state(space: LocalMatterSpace) -> void:
 
 	var state_overlay := MeshInstance3D.new()
 	state_overlay.name = STATE_OVERLAY_NAME
-	state_overlay.mesh = build_side_surface_contour(space.volume)
 	state_overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var state_material := StandardMaterial3D.new()
-	state_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	state_material.albedo_color = STATIC_COLOR if space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC else DYNAMIC_COLOR
-	state_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var state_material := _create_state_material(space)
 	state_overlay.material_override = state_material
 	provider.add_child(state_overlay)
-	_state_signatures[space_id] = _state_signature(space)
 
+	var edge := _chunk_edge_for_space(space)
+	if edge > 0:
+		state_overlay.mesh = ArrayMesh.new()
+		for origin in _chunk_origins(space.volume.size, edge):
+			_install_state_chunk(state_overlay, space.volume, origin, edge, state_material)
+	else:
+		state_overlay.mesh = build_side_surface_contour(space.volume)
+	_state_signatures[space_id] = _state_signature(space)
 
 func _refresh_focus(space: LocalMatterSpace) -> void:
 	var provider := space.get_active_provider()
@@ -197,21 +267,150 @@ func _refresh_focus(space: LocalMatterSpace) -> void:
 	_focus_signatures.erase(space_id)
 	if not enabled or space != _focus_space or space.volume.count_solid() == 0:
 		return
-	var focus_mesh := build_top_surface_perimeter(space.volume)
-	if focus_mesh.get_surface_count() == 0:
-		return
+
 	var focus_overlay := MeshInstance3D.new()
 	focus_overlay.name = FOCUS_OVERLAY_NAME
-	focus_overlay.mesh = focus_mesh
 	focus_overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var focus_material := StandardMaterial3D.new()
-	focus_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	focus_material.albedo_color = FOCUS_COLOR
-	focus_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var focus_material := _create_focus_material()
 	focus_overlay.material_override = focus_material
 	provider.add_child(focus_overlay)
+
+	var edge := _chunk_edge_for_space(space)
+	if edge > 0:
+		focus_overlay.mesh = ArrayMesh.new()
+		for origin in _chunk_origins(space.volume.size, edge):
+			_install_focus_chunk(focus_overlay, space.volume, origin, edge, focus_material)
+		if focus_overlay.get_child_count() == 0:
+			focus_overlay.free()
+			return
+	else:
+		var focus_mesh := build_top_surface_perimeter(space.volume)
+		if focus_mesh.get_surface_count() == 0:
+			focus_overlay.free()
+			return
+		focus_overlay.mesh = focus_mesh
 	_focus_signatures[space_id] = _focus_signature(space)
 
+
+func _install_state_chunk(
+	root: MeshInstance3D,
+	volume: CellVolume,
+	origin: Vector3i,
+	edge: int,
+	material: StandardMaterial3D
+) -> void:
+	var node_name := _state_chunk_name(origin)
+	var existing := root.get_node_or_null(node_name)
+	if existing != null:
+		existing.free()
+	var mesh := build_side_surface_contour_region(volume, origin, _chunk_end(volume.size, origin, edge))
+	if mesh.get_surface_count() == 0:
+		return
+	var child := MeshInstance3D.new()
+	child.name = node_name
+	child.mesh = mesh
+	child.material_override = material
+	child.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(child)
+
+
+func _install_focus_chunk(
+	root: MeshInstance3D,
+	volume: CellVolume,
+	origin: Vector3i,
+	edge: int,
+	material: StandardMaterial3D
+) -> void:
+	var node_name := _focus_chunk_name(origin)
+	var existing := root.get_node_or_null(node_name)
+	if existing != null:
+		existing.free()
+	var mesh := build_top_surface_perimeter_region(volume, origin, _chunk_end(volume.size, origin, edge))
+	if mesh.get_surface_count() == 0:
+		return
+	var child := MeshInstance3D.new()
+	child.name = node_name
+	child.mesh = mesh
+	child.material_override = material
+	child.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(child)
+
+
+func _create_state_material(space: LocalMatterSpace) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = STATIC_COLOR if space.get_provider_kind() == LocalMatterSpace.ProviderKind.STATIC else DYNAMIC_COLOR
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return material
+
+
+func _create_focus_material() -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_color = FOCUS_COLOR
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return material
+
+
+func _chunk_edge_for_space(space: LocalMatterSpace) -> int:
+	if space == null or not is_instance_valid(space):
+		return 0
+	var provider := space.get_active_provider()
+	if provider is MatterRepresentation:
+		return maxi(0, (provider as MatterRepresentation).chunk_edge)
+	return 0
+
+
+func _chunk_origins(size: Vector3i, edge: int) -> Array[Vector3i]:
+	var result: Array[Vector3i] = []
+	for z in range(0, size.z, edge):
+		for y in range(0, size.y, edge):
+			for x in range(0, size.x, edge):
+				result.append(Vector3i(x, y, z))
+	return result
+
+
+func _dirty_chunk_origins(size: Vector3i, cell: Vector3i, edge: int) -> Array[Vector3i]:
+	var unique: Dictionary = {}
+	var candidates: Array[Vector3i] = [cell]
+	for offset in MatterTopology.AXIAL_NEIGHBORS:
+		var neighbor := cell + offset
+		if (
+			neighbor.x >= 0 and neighbor.x < size.x
+			and neighbor.y >= 0 and neighbor.y < size.y
+			and neighbor.z >= 0 and neighbor.z < size.z
+		):
+			candidates.append(neighbor)
+	for candidate in candidates:
+		unique[_chunk_origin(candidate, edge)] = true
+	var result: Array[Vector3i] = []
+	for origin_variant in unique.keys():
+		result.append(origin_variant)
+	return result
+
+
+func _state_chunk_name(origin: Vector3i) -> String:
+	return "StateChunk_%d_%d_%d" % [origin.x, origin.y, origin.z]
+
+
+func _focus_chunk_name(origin: Vector3i) -> String:
+	return "FocusChunk_%d_%d_%d" % [origin.x, origin.y, origin.z]
+
+
+func _chunk_origin(cell: Vector3i, edge: int) -> Vector3i:
+	return Vector3i(
+		floori(float(cell.x) / float(edge)) * edge,
+		floori(float(cell.y) / float(edge)) * edge,
+		floori(float(cell.z) / float(edge)) * edge
+	)
+
+
+func _chunk_end(size: Vector3i, origin: Vector3i, edge: int) -> Vector3i:
+	return Vector3i(
+		mini(size.x, origin.x + edge),
+		mini(size.y, origin.y + edge),
+		mini(size.z, origin.z + edge)
+	)
 
 func _state_signature(space: LocalMatterSpace) -> String:
 	var provider := space.get_active_provider()
@@ -306,6 +505,57 @@ static func build_side_surface_contour(volume: CellVolume) -> ArrayMesh:
 
 # Retained as a diagnostic/full-contour reference for evidence and future
 # challengers. Production state presentation no longer uses this geometry.
+static func build_side_surface_contour_region(
+	volume: CellVolume,
+	from_cell: Vector3i,
+	to_cell: Vector3i
+) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	if volume == null or volume.count_solid() == 0:
+		return mesh
+	var edge_records: Dictionary = {}
+	var scan_from := _scan_from(from_cell)
+	var scan_to := _scan_to(volume.size, to_cell)
+	for z in range(scan_from.z, scan_to.z):
+		for y in range(scan_from.y, scan_to.y):
+			for x in range(scan_from.x, scan_to.x):
+				var cell := Vector3i(x, y, z)
+				if volume.get_cell(cell) == CellVolume.EMPTY:
+					continue
+				var origin := Vector3(cell)
+				for face_index in range(CellMesher.FACE_DIRECTIONS.size()):
+					var normal: Vector3 = CellMesher.FACE_NORMALS[face_index]
+					if absf(normal.dot(Vector3.UP)) > 0.01:
+						continue
+					if volume.get_cell(cell + CellMesher.FACE_DIRECTIONS[face_index]) != CellVolume.EMPTY:
+						continue
+					var corners := _face_corners(origin, face_index)
+					for edge_index in range(4):
+						var a: Vector3 = corners[edge_index]
+						var b: Vector3 = corners[(edge_index + 1) % 4]
+						var key := _oriented_edge_key(face_index, a, b)
+						if not edge_records.has(key):
+							edge_records[key] = {"count": 0, "a": a, "b": b, "face": face_index, "owner": cell}
+						var record: Dictionary = edge_records[key]
+						record["count"] = int(record["count"]) + 1
+						edge_records[key] = record
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_LINES)
+	var emitted := false
+	for record_variant in edge_records.values():
+		var record: Dictionary = record_variant
+		if int(record["count"]) != 1:
+			continue
+		var owner: Vector3i = record["owner"]
+		if not _cell_in_region(owner, from_cell, to_cell):
+			continue
+		var normal: Vector3 = CellMesher.FACE_NORMALS[int(record["face"])]
+		_add_segment(surface, Vector3(record["a"]) + normal * CONTOUR_OFFSET, Vector3(record["b"]) + normal * CONTOUR_OFFSET)
+		emitted = true
+	if not emitted:
+		return mesh
+	return surface.commit(mesh)
+
 static func build_surface_contour(volume: CellVolume) -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	if volume == null or volume.count_solid() == 0:
@@ -392,6 +642,56 @@ static func build_top_surface_perimeter(volume: CellVolume) -> ArrayMesh:
 	return surface.commit(mesh)
 
 
+static func build_top_surface_perimeter_region(
+	volume: CellVolume,
+	from_cell: Vector3i,
+	to_cell: Vector3i
+) -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	if volume == null or volume.count_solid() == 0:
+		return mesh
+	var edge_records: Dictionary = {}
+	var scan_from := _scan_from(from_cell)
+	var scan_to := _scan_to(volume.size, to_cell)
+	for z in range(scan_from.z, scan_to.z):
+		for y in range(scan_from.y, scan_to.y):
+			for x in range(scan_from.x, scan_to.x):
+				var cell := Vector3i(x, y, z)
+				if volume.get_cell(cell) == CellVolume.EMPTY:
+					continue
+				var origin := Vector3(cell)
+				for face_index in range(CellMesher.FACE_DIRECTIONS.size()):
+					var normal: Vector3 = CellMesher.FACE_NORMALS[face_index]
+					if normal.dot(Vector3.UP) < 0.99:
+						continue
+					if volume.get_cell(cell + CellMesher.FACE_DIRECTIONS[face_index]) != CellVolume.EMPTY:
+						continue
+					var corners := _face_corners(origin, face_index)
+					for edge_index in range(4):
+						var a: Vector3 = corners[edge_index]
+						var b: Vector3 = corners[(edge_index + 1) % 4]
+						var key := _plain_edge_key(a, b)
+						if not edge_records.has(key):
+							edge_records[key] = {"count": 0, "a": a, "b": b, "owner": cell}
+						var record: Dictionary = edge_records[key]
+						record["count"] = int(record["count"]) + 1
+						edge_records[key] = record
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_LINES)
+	var emitted := false
+	for record_variant in edge_records.values():
+		var record: Dictionary = record_variant
+		if int(record["count"]) != 1:
+			continue
+		var owner: Vector3i = record["owner"]
+		if not _cell_in_region(owner, from_cell, to_cell):
+			continue
+		_add_segment(surface, Vector3(record["a"]) + Vector3.UP * FOCUS_CROWN_OFFSET, Vector3(record["b"]) + Vector3.UP * FOCUS_CROWN_OFFSET)
+		emitted = true
+	if not emitted:
+		return mesh
+	return surface.commit(mesh)
+
 func _bind_from_scene() -> void:
 	var scene_root := get_parent()
 	if scene_root == null:
@@ -460,8 +760,11 @@ func _on_split_committed(_source: LocalMatterSpace, _result: LocalMatterSplitRes
 	_ensure_active_spaces()
 
 
-func _on_edit_applied(space: LocalMatterSpace, _cell: Vector3i, _mode: int, _split_queued: bool) -> void:
-	refresh_space(space)
+func _on_edit_applied(space: LocalMatterSpace, cell: Vector3i, _mode: int, _split_queued: bool) -> void:
+	if _chunk_edge_for_space(space) > 0:
+		refresh_cell(space, cell)
+	else:
+		refresh_space(space)
 
 
 func _remove_overlays_from_provider(provider: Node3D) -> void:
@@ -482,6 +785,21 @@ func _remove_overlay_from_provider(provider: Node3D, node_name: String) -> void:
 func _is_live_space(space: LocalMatterSpace) -> bool:
 	return space != null and is_instance_valid(space) and not space.is_retired() and space.get_active_provider() != null
 
+
+static func _scan_from(origin: Vector3i) -> Vector3i:
+	return Vector3i(maxi(0, origin.x - 1), maxi(0, origin.y - 1), maxi(0, origin.z - 1))
+
+
+static func _scan_to(size: Vector3i, end: Vector3i) -> Vector3i:
+	return Vector3i(mini(size.x, end.x + 1), mini(size.y, end.y + 1), mini(size.z, end.z + 1))
+
+
+static func _cell_in_region(cell: Vector3i, from_cell: Vector3i, to_cell: Vector3i) -> bool:
+	return (
+		cell.x >= from_cell.x and cell.x < to_cell.x
+		and cell.y >= from_cell.y and cell.y < to_cell.y
+		and cell.z >= from_cell.z and cell.z < to_cell.z
+	)
 
 static func _face_corners(origin: Vector3, face_index: int) -> Array:
 	var face_vertices: Array = CellMesher.FACE_VERTICES[face_index]
