@@ -126,6 +126,14 @@ func _run() -> void:
 		return
 	_check(target.is_retired(), "old dynamic Space retires after topology succession")
 
+	# Succession must preserve the actual relation frame carried by the source at
+	# the transaction boundary. The passive solver host is compliant: before the
+	# split its seam can differ from the ideal authored anchor by a few millimeters.
+	# A successor must inherit that exact live source frame, not magically snap the
+	# accumulated solver compliance back to the authored frame.
+	var seam_world_at_split := split_result.source_transform * old_anchor_local
+	var pre_split_solver_gap := seam_world_at_split.distance_to(anchor_world)
+
 	var relation_successor_index := _find_successor_index_for_lineage(
 		split_result,
 		int(relation["island_lineage"])
@@ -150,7 +158,10 @@ func _run() -> void:
 
 	_check(successor_body.get_instance_id() != old_body_id, "relation endpoint now lives on new physics-body identity")
 	_check(successor.lineage.get_lineage(mapped_endpoint) == int(relation["island_lineage"]), "exact relation endpoint lineage survives compact succession mapping")
-	_check((successor_body.global_transform * mapped_anchor_local).distance_to(anchor_world) < 0.00002, "mapped successor relation frame is world-continuous before host rebind")
+	var mapped_seam_world := successor_body.global_transform * mapped_anchor_local
+	var succession_frame_error := mapped_seam_world.distance_to(seam_world_at_split)
+	_check(succession_frame_error < 0.00002, "mapped successor relation frame preserves the actual source seam continuously across succession")
+	_check(pre_split_solver_gap < 0.08, "source relation remains within bounded passive-joint compliance at the succession boundary")
 	_check(relation == relation_before, "logical relation record itself is unchanged by Space/body succession")
 
 	var endpoint_owner_count := 0
@@ -193,9 +204,11 @@ func _run() -> void:
 	_check(_lineage_contains(successor.lineage, int(relation["island_lineage"])), "island endpoint lineage remains live after island succession")
 
 	print(
-		"C5B_RELATION_SUCCESSION_METRIC pre_gap=%.6f post_gap=%.6f post_rotation=%.6f old_body=%d new_body=%d successor_origin=%s endpoint=%d cut_token=%d"
+		"C5B_RELATION_SUCCESSION_METRIC pre_gap=%.6f split_gap=%.6f succession_error=%.10f post_gap=%.6f post_rotation=%.6f old_body=%d new_body=%d successor_origin=%s endpoint=%d cut_token=%d"
 		% [
 			max_pre_gap,
+			pre_split_solver_gap,
+			succession_frame_error,
 			max_post_gap,
 			max_post_rotation,
 			old_body_id,
