@@ -9,6 +9,7 @@ const TEST_LINEAR_VELOCITY := Vector3(0.65, 0.0, -0.16)
 const TEST_ANGULAR_VELOCITY := Vector3(0.0, 0.22, 0.0)
 
 var _focus_space: LocalMatterSpace
+var _player_speed_scale := 1.0
 var _last_event := "P1 boot"
 var _pending_storage_place := false
 var _pending_storage_place_space: LocalMatterSpace
@@ -116,6 +117,10 @@ func get_interactor() -> P1MatterInteractor:
 
 func get_space_control() -> P1SpaceControl:
 	return _space_control
+
+
+func set_player_speed_scale(scale_factor: float) -> void:
+	_player_speed_scale = maxf(0.01, scale_factor)
 
 
 func activate_dynamic_probe_for_test() -> bool:
@@ -260,7 +265,7 @@ func _update_player_intent() -> void:
 	var desired_world: Vector3 = (
 		_camera_rig.get_planar_right() * input_axis.x
 		+ _camera_rig.get_planar_forward() * input_axis.y
-	) * PLAYER_SPEED
+	) * (PLAYER_SPEED * _player_speed_scale)
 
 	if _player.grounded and _player.support_body != null and is_instance_valid(_player.support_body):
 		var support_basis: Basis = _player.support_body.global_transform.basis.orthonormalized()
