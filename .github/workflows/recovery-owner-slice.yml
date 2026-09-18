@@ -31,6 +31,7 @@ on:
       - "tests/w0_bounded_policy_runtime_probe.gd"
       - "tests/p1_detach_frame_gap_probe.gd"
       - "tests/p1_presentation_packed_key_probe.gd"
+      - "tests/p1_presentation_granularity_probe.gd"
       - "tests/w0*.gd"
       - "ci/**"
       - "project.godot"
@@ -156,6 +157,10 @@ jobs:
       - name: Characterize packed presentation edge keys
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_presentation_packed_key_probe.gd -PassMarker P1_PRESENTATION_PACKED_KEY_PASS
+
+      - name: Characterize presentation chunk granularity
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_presentation_granularity_probe.gd -PassMarker P1_PRESENTATION_GRANULARITY_PASS
 
       - name: Verify lightweight W0 topology component equivalence
         shell: pwsh
