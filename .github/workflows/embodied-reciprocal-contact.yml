@@ -51,6 +51,75 @@ jobs:
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/reciprocal_dynamic_contact_challenger.gd -PassMarker RECIPROCAL_CONTACT_PASS
 
+      - name: Qualify reciprocal Owner scene composition
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/reciprocal_owner_scene_probe.gd -PassMarker RECIPROCAL_OWNER_SCENE_PASS
+
       - name: Preserve causal Matter baseline
         shell: pwsh
         run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0d_recovery_causal_loop_probe.gd -PassMarker W0D_RECOVERY_CAUSAL_LOOP_PASS
+
+      - name: Export reciprocal Owner Windows artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts/reciprocal-contact | Out-Null
+          $godotExecutable = (Get-Command godot -ErrorAction Stop).Source
+          $outputPath = "artifacts/reciprocal-contact/FrameMatter-Reciprocal-Contact.exe"
+          $stdoutFile = [System.IO.Path]::GetTempFileName()
+          $stderrFile = [System.IO.Path]::GetTempFileName()
+          try {
+            $argumentLine = "--headless --path . --export-release `"Windows Desktop`" `"$outputPath`""
+            $process = Start-Process -FilePath $godotExecutable -ArgumentList $argumentLine -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
+            $stdout = Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue
+            $stderr = Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue
+            Write-Host ($stdout + [Environment]::NewLine + $stderr)
+            if ($process.ExitCode -ne 0) { throw "Reciprocal Owner export exited with status $($process.ExitCode)" }
+          }
+          finally {
+            Remove-Item -Path $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+          }
+          if (-not (Test-Path $outputPath)) { throw "Reciprocal Owner executable missing after export" }
+          if ((Get-Item $outputPath).Length -lt 1000000) { throw "Reciprocal Owner executable is implausibly small" }
+
+      - name: Re-prove C0 Spark in exact reciprocal executable
+        shell: pwsh
+        run: |
+          $exe = "artifacts/reciprocal-contact/FrameMatter-Reciprocal-Contact.exe"
+          $stdoutFile = [System.IO.Path]::GetTempFileName()
+          $stderrFile = [System.IO.Path]::GetTempFileName()
+          try {
+            $process = Start-Process -FilePath $exe -ArgumentList "--headless -- --c0-artifact-baseline" -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile
+            $combined = (Get-Content -Path $stdoutFile -Raw -ErrorAction SilentlyContinue) + [Environment]::NewLine + (Get-Content -Path $stderrFile -Raw -ErrorAction SilentlyContinue)
+            Write-Host $combined
+            if ($process.ExitCode -ne 0) { throw "Exact reciprocal executable failed C0 qualification with status $($process.ExitCode)" }
+            if ($combined -notmatch "C0_EXPORTED_SPARK_BASELINE_PASS") { throw "Exact reciprocal executable did not preserve C0 PASS" }
+          }
+          finally {
+            Remove-Item -Path $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Record reciprocal artifact provenance
+        shell: pwsh
+        run: |
+          $exe = "artifacts/reciprocal-contact/FrameMatter-Reciprocal-Contact.exe"
+          $digest = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "RECIPROCAL_EXACT_ARTIFACT_SHA256: $digest"
+          @"
+          FrameMatter reciprocal contact Owner gate
+          workflow_run=$env:GITHUB_RUN_ID
+          source_commit=$env:SOURCE_SHA
+          engine=Godot 4.7.2
+          protected_question=finite mass-sensitive player <-> Matter contact
+          relation_work=frozen after C7 experiential fail
+          exact_artifact_sha256=$digest
+          "@ | Set-Content -Path "artifacts/reciprocal-contact/RECIPROCAL-PROVENANCE.txt"
+
+      - name: Upload reciprocal Owner artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FrameMatter-Reciprocal-Contact-Windows
+          path: |
+            artifacts/reciprocal-contact/FrameMatter-Reciprocal-Contact.exe
+            artifacts/reciprocal-contact/RECIPROCAL-PROVENANCE.txt
+          retention-days: 30
+          if-no-files-found: error
