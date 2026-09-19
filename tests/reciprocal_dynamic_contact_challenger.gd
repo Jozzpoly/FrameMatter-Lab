@@ -46,7 +46,7 @@ func _run() -> void:
 	)
 
 	print(
-		"RECIPROCAL_CONTACT_METRIC light_dx=%.6f heavy_dx=%.6f light_contacts=%d heavy_contacts=%d light_max_impulse=%.6f heavy_max_impulse=%.6f incoming_control_actor_dx=%.6f incoming_actor_dx=%.6f incoming_contacts=%d incoming_max_impulse=%.6f"
+		"RECIPROCAL_CONTACT_METRIC light_dx=%.6f heavy_dx=%.6f light_contacts=%d heavy_contacts=%d light_max_impulse=%.6f heavy_max_impulse=%.6f incoming_control_actor_dx=%.6f incoming_actor_dx=%.6f incoming_contacts=%d incoming_max_impulse=%.6f incoming_control_body_x=%.6f incoming_body_x=%.6f"
 		% [
 			float(light.body_dx),
 			float(heavy.body_dx),
@@ -58,6 +58,8 @@ func _run() -> void:
 			float(incoming_reciprocal.actor_dx),
 			int(incoming_reciprocal.contacts),
 			float(incoming_reciprocal.max_impulse),
+			float(incoming_control.body_x),
+			float(incoming_reciprocal.body_x),
 		]
 	)
 
@@ -115,9 +117,13 @@ func _run_incoming_case(enabled: bool) -> Dictionary:
 	get_root().add_child(host)
 	var floor := _make_floor(host)
 
-	var body := _make_body(host, 18.0, Vector3(2.0, 1.0, 3.0))
+	var body := _make_body(host, 18.0, Vector3(2.0, 1.45, 3.0))
+	# Incoming-contact fixture must actually reach the query actor. Keep this body
+	# clear of the supporting floor so Coulomb friction cannot stop it before the
+	# intended side impact.
+	body.gravity_scale = 0.0
 	body.linear_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
-	body.linear_damp = 0.25
+	body.linear_damp = 0.0
 	body.angular_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
 	body.angular_damp = 2.0
 
