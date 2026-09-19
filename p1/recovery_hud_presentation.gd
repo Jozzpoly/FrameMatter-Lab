@@ -54,8 +54,8 @@ func _refresh() -> void:
 	]
 
 	if is_world:
-		_hint.text = "LMB remove · RMB build · 1/2/3/4 = 1x/2x/4x/8x scale proxy (resets world) · WASD move · Space jump · MMB orbit"
+		_hint.text = "PUSH loose Matter (small=light, large=heavy) · LMB remove · RMB build · 1/2/3/4 scale proxy · WASD move · Space jump · MMB orbit"
 		return
 
 	var toggle_label := "T freeze" if focus.get_provider_kind() == LocalMatterSpace.ProviderKind.DYNAMIC else "T release"
-	_hint.text = "LMB remove · RMB build · %s · 1/2/3/4 scale proxy (resets world) · arrows push/turn · WASD move · Space jump · MMB orbit" % toggle_label
+	_hint.text = "PUSH loose Matter · LMB remove · RMB build · %s · 1/2/3/4 scale proxy · WASD move · Space jump · MMB orbit" % toggle_label
