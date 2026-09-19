@@ -268,7 +268,7 @@ Do not call a technical proxy an experiential result.
 
 ## Post-C7 protected next question — reciprocal contact
 
-**Status: ACTIVE / ONE-CHALLENGER LIMIT**
+**Status: TECHNICAL PASS / OWNER FEEL GATE**
 
 C7 selected embodiment/contact pressure over further relation work.
 
@@ -276,7 +276,7 @@ Question:
 
 > can the existing query actor and dynamic Matter exchange finite, mass-sensitive momentum in both directions while preserving responsive locomotion?
 
-This is not a new multi-stage campaign. Stop after one technically qualified playable challenger and return to Owner judgement.
+The one challenger is technically qualified and packaged. Development is stopped at Owner judgement.
 
 Explicitly deferred until that Owner result:
 
