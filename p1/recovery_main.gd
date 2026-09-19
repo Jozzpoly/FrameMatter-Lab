@@ -21,6 +21,9 @@ const C1_SCALE_PROXY_FACTORS := [1.0, 2.0, 4.0, 8.0]
 const C6_SEAM_MARKER_LENGTH := 0.9
 const C6_SEAM_MARKER_THICKNESS := 0.08
 const C6_ARTIFACT_QUALIFIER = preload("res://p1/c6_artifact_qualifier.gd")
+const RECIPROCAL_OWNER_DEFAULT_SCALE := 2.0
+const RECIPROCAL_LIGHT_PROP_ORIGIN := Vector3(-0.5, 2.0, 2.5)
+const RECIPROCAL_HEAVY_PROP_ORIGIN := Vector3(2.5, 2.0, -1.5)
 const RECOVERY_ANCHOR_CELLS: Array[Vector3i] = [
 	Vector3i(1, 0, 1),
 	Vector3i(30, 0, 1),
@@ -65,12 +68,19 @@ func _ready() -> void:
 	# The recovery surface uses direct mouse semantics through
 	# P1RecoveryDirectEdit instead of the old modal E + LMB consumer path.
 	_interactor.set_process_unhandled_input(false)
-	_last_event = "recovery: edit ordinary Matter; detached Matter becomes physical"
+	_player.reciprocal_dynamic_contact_enabled = true
+	_last_event = "reciprocal contact gate: push loose Matter; light and heavy should feel different"
 	if OS.get_cmdline_user_args().has("--c0-artifact-baseline"):
 		call_deferred("_run_c0_artifact_baseline")
 	elif OS.get_cmdline_user_args().has("--c6-autonomous-flow"):
 		call_deferred("_run_c6_exported_autonomous_flow")
-	_apply_c1_scale_probe(1.0, false)
+	# Historical/headless qualification keeps the 1x control. The interactive
+	# Owner gate starts at 2x because C1 already found 2x-4x substantially more
+	# useful for construction feel than the 1x proxy.
+	if DisplayServer.get_name() == "headless":
+		_apply_c1_scale_probe(1.0, false)
+	else:
+		_apply_c1_scale_probe(RECIPROCAL_OWNER_DEFAULT_SCALE, true)
 
 
 func get_recovery_world_space() -> LocalMatterSpace:
@@ -242,6 +252,7 @@ func _initialize_space() -> void:
 	_registry.clear()
 	for child in $Spaces.get_children():
 		child.free()
+	_reset_reciprocal_contact_props()
 
 	_recovery_world_space = _build_world_matter_space()
 	# Presentation granularity is intentionally decoupled from physics-provider
@@ -259,6 +270,55 @@ func _initialize_space() -> void:
 	_registry.register_space(_recovery_world_space)
 	_focus_space = _recovery_world_space
 	_last_event = "one ordinary causal Matter world initialized"
+
+
+func _reset_reciprocal_contact_props() -> void:
+	var host := get_node_or_null("ReciprocalContactProps") as Node3D
+	if host == null:
+		return
+	for child in host.get_children():
+		child.free()
+
+	# These are deliberately bounded contact instrumentation, not a new world
+	# ontology. They use the same CellVolume -> ConstructBody Matter derivation
+	# but remain outside the Space registry so the existing causal-world contract
+	# and editing semantics are not silently redesigned.
+	var light_volume := CellVolume.new(Vector3i.ONE)
+	light_volume.set_cell(Vector3i.ZERO, CellVolume.SOLID)
+	var light := ConstructBody.new()
+	light.name = "ReciprocalLightMatter"
+	light.mass_per_cell = 1.0
+	light.gravity_scale = 1.0
+	light.linear_damp = 1.0
+	light.angular_damp = 1.5
+	light.can_sleep = false
+	host.add_child(light)
+	light.global_position = RECIPROCAL_LIGHT_PROP_ORIGIN
+	light.set_volume(light_volume)
+
+	var heavy_volume := CellVolume.new(Vector3i(2, 2, 2))
+	heavy_volume.fill_box(Vector3i.ZERO, Vector3i(2, 2, 2), CellVolume.SOLID)
+	var heavy := ConstructBody.new()
+	heavy.name = "ReciprocalHeavyMatter"
+	heavy.mass_per_cell = 8.0
+	heavy.gravity_scale = 1.0
+	heavy.linear_damp = 1.0
+	heavy.angular_damp = 1.5
+	heavy.can_sleep = false
+	host.add_child(heavy)
+	heavy.global_position = RECIPROCAL_HEAVY_PROP_ORIGIN
+	heavy.set_volume(heavy_volume)
+
+
+func get_reciprocal_contact_props_for_test() -> Array[ConstructBody]:
+	var result: Array[ConstructBody] = []
+	var host := get_node_or_null("ReciprocalContactProps") as Node3D
+	if host == null:
+		return result
+	for child in host.get_children():
+		if child is ConstructBody:
+			result.append(child as ConstructBody)
+	return result
 
 
 func _build_world_matter_space() -> W0AuthorityPartitionSpace:
