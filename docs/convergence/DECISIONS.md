@@ -57,3 +57,16 @@ Purpose: preserve decisions that materially constrain future interpretation with
 **Decision:** retain previous quality/recovery work and failures, but do not let stale “Q0 current” documentation redirect current execution.
 
 **Consequence:** `docs/convergence/CURRENT.md` is the active mutable pointer.
+
+
+## D10 — C7 closes the relation-first priority
+
+**Decision:** C7 is a material experiential FAIL even though C2-C6 remain bounded technical PASSes.
+
+**Consequence:** additional hinge/relation work is frozen. The next work must test physical reciprocity between the actor and Matter.
+
+## D11 — one challenger between Owner gates
+
+**Decision:** after C7, do not chain multiple research questions before the next playable Owner build.
+
+**Consequence:** the current branch may implement and qualify reciprocal contact, including fixes required to make that single challenger truthful, but must not silently expand into representation, large-world, reconnect, or a new player architecture campaign.
