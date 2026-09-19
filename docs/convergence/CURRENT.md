@@ -2,154 +2,130 @@
 
 Status: **live mutable execution pointer**
 
-Updated: 2026-09-18
+Updated: 2026-09-19
 
 If live repository/CI evidence contradicts this file, live evidence wins and this file must be corrected.
 
 ## Active objective
 
-**C6 — Autonomous Qualification is active.**
+**C7 — Owner Spark Gate is active.**
 
-Question:
+The technical Convergence chain C0→C6 is qualified far enough to stop development and ask the Owner the next uniquely valuable question:
 
-> can the earned C2→C5 causal language operate through the real Owner-facing scene and actual input path as one continuous packaged-world flow, without relying on headless fixture orchestration?
+> does the current living-material primitive actually provoke spontaneous construction, experimentation and new missing-world-language pressure during open play?
 
-The next build is not yet an Owner judgement gate. C6 must remove basic technical uncertainty first.
+This is an experiential gate, not another implementation stage.
 
-## Earned Convergence chain
+## Exact C7 specimen
 
-### C0 — Spark / exact artifact
+Do **not** rebuild before Owner play.
 
-Ordinary WORLD Matter can causally acquire dynamic autonomy while retaining Matter identity, actor continuity and live moving editability.
+Use the already-qualified C6 Windows artifact from workflow run:
 
-### C1 — Scale / Owner finding
+`35382830457`
 
-Relative body : Matter scale is a strong experiential multiplier. Current strongest Owner signal is roughly 50–25 cm proxies; ~12.5 cm remains informative. This does not select final representation.
+Qualified source:
 
-### C2 — Structural Law
+`748c1e413c9a89b192f9117e78eb76091d7d49f1`
 
-`material continuity != rigid connectivity`
+Owner artifact:
 
-One local lineage-owned interface law can change rigid decomposition without changing Matter occupancy.
+`FrameMatter-Convergence-C6-Windows` — artifact id `10562783825`
 
-### C3 — Authority Composition
+Executable SHA-256:
 
-Local structural law can produce:
-
-> materially-continuous WORLD → anchored WORLD remainder + zero-launch dynamic island
-
-without destructive Matter topology causing the decomposition.
-
-### C4 — Passive Relation
-
-The lineage-owned seam can manifest as one passive rotational DOF. Gravity, not a motor or launch command, produces motion.
-
-### C5 — Living World / bounded PASS
-
-C5A:
-
-- unrelated moving-Matter edits preserve relation;
-- endpoint destruction kills relation;
-- same-address fresh Matter does not resurrect relation.
-
-C5B:
-
-- retained endpoint lineage follows production topology succession;
-- old Space/body retires;
-- non-zero compact-frame remap is exact;
-- new body identity is resolved from Matter lineage;
-- relation continues without world-space seam discontinuity.
-
-Qualified C5B source:
-
-`6171413d165bf09cfe631663ea65bb658ec58a04`
+`f615d31bf3028cbaf023ac878a7c522b3ff172e113ffc1ee95f9bf31e3b11ec7`
 
 Evidence:
 
-- `docs/evidence/convergence-c5a-relation-history-2026-09-18.md`
-- `docs/evidence/convergence-c5b-relation-succession-2026-09-18.md`
+`docs/evidence/convergence-c6-autonomous-qualification-2026-09-18.md`
 
-## C5 explicit residual
+## Earned chain
 
-A temporary rigid bypass that suppresses the DOF and later restores it remains **unearned**.
+### C0 — PASS / frozen
 
-After C3 the two sides live under distinct authorities. A real rigid bypass/removal cycle therefore requires reconnect / authority-merge semantics. Do not fake this by keeping a hidden snapshot body or by simply toggling the host joint.
+Ordinary WORLD Matter can causally acquire dynamic autonomy while preserving Matter identity, actor/support continuity and moving editability.
 
-This is a future WORLD LANGUAGE branch-selection candidate, not a reason to inflate C5 now.
+### C1 — PASS as bounded Owner finding
 
-## C6 product-flow requirement
+Relative body : Matter scale materially changes construction instinct. Strongest current Owner range is roughly the 2×–4× proxies (~50–25 cm relative cells); 8×/~12.5 cm is extreme but informative.
 
-C6 must compose the already-earned pieces in `p1/recovery_main.tscn` (or a minimal sibling Owner scene if integration pressure proves that cleaner):
+This does not select final representation.
 
-> ordinary WORLD Matter
-> → actual Owner input authors one local structural seam
-> → derived rigid decomposition
+### C2 — PASS / bounded
+
+`material continuity != rigid connectivity`
+
+A local lineage-owned interface law can change derived rigid organization without changing Matter occupancy.
+
+### C3 — PASS / bounded
+
+That local law can drive ordinary WORLD Matter into:
+
+> anchored WORLD remainder + zero-launch dynamic island
+
+while retained Matter lineage transfers exactly.
+
+### C4 — PASS / bounded
+
+The seam can manifest as one passive rotational DOF. Gravity/world forces produce motion; no prefab mechanism launch is required.
+
+### C5 — PASS / bounded living history
+
+Relation truth follows retained Matter identity through moving edits and topology succession.
+
+Endpoint destruction kills the relation.
+
+Fresh Matter recreated at the same address does not resurrect it.
+
+Reconnect / rigid-bypass semantics remain explicitly unearned.
+
+### C6 — PASS / exact Owner artifact
+
+The real Owner-facing scene and exact Windows executable autonomously reproduce:
+
+> pointer + H structural seam
+> → local law
 > → authority composition
-> → passive rotational relation exists before the next solver step
-> → gravity produces motion
-> → actor can ride/interact
-> → live Matter edit changes the moving structure
-> → relation history/succession remains truthful.
+> → same-frame passive relation
+> → gravity-driven motion
+> → actor ride
+> → moving edit/history
 
-Required surfaces:
+while preserving the C0 Spark.
 
-- actual pointer/input targeting;
-- actual Matter/lineage authority;
-- actual registry + actor support handoff;
-- actual physics;
-- actual rendered scene;
-- exact exported Windows artifact;
-- autonomous artifact-side qualification of the protected causal flow.
+## C7 discipline
 
-## C6 authoring constraint
+Stop implementation long enough for Owner play to select the next branch.
 
-Do not introduce a mechanism editor or final relation ontology.
+Do not pre-emptively:
 
-The smallest acceptable Owner-facing authoring dialect may be one explicit experimental **STRUCTURAL SEAM** action operating on a local occupied adjacency derived from the pointer hit.
+- add another relation type;
+- build reconnect/merge;
+- redesign actor embodiment;
+- implement real fine-resolution Matter;
+- polish the seam into a mechanism editor;
+- start a performance campaign.
 
-Relation truth must remain lineage-owned + local frame/axis.
+The Owner gate should remain minimally instructed. Technical demonstration has already been machine-qualified.
 
-Body/provider IDs remain execution details only.
+The useful evidence now is what the Owner spontaneously tries to build, what feels generative, what becomes frustrating, and which missing primitive repeatedly blocks play.
 
-## C6 atomicity invariant
+## Known pressure carried into C7
 
-The integrated transition must not expose a one-frame free-fall window:
-
-> meaning change
-> → rigid decomposition
-> → authority repartition
-> → target provider publication
-> → passive relation host manifestation
-> → only then next solver step.
-
-If a frame exists where the newly separated island is unconstrained before the relation host exists, C6 is RED.
-
-## C6 scale stance
-
-Retain the C1 scale proxy controls unless they materially complicate C6.
-
-They are useful Owner research instrumentation, not a new C6 objective.
-
-Do not redesign representation.
-
-## Explicitly not next
-
-- no generic relation graph/registry;
-- no reconnect/merge framework;
-- no motor/limits;
-- no final MaterialAnchor/Bond datatype;
-- no actor rewrite yet;
-- no real finer-resolution backend;
-- no performance campaign without demonstrated pressure.
-
-## Embodiment pressure
-
-C1 Owner play exposed a real future debt: the query capsule and weak reciprocal actor↔Matter reaction increasingly lag behind the physical world at larger scale.
-
-C6 should preserve the current actor continuity contract. It should not solve embodiment before the next Owner Spark gate unless integration exposes a hard blocker.
+- C1 showed scale strongly changes immersion and construction instinct.
+- The current capsule/contact model increasingly feels weaker than the world at larger relative scale.
+- The current structural-seam presentation is intentionally experimental, not final UX.
+- Reconnect / authority merge is still unearned and may emerge as a genuine play pressure.
+- WORLD LANGUAGE remains primary until Owner play demonstrates otherwise.
 
 ## Next legitimate move
 
-Audit the exact real-scene input and transaction seams, then implement the smallest C6 structural-seam authoring path with a strict autonomous integration probe.
+**Owner plays the exact qualified specimen.**
 
-Do not hand an artifact to the Owner until the actual input→law→authority→relation→motion chain is machine-qualified.
+After the play session:
+
+1. recover what the Owner actually attempted, not what the roadmap predicted;
+2. distinguish novelty from repeated pressure;
+3. identify the smallest next falsifiable world-language or representation question;
+4. only then reopen implementation.
