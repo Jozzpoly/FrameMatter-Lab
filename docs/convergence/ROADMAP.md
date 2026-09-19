@@ -223,7 +223,7 @@ Stop condition:
 
 ## C7 — Owner Spark Gate
 
-**Status: ACTIVE / OWNER AUTHORITY**
+**Status: MATERIAL EXPERIENTIAL FAIL / CLOSED**
 
 Only after C6.
 
@@ -262,3 +262,27 @@ Do not accumulate framework debt ahead of repeated need.
 Do not spend Owner attention on a build that still has unresolved technical errors detectable in CI.
 
 Do not call a technical proxy an experiential result.
+
+
+---
+
+## Post-C7 protected next question — reciprocal contact
+
+**Status: ACTIVE / ONE-CHALLENGER LIMIT**
+
+C7 selected embodiment/contact pressure over further relation work.
+
+Question:
+
+> can the existing query actor and dynamic Matter exchange finite, mass-sensitive momentum in both directions while preserving responsive locomotion?
+
+This is not a new multi-stage campaign. Stop after one technically qualified playable challenger and return to Owner judgement.
+
+Explicitly deferred until that Owner result:
+
+- true metric Matter scale,
+- larger authored playground,
+- full rigid-body actor rewrite,
+- additional structural relations,
+- reconnect/merge,
+- adaptive representation.
