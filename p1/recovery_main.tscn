@@ -87,6 +87,8 @@ cast_shadow = 0
 
 [node name="Spaces" type="Node3D" parent="."]
 
+[node name="ReciprocalContactProps" type="Node3D" parent="."]
+
 [node name="P1SpaceRegistry" type="Node" parent="."]
 script = ExtResource("4_registry")
 
