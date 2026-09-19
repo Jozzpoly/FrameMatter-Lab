@@ -27,6 +27,17 @@ const SCALE_PROBE_BASE_FACING_SIZE := Vector3(0.16, 0.16, 0.42)
 @export var max_slide_iterations: int = 4
 @export_flags_3d_physics var collision_mask := 1
 
+# Bounded post-C7 challenger. This does not turn the query actor into a solver
+# body. It gives contacts with dynamic rigid Matter a finite effective actor
+# mass so momentum exchange can be tested without restoring CharacterBody-style
+# infinite kinematic push authority.
+@export var reciprocal_dynamic_contact_enabled := false
+@export var reciprocal_actor_mass := 4.0
+@export_range(0.0, 1.0, 0.01) var reciprocal_contact_coupling := 0.72
+@export var reciprocal_max_impulse := 8.0
+@export var reciprocal_min_closing_speed := 0.05
+@export var reciprocal_external_velocity_decay := 9.0
+
 var desired_local_velocity := Vector3.ZERO
 var world_velocity := Vector3.ZERO
 var jump_requested := false
@@ -41,8 +52,16 @@ var observed_support_transfers := 0
 var observed_support_rebases := 0
 var observed_wall_blocks := 0
 var observed_ceiling_blocks := 0
+var observed_reciprocal_contacts := 0
+var observed_reciprocal_impulse_total := 0.0
+var observed_reciprocal_max_impulse := 0.0
+var observed_reciprocal_last_body_mass := 0.0
+var observed_reciprocal_last_impulse := 0.0
+var reciprocal_external_velocity := Vector3.ZERO
 
 var _shape: CapsuleShape3D
+var _reciprocal_contact_shape: CapsuleShape3D
+var _reciprocal_contact_bodies_this_step: Dictionary = {}
 var _previous_support_point_world := Vector3.ZERO
 var _has_support_sample := false
 var _topology_validation_grace_steps := 0
@@ -55,6 +74,8 @@ func _ready() -> void:
 	_shape = CapsuleShape3D.new()
 	_shape.radius = radius
 	_shape.height = maxf(height, radius * 2.0)
+	_reciprocal_contact_shape = CapsuleShape3D.new()
+	_refresh_reciprocal_contact_shape()
 
 
 # C1-only relative-scale proxy. It deliberately changes the embodied actor's
@@ -70,6 +91,7 @@ func apply_scale_probe(length_scale: float) -> void:
 	if _shape != null:
 		_shape.radius = radius
 		_shape.height = maxf(height, radius * 2.0)
+	_refresh_reciprocal_contact_shape()
 
 	var body := get_node_or_null("Body") as MeshInstance3D
 	if body != null and body.mesh is CapsuleMesh:
@@ -93,6 +115,7 @@ func clear_support_for_world_reset() -> void:
 	_detach_from_support(false)
 	desired_local_velocity = Vector3.ZERO
 	world_velocity = Vector3.ZERO
+	reciprocal_external_velocity = Vector3.ZERO
 	jump_requested = false
 
 
@@ -225,10 +248,19 @@ func _physics_process(delta: float) -> void:
 	if _shape == null:
 		return
 
+	_reciprocal_contact_bodies_this_step.clear()
+	if reciprocal_dynamic_contact_enabled:
+		_resolve_incoming_reciprocal_contact()
+
 	if grounded:
 		_step_grounded(delta)
 	else:
 		_step_airborne(delta)
+	if reciprocal_dynamic_contact_enabled:
+		reciprocal_external_velocity = reciprocal_external_velocity.move_toward(
+			Vector3.ZERO,
+			reciprocal_external_velocity_decay * delta
+		)
 	jump_requested = false
 
 
@@ -246,6 +278,8 @@ func _step_grounded(delta: float) -> void:
 
 	var desired_world: Vector3 = support_body.global_transform.basis.orthonormalized() * desired_local_velocity
 	desired_world.y = 0.0
+	if reciprocal_dynamic_contact_enabled:
+		desired_world += reciprocal_external_velocity
 
 	if jump_requested:
 		world_velocity = support_velocity + desired_world + Vector3.UP * jump_speed
@@ -286,6 +320,8 @@ func _step_grounded(delta: float) -> void:
 func _step_airborne(delta: float) -> void:
 	var desired_world: Vector3 = desired_local_velocity
 	desired_world.y = 0.0
+	if reciprocal_dynamic_contact_enabled:
+		desired_world += reciprocal_external_velocity
 	world_velocity.x = desired_world.x
 	world_velocity.z = desired_world.z
 	world_velocity.y -= gravity_acceleration * delta
@@ -325,6 +361,13 @@ func _move_with_slide(motion: Vector3) -> void:
 
 		if normal.y <= 0.25 and absf(normal.y) < 0.75:
 			observed_wall_blocks += 1
+			if reciprocal_dynamic_contact_enabled and not hit.is_empty():
+				var motion_seconds := maxf(get_physics_process_delta_time(), 0.000001)
+				_apply_reciprocal_dynamic_contact(
+					hit,
+					normal,
+					remaining / motion_seconds
+				)
 		if normal.y < -0.45 and world_velocity.y > 0.0:
 			world_velocity.y = 0.0
 			observed_ceiling_blocks += 1
@@ -336,6 +379,93 @@ func _move_with_slide(motion: Vector3) -> void:
 		# Keep the query shape just outside the contacted surface instead of
 		# relying on deep-overlap recovery in the next slide iteration.
 		global_position += normal * query_margin
+
+
+func _refresh_reciprocal_contact_shape() -> void:
+	if _reciprocal_contact_shape == null:
+		return
+	_reciprocal_contact_shape.radius = maxf(0.01, radius * 0.96)
+	# Deliberately keep the reciprocal probe away from the floor/ceiling so an
+	# ordinary support contact does not masquerade as a side impact.
+	_reciprocal_contact_shape.height = maxf(
+		_reciprocal_contact_shape.radius * 2.0,
+		height * 0.58
+	)
+
+
+func _resolve_incoming_reciprocal_contact() -> void:
+	if _reciprocal_contact_shape == null:
+		return
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = _reciprocal_contact_shape
+	query.transform = global_transform
+	query.margin = maxf(query_margin, 0.004)
+	query.collision_mask = collision_mask
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	var hit: Dictionary = get_world_3d().direct_space_state.get_rest_info(query)
+	if hit.is_empty():
+		return
+	var normal := Vector3(hit.get("normal", Vector3.ZERO)).normalized()
+	if normal.is_zero_approx() or absf(normal.y) >= 0.70:
+		return
+	var actor_velocity := reciprocal_external_velocity
+	if grounded and support_body != null and is_instance_valid(support_body):
+		actor_velocity += _support_velocity(global_position, maxf(get_physics_process_delta_time(), 0.000001))
+		actor_velocity += support_body.global_transform.basis.orthonormalized() * desired_local_velocity
+	else:
+		actor_velocity += Vector3(desired_local_velocity.x, world_velocity.y, desired_local_velocity.z)
+	_apply_reciprocal_dynamic_contact(hit, normal, actor_velocity)
+
+
+func _apply_reciprocal_dynamic_contact(
+	hit: Dictionary,
+	normal: Vector3,
+	actor_contact_velocity: Vector3
+) -> void:
+	var collider := _collider_from_rest_info(hit)
+	if collider == null:
+		return
+	var frame := _resolve_support_frame(collider)
+	if not (frame is RigidBody3D):
+		return
+	var body := frame as RigidBody3D
+	if not is_instance_valid(body) or body == support_body:
+		return
+	var body_id := body.get_instance_id()
+	if _reciprocal_contact_bodies_this_step.has(body_id):
+		return
+	var actor_mass := maxf(reciprocal_actor_mass, 0.001)
+	var body_mass := maxf(body.mass, 0.001)
+	var contact_world: Vector3 = Vector3(hit.get("point", global_position))
+	var body_velocity := _rigid_velocity_at_point(body, contact_world)
+	var relative_normal_speed := (actor_contact_velocity - body_velocity).dot(normal)
+	var closing_speed := -relative_normal_speed
+	if closing_speed <= reciprocal_min_closing_speed:
+		return
+
+	var effective_inverse_mass := 1.0 / actor_mass + 1.0 / body_mass
+	var impulse_magnitude := closing_speed / maxf(effective_inverse_mass, 0.000001)
+	impulse_magnitude *= clampf(reciprocal_contact_coupling, 0.0, 1.0)
+	impulse_magnitude = minf(impulse_magnitude, maxf(reciprocal_max_impulse, 0.0))
+	if impulse_magnitude <= 0.0:
+		return
+
+	_reciprocal_contact_bodies_this_step[body_id] = true
+	var impulse_on_body := -normal * impulse_magnitude
+	body.apply_central_impulse(impulse_on_body)
+
+	# The query actor is not a PhysicsServer body, so explicitly retain its
+	# equal-and-opposite velocity change as a transient external channel. Player
+	# intent remains responsive and will overcome it over time rather than being
+	# replaced by solver-owned locomotion in this bounded challenger.
+	reciprocal_external_velocity += normal * (impulse_magnitude / actor_mass)
+
+	observed_reciprocal_contacts += 1
+	observed_reciprocal_impulse_total += impulse_magnitude
+	observed_reciprocal_max_impulse = maxf(observed_reciprocal_max_impulse, impulse_magnitude)
+	observed_reciprocal_last_body_mass = body_mass
+	observed_reciprocal_last_impulse = impulse_magnitude
 
 
 func _snap_and_attach_ground() -> bool:
