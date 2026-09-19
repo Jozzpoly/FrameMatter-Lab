@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: embodied-reciprocal-contact-${{ github.ref }}
+  group: embodied-reciprocal-contact-owner-gate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
