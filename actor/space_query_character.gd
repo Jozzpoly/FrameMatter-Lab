@@ -403,19 +403,39 @@ func _resolve_incoming_reciprocal_contact() -> void:
 	query.collision_mask = collision_mask
 	query.collide_with_bodies = true
 	query.collide_with_areas = false
-	var hit: Dictionary = get_world_3d().direct_space_state.get_rest_info(query)
-	if hit.is_empty():
+
+	# Query actors are invisible to the rigid solver. For an incoming body we
+	# therefore cannot wait for actor-authored cast_motion to discover contact.
+	# Inspect current side-volume overlaps explicitly and feed the exact same
+	# finite-mass impulse law used by actor-authored contact.
+	var overlaps: Array[Dictionary] = get_world_3d().direct_space_state.intersect_shape(query, 8)
+	if overlaps.is_empty():
 		return
-	var normal := Vector3(hit.get("normal", Vector3.ZERO)).normalized()
-	if normal.is_zero_approx() or absf(normal.y) >= 0.70:
-		return
+
 	var actor_velocity := reciprocal_external_velocity
 	if grounded and support_body != null and is_instance_valid(support_body):
 		actor_velocity += _support_velocity(global_position, maxf(get_physics_process_delta_time(), 0.000001))
 		actor_velocity += support_body.global_transform.basis.orthonormalized() * desired_local_velocity
 	else:
 		actor_velocity += Vector3(desired_local_velocity.x, world_velocity.y, desired_local_velocity.z)
-	_apply_reciprocal_dynamic_contact(hit, normal, actor_velocity)
+
+	for overlap in overlaps:
+		var collider := overlap.get("collider") as Node3D
+		if collider == null:
+			continue
+		var frame := _resolve_support_frame(collider)
+		if not (frame is RigidBody3D):
+			continue
+		var body := frame as RigidBody3D
+		if body == support_body:
+			continue
+		var normal := global_position - body.global_position
+		normal.y = 0.0
+		normal = normal.normalized()
+		if normal.is_zero_approx():
+			continue
+		var contact_world := global_position - normal * radius
+		_apply_reciprocal_body_contact(body, normal, actor_velocity, contact_world)
 
 
 func _apply_reciprocal_dynamic_contact(
@@ -429,15 +449,28 @@ func _apply_reciprocal_dynamic_contact(
 	var frame := _resolve_support_frame(collider)
 	if not (frame is RigidBody3D):
 		return
-	var body := frame as RigidBody3D
-	if not is_instance_valid(body) or body == support_body:
+	var contact_world: Vector3 = Vector3(hit.get("point", global_position))
+	_apply_reciprocal_body_contact(
+		frame as RigidBody3D,
+		normal,
+		actor_contact_velocity,
+		contact_world
+	)
+
+
+func _apply_reciprocal_body_contact(
+	body: RigidBody3D,
+	normal: Vector3,
+	actor_contact_velocity: Vector3,
+	contact_world: Vector3
+) -> void:
+	if not is_instance_valid(body) or body == support_body or normal.is_zero_approx():
 		return
 	var body_id := body.get_instance_id()
 	if _reciprocal_contact_bodies_this_step.has(body_id):
 		return
 	var actor_mass := maxf(reciprocal_actor_mass, 0.001)
 	var body_mass := maxf(body.mass, 0.001)
-	var contact_world: Vector3 = Vector3(hit.get("point", global_position))
 	var body_velocity := _rigid_velocity_at_point(body, contact_world)
 	var relative_normal_speed := (actor_contact_velocity - body_velocity).dot(normal)
 	var closing_speed := -relative_normal_speed
