@@ -62,6 +62,7 @@ var reciprocal_external_velocity := Vector3.ZERO
 var _shape: CapsuleShape3D
 var _reciprocal_contact_shape: CapsuleShape3D
 var _reciprocal_contact_bodies_this_step: Dictionary = {}
+var _reciprocal_recoil_exclude_rids: Array[RID] = []
 var _previous_support_point_world := Vector3.ZERO
 var _has_support_sample := false
 var _topology_validation_grace_steps := 0
@@ -116,6 +117,7 @@ func clear_support_for_world_reset() -> void:
 	desired_local_velocity = Vector3.ZERO
 	world_velocity = Vector3.ZERO
 	reciprocal_external_velocity = Vector3.ZERO
+	_reciprocal_recoil_exclude_rids.clear()
 	jump_requested = false
 
 
@@ -279,7 +281,7 @@ func _step_grounded(delta: float) -> void:
 	var desired_world: Vector3 = support_body.global_transform.basis.orthonormalized() * desired_local_velocity
 	desired_world.y = 0.0
 	if reciprocal_dynamic_contact_enabled:
-		desired_world += reciprocal_external_velocity
+		_apply_reciprocal_recoil_motion(delta)
 
 	if jump_requested:
 		world_velocity = support_velocity + desired_world + Vector3.UP * jump_speed
@@ -321,7 +323,7 @@ func _step_airborne(delta: float) -> void:
 	var desired_world: Vector3 = desired_local_velocity
 	desired_world.y = 0.0
 	if reciprocal_dynamic_contact_enabled:
-		desired_world += reciprocal_external_velocity
+		_apply_reciprocal_recoil_motion(delta)
 	world_velocity.x = desired_world.x
 	world_velocity.z = desired_world.z
 	world_velocity.y -= gravity_acceleration * delta
@@ -485,6 +487,9 @@ func _apply_reciprocal_body_contact(
 		return
 
 	_reciprocal_contact_bodies_this_step[body_id] = true
+	var body_rid := body.get_rid()
+	if not _reciprocal_recoil_exclude_rids.has(body_rid):
+		_reciprocal_recoil_exclude_rids.append(body_rid)
 	var impulse_on_body := -normal * impulse_magnitude
 	body.apply_central_impulse(impulse_on_body)
 
@@ -499,6 +504,29 @@ func _apply_reciprocal_body_contact(
 	observed_reciprocal_max_impulse = maxf(observed_reciprocal_max_impulse, impulse_magnitude)
 	observed_reciprocal_last_body_mass = body_mass
 	observed_reciprocal_last_impulse = impulse_magnitude
+
+
+func _apply_reciprocal_recoil_motion(delta: float) -> void:
+	if reciprocal_external_velocity.length_squared() <= 0.0000000001 or delta <= 0.0:
+		_reciprocal_recoil_exclude_rids.clear()
+		return
+	var motion := reciprocal_external_velocity * delta
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = _shape
+	query.transform = global_transform
+	query.motion = motion
+	query.margin = query_margin
+	query.collision_mask = collision_mask
+	query.collide_with_bodies = true
+	query.collide_with_areas = false
+	query.exclude = _reciprocal_recoil_exclude_rids.duplicate()
+	var cast: PackedFloat32Array = get_world_3d().direct_space_state.cast_motion(query)
+	if cast.is_empty():
+		global_position += motion
+	else:
+		var safe := clampf(cast[0], 0.0, 1.0)
+		global_position += motion * safe
+	_reciprocal_recoil_exclude_rids.clear()
 
 
 func _snap_and_attach_ground() -> bool:
