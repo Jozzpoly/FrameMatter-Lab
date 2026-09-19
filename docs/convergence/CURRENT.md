@@ -1,6 +1,6 @@
 # FrameMatter — CURRENT
 
-Status: **live mutable execution pointer**
+Status: **OWNER FEEL GATE / DEVELOPMENT STOP**
 
 Updated: 2026-09-19
 
@@ -10,63 +10,82 @@ If live repository/CI evidence contradicts this file, live evidence wins.
 
 **C7 Owner Spark Gate: MATERIAL EXPERIENTIAL FAIL.**
 
-The C6 artifact remains a valid technical proof and a negative experiential baseline. It is not the current playable baseline.
+C7 closed the relation-first direction as the immediate priority. C2-C6 remain bounded technical donor evidence; hinge/seam does not generate new work.
 
 Evidence:
 
 `docs/evidence/convergence-c7-owner-spark-fail-2026-09-19.md`
 
-## Protected objective
+## Current qualified specimen
 
-Do not continue the Convergence relation/mechanism ladder.
+The single post-C7 reciprocal-contact challenger is now **TECHNICALLY PASS**.
 
-The only active near-term question is:
+Qualified source:
 
-> **can the existing responsive query-controller and dynamic Matter feel physically reciprocal through finite, mass-sensitive contact?**
+`2300cbcab5bc0adbae0e1254957276465999024b`
 
-This is deliberately smaller than a new architecture campaign.
+Workflow:
 
-## Current hypothesis
+`35471659480`
 
-Keep `SpaceQueryCharacter` locomotion as control A.
+Exact Windows executable SHA-256:
 
-Add one bounded challenger that:
+`2fda163d1dc5310d6c34a280c41391bd268687e677e7771d104ed91899fe31e8`
 
-- gives the actor a finite effective mass for dynamic-contact exchange;
-- transfers bounded momentum into contacted `RigidBody3D` Matter instead of infinite kinematic push authority;
-- gives the actor an equal-and-opposite transient response instead of remaining physically unaffected;
-- distinguishes light and heavy Matter;
-- preserves walls/ceilings, moving support, topology handoff and existing C0 Spark behavior.
+Artifact:
 
-The implementation may be hybrid/query-based. It is not automatically the final player controller.
+`FrameMatter-Reciprocal-Contact-Windows` — id `10592769292`
 
-## Hard scope stop
+Evidence:
 
-Until this challenger reaches an Owner build, do **not**:
+`docs/evidence/reciprocal-contact-owner-gate-2026-09-19.md`
 
-- extend hinge/seam/reconnect/mechanical relations;
-- redesign Matter representation;
-- implement true 0.5/0.25 m cells;
-- build adaptive LOD/chunking/streaming;
-- rewrite the actor as a full solver body;
-- expand the world into a large-world architecture;
-- start another performance campaign.
+## What is newly earned
 
-Existing C1 scale proxies may remain as instrumentation.
+The existing query controller and dynamic Matter can exchange finite, mass-sensitive momentum in both directions.
 
-Existing C2-C6 mechanics may be used only as donors or later tests; they do not generate work of their own.
+Bounded automated evidence:
 
-## Evidence boundary
+- light Matter displacement: ~1.98 m;
+- 64x-mass control displacement: ~0.000011 m;
+- incoming Matter actor displacement: ~1.33 m;
+- no-reciprocity control actor displacement: ~0.008 m;
+- impulses are capped;
+- old reciprocity-OFF volumetric controller test remains PASS;
+- W0D causal Matter loop remains PASS;
+- exact exported executable re-passes C0 Spark.
 
-The next meaningful technical gate is a small A/B contact probe:
+## Owner surface
 
-- actor pushes a light dynamic Matter body;
-- actor pushes a much heavier dynamic Matter body;
-- displacement/velocity must differ materially with mass;
-- applied impulses must be finite and bounded;
-- no legacy CharacterBody-style mass-independent bulldozing;
-- existing volumetric actor/support probes remain green.
+The graphical Owner build starts at the C1 2x proxy rather than the stale 1x default.
 
-If that passes, integrate the same challenger into the current Owner scene with a minimal immediate contact playground and package it.
+Near spawn are two bounded contact specimens:
 
-Then **stop and return to Owner feel** before true-scale representation or any other major research branch.
+- small/light Matter;
+- larger/heavy Matter.
+
+The active question is not whether the numbers are correct. It is:
+
+> **does pushing, being hit by, and moving around dynamic Matter now feel materially more like one physical world?**
+
+Structural seam authoring is frozen for this gate so it cannot redirect the test.
+
+## Hard stop
+
+Do not continue implementation before Owner play.
+
+Specifically do not start:
+
+- true 0.5/0.25 m Matter;
+- larger-world architecture;
+- full rigid/solver player rewrite;
+- new hinge/relation work;
+- reconnect/merge;
+- adaptive representation;
+- performance work not demanded by this specimen.
+
+## Next legitimate move
+
+**Owner plays the exact reciprocal-contact artifact.**
+
+After that play, recover the actual physical/experiential pressure before choosing the next research question.
