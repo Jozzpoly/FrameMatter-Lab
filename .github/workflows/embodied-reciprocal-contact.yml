@@ -1,0 +1,56 @@
+name: Embodied reciprocal contact
+
+on:
+  push:
+    branches:
+      - research/embodied-reciprocal-contact
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: embodied-reciprocal-contact-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reciprocal-contact:
+    name: Qualify reciprocal contact challenger
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      SOURCE_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 1
+
+      - name: Setup Godot 4.7.2
+        uses: chickensoft-games/setup-godot@v2.4.1
+        with:
+          version: 4.7.2
+          use-dotnet: false
+          include-templates: true
+
+      - name: Strict Windows import
+        shell: pwsh
+        run: ./ci/run_godot_import.ps1
+
+      - name: Compile recovery dependency graph
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_compile_gate.gd -PassMarker P1_COMPILE_GATE_PASS
+
+      - name: Preserve no-reciprocity actor control
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/p1_volumetric_actor_challenger.gd -PassMarker P1_VOLUMETRIC_ACTOR_PASS
+
+      - name: Qualify finite reciprocal contact
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/reciprocal_dynamic_contact_challenger.gd -PassMarker RECIPROCAL_CONTACT_PASS
+
+      - name: Preserve causal Matter baseline
+        shell: pwsh
+        run: ./ci/run_godot_probe.ps1 -ScriptPath res://tests/w0d_recovery_causal_loop_probe.gd -PassMarker W0D_RECOVERY_CAUSAL_LOOP_PASS
