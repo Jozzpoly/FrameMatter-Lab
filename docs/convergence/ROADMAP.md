@@ -197,7 +197,7 @@ Stop condition:
 
 ## C6 — Autonomous Qualification
 
-**Status: ACTIVE**
+**Status: PASS / EXACT ARTIFACT QUALIFIED**
 
 Question:
 
@@ -223,7 +223,7 @@ Stop condition:
 
 ## C7 — Owner Spark Gate
 
-**Status: FUTURE / OWNER AUTHORITY**
+**Status: ACTIVE / OWNER AUTHORITY**
 
 Only after C6.
 
